@@ -1,0 +1,25 @@
+#Log level
+log_level = "debug"
+elastic_address = "localhost"
+elastic_port = 9200
+elastic_index = "quiz_registrator_api_prod"
+elastic_logs_enabled = true
+
+#
+# Telegram Bot settings
+#
+games_with_photos_list_limit = 8
+group_id = -826325866
+registrator_api_address = "localhost"
+registrator_api_port = 8080
+telegram_api_bind_address = "localhost"
+telegram_api_bind_port = 8081
+
+#
+# DB Settings
+#
+driver = "mysql"
+database_address = "localhost"
+database_name = "quiz_telegram_prod"
+database_port = 3306
+database_username = "quiz_prod"
