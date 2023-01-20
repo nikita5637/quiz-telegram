@@ -17,13 +17,13 @@ type Game struct {
 	MaxPlayers byte
 	Number     string
 	PlaceID    int32
+	Place      Place
 	Registered bool
 	Payment    PaymentType
 	gameAdditionalInfo
 }
 
 type gameAdditionalInfo struct {
-	Address         string
 	DeletedAt       DateTime    `json:"deleted_at,omitempty"`
 	My              bool        `json:"my,omitempty"`
 	MyLegioners     byte        `json:"my_legioners,omitempty"`

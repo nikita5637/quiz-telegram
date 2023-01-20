@@ -26,6 +26,7 @@ const (
 	playerUnlikelyIcon      = "🤷‍"
 	playerWillNotComeIcon   = "🙅‍"
 	prevPageIcon            = "◀️"
+	routeIcon               = "🗺"
 )
 
 var (
@@ -76,6 +77,10 @@ var (
 	registerForLotteryLexeme = i18n.Lexeme{
 		Key:      "register_for_lottery",
 		FallBack: "Register for lottery",
+	}
+	routeToBarLexeme = i18n.Lexeme{
+		Key:      "route_to_bar",
+		FallBack: "Route to bar",
 	}
 )
 
@@ -216,6 +221,15 @@ func (b *Bot) getGameMenu(ctx context.Context, game model.Game) (tgbotapi.Inline
 			return tgbotapi.InlineKeyboardMarkup{}, err
 		}
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnLottery))
+	}
+
+	if game.Place.Latitude != 0 && game.Place.Longitude != 0 {
+		var btnVenue tgbotapi.InlineKeyboardButton
+		btnVenue, err = b.venueButton(ctx, game.Place.Name, game.Place.Address, game.Place.Latitude, game.Place.Longitude)
+		if err != nil {
+			return tgbotapi.InlineKeyboardMarkup{}, err
+		}
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnVenue))
 	}
 
 	var btnGamesList tgbotapi.InlineKeyboardButton
@@ -433,6 +447,28 @@ func (b *Bot) unregisterRequest(ctx context.Context, uuid string) error {
 	return nil
 }
 
+func (b *Bot) venueButton(ctx context.Context, title, address string, latitude, longitude float32) (tgbotapi.InlineKeyboardButton, error) {
+	venue := VenueData{
+		Title:     title,
+		Address:   address,
+		Latitude:  latitude,
+		Longitude: longitude,
+	}
+
+	request, err := getRequest(ctx, CommandGetVenue, venue)
+	if err != nil {
+		return tgbotapi.InlineKeyboardButton{}, err
+	}
+
+	text := fmt.Sprintf("%s %s", routeIcon, getTranslator(routeToBarLexeme)(ctx))
+	callbackData := b.registerRequest(ctx, request)
+
+	return tgbotapi.InlineKeyboardButton{
+		Text:         text,
+		CallbackData: &callbackData,
+	}, nil
+}
+
 func convertPBGameToModelGame(pbGame *registrator.Game) model.Game {
 	ret := model.Game{
 		Date:       model.DateTime(pbGame.GetDate().AsTime()),
@@ -483,4 +519,16 @@ func getRequest[T any](ctx context.Context, command Command, pbReq T) (model.Req
 	}
 
 	return request, nil
+}
+
+func convertPBPlaceToModelPlace(place *registrator.Place) model.Place {
+	return model.Place{
+		ID:        place.GetId(),
+		Address:   place.GetAddress(),
+		Name:      place.GetName(),
+		ShortName: place.GetShortName(),
+		Longitude: place.GetLongitude(),
+		Latitude:  place.GetLatitude(),
+		MenuLink:  place.GetMenuLink(),
+	}
 }

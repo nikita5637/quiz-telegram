@@ -37,6 +37,8 @@ const (
 	CommandChangePhone
 	// CommandLottery ...
 	CommandLottery
+	// CommandGetVenue ...
+	CommandGetVenue
 	// ...
 
 	// CommandsNumber ...
@@ -47,4 +49,12 @@ const (
 type TelegramRequest struct {
 	Command Command `json:"command,omitempty"`
 	Body    []byte  `json:"body,omitempty"`
+}
+
+// Venue is data for CommandGetVenue
+type VenueData struct {
+	Title     string
+	Address   string
+	Latitude  float32
+	Longitude float32
 }

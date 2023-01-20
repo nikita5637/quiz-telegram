@@ -205,7 +205,7 @@ func (b *Bot) HandleMessage(ctx context.Context, update *tgbotapi.Update) error 
 	case "/registeredgames":
 		handler = func(ctx context.Context) error {
 			var msg tgbotapi.Chattable
-			msg, err = b.getListOfRegisteredMessage(ctx, update)
+			msg, err = b.getListOfRegisteredGamesMessage(ctx, update)
 			if err != nil {
 				return err
 			}
@@ -560,7 +560,7 @@ func (b *Bot) getListOfMyGamesMessage(ctx context.Context, update *tgbotapi.Upda
 	return msg, nil
 }
 
-func (b *Bot) getListOfRegisteredMessage(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error) {
+func (b *Bot) getListOfRegisteredGamesMessage(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error) {
 	clientID := update.Message.From.ID
 
 	resp, err := b.registratorServiceClient.GetRegisteredGames(ctx, &registrator.GetRegisteredGamesRequest{

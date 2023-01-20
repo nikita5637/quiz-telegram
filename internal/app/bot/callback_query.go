@@ -157,6 +157,10 @@ func (b *Bot) HandleCallbackQuery(ctx context.Context, update *tgbotapi.Update) 
 		handler = func(ctx context.Context) error {
 			return b.handleGetListGamesWithPhotosPrevPage(ctx, update, telegramRequest)
 		}
+	case CommandGetVenue:
+		handler = func(ctx context.Context) error {
+			return b.handleGetVenue(ctx, update, telegramRequest)
+		}
 	case CommandLottery:
 		handler = func(ctx context.Context) error {
 			return b.handleLottery(ctx, update, telegramRequest)
@@ -304,15 +308,13 @@ func (b *Bot) handleGetGame(ctx context.Context, update *tgbotapi.Update, telegr
 
 	game := convertPBGameToModelGame(resp.GetGame())
 
-	game.Address = "?"
-
 	placeResp, err := b.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
 		Id: resp.GetGame().GetPlaceId(),
 	})
 	if err != nil {
 		logger.Warnf(ctx, "getting place info error: %w", err)
 	} else {
-		game.Address = placeResp.GetPlace().GetAddress()
+		game.Place = convertPBPlaceToModelPlace(placeResp.GetPlace())
 	}
 
 	lotteryResp, err := b.croupierServiceClient.GetLotteryStatus(ctx, &registrator.GetLotteryStatusRequest{
@@ -619,6 +621,28 @@ func (b *Bot) handleGetListGamesWithPhotosPrevPage(ctx context.Context, update *
 	return err
 }
 
+func (b *Bot) handleGetVenue(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
+	clientID := update.CallbackQuery.From.ID
+	messageID := update.CallbackQuery.Message.MessageID
+
+	venue := &VenueData{}
+
+	err := json.Unmarshal(telegramRequest.Body, venue)
+	if err != nil {
+		return err
+	}
+
+	deleteMessageConfig := tgbotapi.NewDeleteMessage(clientID, messageID)
+	_, err = b.bot.Request(deleteMessageConfig)
+	if err != nil {
+		return err
+	}
+
+	venueConfig := tgbotapi.NewVenue(clientID, venue.Title, venue.Address, float64(venue.Latitude), float64(venue.Longitude))
+	_, err = b.bot.Request(venueConfig)
+	return err
+}
+
 func (b *Bot) handleLottery(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
 	clientID := update.CallbackQuery.From.ID
 	messageID := update.CallbackQuery.Message.MessageID
@@ -784,15 +808,13 @@ func (b *Bot) handleRegisterGame(ctx context.Context, update *tgbotapi.Update, t
 
 	game := convertPBGameToModelGame(gameResp.GetGame())
 
-	game.Address = "?"
-
 	placeResp, err := b.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
 		Id: gameResp.GetGame().GetPlaceId(),
 	})
 	if err != nil {
 		logger.Warnf(ctx, "getting place info error: %w", err)
 	} else {
-		game.Address = placeResp.GetPlace().GetAddress()
+		game.Place = convertPBPlaceToModelPlace(placeResp.GetPlace())
 	}
 
 	lotteryResp, err := b.croupierServiceClient.GetLotteryStatus(ctx, &registrator.GetLotteryStatusRequest{
@@ -870,15 +892,13 @@ func (b *Bot) handleRegisterPlayer(ctx context.Context, update *tgbotapi.Update,
 
 	game := convertPBGameToModelGame(gameResp.GetGame())
 
-	game.Address = "?"
-
 	placeResp, err := b.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
 		Id: gameResp.GetGame().GetPlaceId(),
 	})
 	if err != nil {
 		logger.Warnf(ctx, "getting place info error: %w", err)
 	} else {
-		game.Address = placeResp.GetPlace().GetAddress()
+		game.Place = convertPBPlaceToModelPlace(placeResp.GetPlace())
 	}
 
 	lotteryResp, err := b.croupierServiceClient.GetLotteryStatus(ctx, &registrator.GetLotteryStatusRequest{
@@ -946,15 +966,13 @@ func (b *Bot) handleUnregisterGame(ctx context.Context, update *tgbotapi.Update,
 
 	game := convertPBGameToModelGame(gameResp.GetGame())
 
-	game.Address = "?"
-
 	placeResp, err := b.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
 		Id: gameResp.GetGame().GetPlaceId(),
 	})
 	if err != nil {
 		logger.Warnf(ctx, "getting place info error: %w", err)
 	} else {
-		game.Address = placeResp.GetPlace().GetAddress()
+		game.Place = convertPBPlaceToModelPlace(placeResp.GetPlace())
 	}
 
 	lotteryResp, err := b.croupierServiceClient.GetLotteryStatus(ctx, &registrator.GetLotteryStatusRequest{
@@ -1022,15 +1040,13 @@ func (b *Bot) handleUnregisterPlayer(ctx context.Context, update *tgbotapi.Updat
 
 	game := convertPBGameToModelGame(gameResp.GetGame())
 
-	game.Address = "?"
-
 	placeResp, err := b.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
 		Id: gameResp.GetGame().GetPlaceId(),
 	})
 	if err != nil {
 		logger.Warnf(ctx, "getting place info error: %w", err)
 	} else {
-		game.Address = placeResp.GetPlace().GetAddress()
+		game.Place = convertPBPlaceToModelPlace(placeResp.GetPlace())
 	}
 
 	lotteryResp, err := b.croupierServiceClient.GetLotteryStatus(ctx, &registrator.GetLotteryStatusRequest{
@@ -1096,15 +1112,13 @@ func (b *Bot) handleUpdatePayment(ctx context.Context, update *tgbotapi.Update, 
 
 	game := convertPBGameToModelGame(gameResp.GetGame())
 
-	game.Address = "?"
-
 	placeResp, err := b.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
 		Id: gameResp.GetGame().GetPlaceId(),
 	})
 	if err != nil {
 		logger.Warnf(ctx, "getting place info error: %w", err)
 	} else {
-		game.Address = placeResp.GetPlace().GetAddress()
+		game.Place = convertPBPlaceToModelPlace(placeResp.GetPlace())
 	}
 
 	lotteryResp, err := b.croupierServiceClient.GetLotteryStatus(ctx, &registrator.GetLotteryStatusRequest{
@@ -1193,7 +1207,7 @@ func detailInfo(ctx context.Context, game model.Game) string {
 	}
 
 	info.WriteString("#️⃣ Номер пакета: " + game.Number + "\n")
-	info.WriteString("📍 Адрес: " + game.Address + "\n")
+	info.WriteString("📍 Адрес: " + game.Place.Address + "\n")
 	info.WriteString("📅 Дата и время: " + game.DateTime().String() + "\n")
 	info.WriteString(fmt.Sprintf("👥 Количество игроков: %d/%d/%d", game.NumberPlayers, game.NumberLegioners, game.MaxPlayers))
 
