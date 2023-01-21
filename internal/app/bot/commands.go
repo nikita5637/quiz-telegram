@@ -51,7 +51,7 @@ type TelegramRequest struct {
 	Body    []byte  `json:"body,omitempty"`
 }
 
-// Venue is data for CommandGetVenue
+// VenueData is data for CommandGetVenue
 type VenueData struct {
 	Title     string
 	Address   string

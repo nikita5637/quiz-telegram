@@ -223,14 +223,16 @@ func (b *Bot) handleGamesList(ctx context.Context, update *tgbotapi.Update, tele
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
 	for _, pbGame := range resp.GetGames() {
-		leagueResp, err := b.registratorServiceClient.GetLeagueByID(ctx, &registrator.GetLeagueByIDRequest{
+		var leagueResp *registrator.GetLeagueByIDResponse
+		leagueResp, err = b.registratorServiceClient.GetLeagueByID(ctx, &registrator.GetLeagueByIDRequest{
 			Id: pbGame.GetLeagueId(),
 		})
 		if err != nil {
 			return err
 		}
 
-		placeResp, err := b.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
+		var placeResp *registrator.GetPlaceByIDResponse
+		placeResp, err = b.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
 			Id: pbGame.GetPlaceId(),
 		})
 		if err != nil {
@@ -409,14 +411,16 @@ func (b *Bot) handleGetListGamesWithPhotosNextPage(ctx context.Context, update *
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
 	for _, pbGame := range resp.GetGames() {
-		leagueResp, err := b.registratorServiceClient.GetLeagueByID(ctx, &registrator.GetLeagueByIDRequest{
+		var leagueResp *registrator.GetLeagueByIDResponse
+		leagueResp, err = b.registratorServiceClient.GetLeagueByID(ctx, &registrator.GetLeagueByIDRequest{
 			Id: pbGame.GetLeagueId(),
 		})
 		if err != nil {
 			return err
 		}
 
-		placeResp, err := b.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
+		var placeResp *registrator.GetPlaceByIDResponse
+		placeResp, err = b.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
 			Id: pbGame.GetPlaceId(),
 		})
 		if err != nil {
@@ -525,14 +529,16 @@ func (b *Bot) handleGetListGamesWithPhotosPrevPage(ctx context.Context, update *
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
 	for _, pbGame := range resp.GetGames() {
-		leagueResp, err := b.registratorServiceClient.GetLeagueByID(ctx, &registrator.GetLeagueByIDRequest{
+		var leagueResp *registrator.GetLeagueByIDResponse
+		leagueResp, err = b.registratorServiceClient.GetLeagueByID(ctx, &registrator.GetLeagueByIDRequest{
 			Id: pbGame.GetLeagueId(),
 		})
 		if err != nil {
 			return err
 		}
 
-		placeResp, err := b.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
+		var placeResp *registrator.GetPlaceByIDResponse
+		placeResp, err = b.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
 			Id: pbGame.GetPlaceId(),
 		})
 		if err != nil {
@@ -736,21 +742,21 @@ func (b *Bot) handlePlayersList(ctx context.Context, update *tgbotapi.Update, te
 	for i, player := range resp.GetPlayers() {
 		playerName := ""
 		if player.UserId > 0 {
-			if playerResp, err := b.registratorServiceClient.GetUserByID(ctx, &registrator.GetUserByIDRequest{
+			var playerResp *registrator.GetUserByIDResponse
+			if playerResp, err = b.registratorServiceClient.GetUserByID(ctx, &registrator.GetUserByIDRequest{
 				Id: player.UserId,
 			}); err != nil {
 				return err
-			} else {
-				playerName = playerResp.GetUser().GetName()
 			}
+			playerName = playerResp.GetUser().GetName()
 		} else {
-			if playerResp, err := b.registratorServiceClient.GetUserByID(ctx, &registrator.GetUserByIDRequest{
+			var playerResp *registrator.GetUserByIDResponse
+			if playerResp, err = b.registratorServiceClient.GetUserByID(ctx, &registrator.GetUserByIDRequest{
 				Id: player.RegisteredBy,
 			}); err != nil {
 				return err
-			} else {
-				playerName = fmt.Sprintf("%s %s", getTranslator(legionerByLexeme)(ctx), playerResp.GetUser().GetName())
 			}
+			playerName = fmt.Sprintf("%s %s", getTranslator(legionerByLexeme)(ctx), playerResp.GetUser().GetName())
 		}
 
 		if player.GetDegree() == registrator.Degree_DEGREE_UNLIKELY {

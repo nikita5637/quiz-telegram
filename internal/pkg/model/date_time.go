@@ -8,6 +8,8 @@ import (
 const (
 	// TimeZoneMoscow ...
 	TimeZoneMoscow = "Europe/Moscow"
+
+	timeIsEmpty = "time is empty"
 )
 
 var (
@@ -43,7 +45,7 @@ type DateTime time.Time
 // String ...
 func (d DateTime) String() string {
 	if time.Time(d).IsZero() {
-		return "time is empty"
+		return timeIsEmpty
 	}
 
 	loc, err := time.LoadLocation(TimeZoneMoscow)
@@ -58,7 +60,7 @@ func (d DateTime) String() string {
 // Time ...
 func (d DateTime) Time() string {
 	if time.Time(d).IsZero() {
-		return "time is empty"
+		return timeIsEmpty
 	}
 
 	loc, err := time.LoadLocation(TimeZoneMoscow)

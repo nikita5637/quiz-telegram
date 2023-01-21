@@ -67,7 +67,8 @@ func (b *Bot) HandleInlineQuery(ctx context.Context, update *tgbotapi.Update) er
 	}
 
 	for _, game := range resp.GetGames() {
-		gameResp, err := b.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
+		var gameResp *registrator.GetPlaceByIDResponse
+		gameResp, err = b.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
 			Id: game.GetPlaceId(),
 		})
 		if err != nil {
@@ -107,13 +108,13 @@ func (b *Bot) HandleInlineQuery(ctx context.Context, update *tgbotapi.Update) er
 		for i, player := range playersResp.GetPlayers() {
 			playerName := ""
 			if player.GetUserId() > 0 {
-				if playerResp, err := b.registratorServiceClient.GetUserByID(ctx, &registrator.GetUserByIDRequest{
+				var playerResp *registrator.GetUserByIDResponse
+				if playerResp, err = b.registratorServiceClient.GetUserByID(ctx, &registrator.GetUserByIDRequest{
 					Id: player.GetUserId(),
 				}); err != nil {
 					return err
-				} else {
-					playerName = playerResp.GetUser().GetName()
 				}
+				playerName = playerResp.GetUser().GetName()
 			} else {
 				playerName = "Лег"
 			}

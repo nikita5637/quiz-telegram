@@ -2,6 +2,7 @@
 //go:generate mockery --case underscore --name RegistratorServiceClient --with-expecter
 //go:generate mockery --case underscore --name RequestsFacade --with-expecter
 //go:generate mockery --case underscore --name TelegramBot --with-expecter
+
 package bot
 
 import (
