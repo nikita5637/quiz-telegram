@@ -55,6 +55,21 @@ func (d DateTime) String() string {
 	return fmt.Sprintf("[%s] %02d %s: %02d:%02d", days[t.Weekday()], t.Day(), months[t.Month()-1], t.Hour(), t.Minute())
 }
 
+// Time ...
+func (d DateTime) Time() string {
+	if time.Time(d).IsZero() {
+		return "time is empty"
+	}
+
+	loc, err := time.LoadLocation(TimeZoneMoscow)
+	if err != nil {
+		return ""
+	}
+
+	t := time.Time(d).In(loc)
+	return t.Format("15:04")
+}
+
 // AsTime returns time in UTC
 func (d DateTime) AsTime() time.Time {
 	return time.Time(d).UTC()

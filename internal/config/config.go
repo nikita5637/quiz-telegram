@@ -10,6 +10,7 @@ import (
 type GlobalConfig struct {
 	DatabaseConfig
 	LoggerConfig
+	ReminderConfig
 	TelegramBotConfig
 }
 

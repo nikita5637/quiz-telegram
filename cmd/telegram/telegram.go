@@ -7,12 +7,14 @@ import (
 	"os/signal"
 
 	telegram "github.com/nikita5637/quiz-telegram/internal/app/bot"
+	"github.com/nikita5637/quiz-telegram/internal/app/reminder"
 	"github.com/nikita5637/quiz-telegram/internal/app/telegramapi"
 	"github.com/nikita5637/quiz-telegram/internal/config"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/elasticsearch"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/request"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/storage"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -91,6 +93,9 @@ func main() {
 
 	logger.Infof(ctx, "authorized on account '%s'", bot.Self.UserName)
 
+	registratorAPIAddress := config.GetValue("RegistratorAPIAddress").String()
+	registratorAPIPort := config.GetValue("RegistratorAPIPort").Uint16()
+
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
@@ -100,9 +105,6 @@ func main() {
 			RequestStorage: requestStorage,
 		}
 		requestsFacade := request.NewFacade(requestsFacadeConfig)
-
-		registratorAPIAddress := config.GetValue("RegistratorAPIAddress").String()
-		registratorAPIPort := config.GetValue("RegistratorAPIPort").Uint16()
 
 		telegramBotConfig := telegram.Config{
 			Bot: bot,
@@ -136,6 +138,32 @@ func main() {
 
 		logger.InfoKV(ctx, "initialized telegram API", "bind address", bindAddr)
 		return telegramAPI.ListenAndServe(ctx)
+	})
+
+	g.Go(func() error {
+		rabbitMQConn, err2 := amqp.Dial(config.GetRabbitMQURL())
+		if err2 != nil {
+			return err2
+		}
+		defer rabbitMQConn.Close()
+
+		rabbitMQChannel, err2 := rabbitMQConn.Channel()
+		if err2 != nil {
+			return err2
+		}
+		defer rabbitMQChannel.Close()
+
+		reminderConfig := reminder.Config{
+			Bot:                   bot,
+			GameReminderQueueName: config.GetValue("RabbitMQGameReminderQueueName").String(),
+			RabbitMQChannel:       rabbitMQChannel,
+			RegistratorAPIAddress: registratorAPIAddress,
+			RegistratorAPIPort:    registratorAPIPort,
+		}
+		reminder := reminder.New(reminderConfig)
+
+		logger.InfoKV(ctx, "initialized reminder")
+		return reminder.Start(ctx)
 	})
 
 	err = g.Wait()

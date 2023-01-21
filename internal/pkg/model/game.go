@@ -3,8 +3,8 @@ package model
 import (
 	"time"
 
+	time_utils "github.com/nikita5637/quiz-registrator-api/utils/time"
 	"github.com/nikita5637/quiz-telegram/internal/config"
-	time_utils "github.com/nikita5637/quiz-telegram/utils/time"
 )
 
 // Game ...
