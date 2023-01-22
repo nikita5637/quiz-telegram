@@ -119,7 +119,7 @@ func (b *Bot) getGameMenu(ctx context.Context, game model.Game) (tgbotapi.Inline
 	var err error
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
-	if game.NumberLegioners+game.NumberPlayers == game.MaxPlayers {
+	if game.NumberOfLegioners+game.NumberOfPlayers == game.MaxPlayers {
 		if game.My {
 			var btn1 tgbotapi.InlineKeyboardButton
 			btn1, err = b.unregisterPlayerButton(ctx, game.ID, registrator.PlayerType_PLAYER_TYPE_MAIN)
@@ -129,7 +129,7 @@ func (b *Bot) getGameMenu(ctx context.Context, game model.Game) (tgbotapi.Inline
 			rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn1))
 		}
 
-		if game.MyLegioners > 0 {
+		if game.NumberOfMyLegioners > 0 {
 			var btn1 tgbotapi.InlineKeyboardButton
 			btn1, err = b.unregisterPlayerButton(ctx, game.ID, registrator.PlayerType_PLAYER_TYPE_LEGIONER)
 			if err != nil {
@@ -172,7 +172,7 @@ func (b *Bot) getGameMenu(ctx context.Context, game model.Game) (tgbotapi.Inline
 		}
 
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn1), tgbotapi.NewInlineKeyboardRow(btn2))
-		if game.MyLegioners > 0 {
+		if game.NumberOfMyLegioners > 0 {
 			var btn3 tgbotapi.InlineKeyboardButton
 			btn3, err = b.unregisterPlayerButton(ctx, game.ID, registrator.PlayerType_PLAYER_TYPE_LEGIONER)
 			if err != nil {
@@ -182,7 +182,7 @@ func (b *Bot) getGameMenu(ctx context.Context, game model.Game) (tgbotapi.Inline
 		}
 	}
 
-	if game.NumberLegioners+game.NumberPlayers > 0 {
+	if game.NumberOfLegioners+game.NumberOfPlayers > 0 {
 		var btnPlayersList tgbotapi.InlineKeyboardButton
 		btnPlayersList, err = b.playersListButton(ctx, game.ID)
 		if err != nil {
@@ -472,21 +472,18 @@ func (b *Bot) venueButton(ctx context.Context, title, address string, latitude, 
 func convertPBGameToModelGame(pbGame *registrator.Game) model.Game {
 	ret := model.Game{
 		Date:       model.DateTime(pbGame.GetDate().AsTime()),
-		GameType:   int32(pbGame.GetType()),
 		ID:         pbGame.GetId(),
 		ExternalID: pbGame.GetExternalId(),
-		LeagueID:   pbGame.GetLeagueId(),
-		MaxPlayers: byte(pbGame.GetMaxPlayers()),
+		MaxPlayers: pbGame.GetMaxPlayers(),
 		Number:     pbGame.GetNumber(),
-		PlaceID:    pbGame.GetPlaceId(),
 		Registered: pbGame.GetRegistered(),
 		Payment:    model.PaymentType(pbGame.GetPayment()),
 	}
 
 	ret.My = pbGame.GetMy()
-	ret.MyLegioners = byte(pbGame.GetNumberOfMyLegioners())
-	ret.NumberLegioners = byte(pbGame.GetNumberOfLegioners())
-	ret.NumberPlayers = byte(pbGame.GetNumberOfPlayers())
+	ret.NumberOfMyLegioners = pbGame.GetNumberOfMyLegioners()
+	ret.NumberOfLegioners = pbGame.GetNumberOfLegioners()
+	ret.NumberOfPlayers = pbGame.GetNumberOfPlayers()
 
 	return ret
 }

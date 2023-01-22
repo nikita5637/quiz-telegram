@@ -9,28 +9,28 @@ import (
 
 // Game ...
 type Game struct {
-	Date       DateTime
-	ExternalID int32
-	GameType   int32
-	ID         int32
-	LeagueID   int32
-	MaxPlayers byte
-	Number     string
-	PlaceID    int32
-	Place      Place
-	Registered bool
-	Payment    PaymentType
-	gameAdditionalInfo
-}
+	ID          int32
+	ExternalID  int32
+	League      League
+	Type        int32
+	Number      string
+	Name        string
+	Place       Place
+	Date        DateTime
+	Price       uint32
+	PaymentType string
+	MaxPlayers  uint32
+	Payment     PaymentType
+	Registered  bool
 
-type gameAdditionalInfo struct {
-	DeletedAt       DateTime    `json:"deleted_at,omitempty"`
-	My              bool        `json:"my,omitempty"`
-	MyLegioners     byte        `json:"my_legioners,omitempty"`
-	NumberLegioners byte        `json:"number_legioners,omitempty"`
-	NumberPlayers   byte        `json:"number_players,omitempty"`
-	ResultPlace     ResultPlace `json:"result_place,omitempty"`
-	WithLottery     bool
+	My                  bool
+	NumberOfMyLegioners uint32
+	NumberOfLegioners   uint32
+	NumberOfPlayers     uint32
+	ResultPlace         ResultPlace
+
+	WithLottery bool
+	DeletedAt   DateTime
 }
 
 // DateTime ...

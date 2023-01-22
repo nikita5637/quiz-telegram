@@ -1215,7 +1215,7 @@ func detailInfo(ctx context.Context, game model.Game) string {
 	info.WriteString("#️⃣ Номер пакета: " + game.Number + "\n")
 	info.WriteString("📍 Адрес: " + game.Place.Address + "\n")
 	info.WriteString("📅 Дата и время: " + game.DateTime().String() + "\n")
-	info.WriteString(fmt.Sprintf("👥 Количество игроков: %d/%d/%d", game.NumberPlayers, game.NumberLegioners, game.MaxPlayers))
+	info.WriteString(fmt.Sprintf("👥 Количество игроков: %d/%d/%d", game.NumberOfPlayers, game.NumberOfLegioners, game.MaxPlayers))
 
 	return info.String()
 }
