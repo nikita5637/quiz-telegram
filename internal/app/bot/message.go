@@ -14,7 +14,6 @@ import (
 	"github.com/nikita5637/quiz-telegram/internal/config"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
-	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 )
 
 const (
@@ -356,36 +355,19 @@ func (b *Bot) getGamesWithPhotosMessage(ctx context.Context, update *tgbotapi.Up
 	clientID := update.Message.From.ID
 	gamesWithPhotosListLimit := uint32(config.GetValue("GamesWithPhotosListLimit").Uint64())
 
-	resp, err := b.photographerServiceClient.GetGamesWithPhotos(ctx, &registrator.GetGamesWithPhotosRequest{
-		Limit:  gamesWithPhotosListLimit,
-		Offset: 0,
-	})
+	games, total, err := b.gamesFacade.GetGamesWithPhotos(ctx, gamesWithPhotosListLimit, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	if resp.GetTotal() == 0 {
+	if total == 0 {
 		return tgbotapi.NewMessage(clientID, getTranslator(listOfGamesWithPhotosIsEmptyLexeme)(ctx)), nil
 	}
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
-	for _, pbGame := range resp.GetGames() {
-		leagueResp, err := b.registratorServiceClient.GetLeagueByID(ctx, &registrator.GetLeagueByIDRequest{
-			Id: pbGame.GetLeagueId(),
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		placeResp, err := b.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
-			Id: pbGame.GetPlaceId(),
-		})
-		if err != nil {
-			return nil, err
-		}
-
+	for _, game := range games {
 		pbReq := &registrator.GetPhotosByGameIDRequest{
-			GameId: pbGame.GetId(),
+			GameId: game.ID,
 		}
 
 		request, err := getRequest(ctx, CommandGetGamePhotos, pbReq)
@@ -394,7 +376,7 @@ func (b *Bot) getGamesWithPhotosMessage(ctx context.Context, update *tgbotapi.Up
 		}
 
 		callbackData := b.registerRequest(ctx, request)
-		text := fmt.Sprintf(gamePhotosInfoFormatString, model.ResultPlace(pbGame.GetResultPlace()).String(), leagueResp.GetLeague().GetShortName(), pbGame.GetNumber(), placeResp.GetPlace().GetShortName(), model.DateTime(pbGame.GetDate().AsTime()))
+		text := fmt.Sprintf(gamePhotosInfoFormatString, game.ResultPlace.String(), game.League.ShortName, game.Number, game.Place.ShortName, game.DateTime())
 
 		btn := tgbotapi.InlineKeyboardButton{
 			Text:         text,
@@ -404,8 +386,8 @@ func (b *Bot) getGamesWithPhotosMessage(ctx context.Context, update *tgbotapi.Up
 	}
 
 	leftNext := uint32(0)
-	if resp.GetTotal() > gamesWithPhotosListLimit {
-		leftNext = resp.GetTotal() - gamesWithPhotosListLimit
+	if total > gamesWithPhotosListLimit {
+		leftNext = total - gamesWithPhotosListLimit
 	}
 
 	if leftNext > 0 {

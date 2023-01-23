@@ -127,7 +127,8 @@ func main() {
 		requestsFacade := request.NewFacade(requestsFacadeConfig)
 
 		gamesFacadeConfig := games.Config{
-			RegistratorServiceClient: registratorServiceClient,
+			PhotographerServiceClient: photographerServiceClient,
+			RegistratorServiceClient:  registratorServiceClient,
 		}
 		gamesFacade := games.NewFacade(gamesFacadeConfig)
 

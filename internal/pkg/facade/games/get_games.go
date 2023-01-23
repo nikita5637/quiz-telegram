@@ -69,6 +69,24 @@ func (f *Facade) GetGames(ctx context.Context, active bool) ([]model.Game, error
 	return games, nil
 }
 
+// GetGamesWithPhotos ...
+func (f *Facade) GetGamesWithPhotos(ctx context.Context, limit, offset uint32) ([]model.Game, uint32, error) {
+	gamesResp, err := f.photographerServiceClient.GetGamesWithPhotos(ctx, &registrator.GetGamesWithPhotosRequest{
+		Limit:  limit,
+		Offset: offset,
+	})
+	if err != nil {
+		return nil, 0, fmt.Errorf("get games error: %w", err)
+	}
+
+	games, err := f.getGames(ctx, gamesResp.GetGames())
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return games, gamesResp.GetTotal(), nil
+}
+
 // GetRegisteredGames ...
 func (f *Facade) GetRegisteredGames(ctx context.Context, active bool) ([]model.Game, error) {
 	gamesResp, err := f.registratorServiceClient.GetRegisteredGames(ctx, &registrator.GetRegisteredGamesRequest{

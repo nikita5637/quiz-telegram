@@ -376,31 +376,15 @@ func (b *Bot) handleGetListGamesWithPhotosNextPage(ctx context.Context, update *
 		return err
 	}
 
-	resp, err := b.photographerServiceClient.GetGamesWithPhotos(ctx, req)
+	games, total, err := b.gamesFacade.GetGamesWithPhotos(ctx, req.GetLimit(), req.GetOffset())
 	if err != nil {
 		return err
 	}
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
-	for _, pbGame := range resp.GetGames() {
-		var leagueResp *registrator.GetLeagueByIDResponse
-		leagueResp, err = b.registratorServiceClient.GetLeagueByID(ctx, &registrator.GetLeagueByIDRequest{
-			Id: pbGame.GetLeagueId(),
-		})
-		if err != nil {
-			return err
-		}
-
-		var placeResp *registrator.GetPlaceByIDResponse
-		placeResp, err = b.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
-			Id: pbGame.GetPlaceId(),
-		})
-		if err != nil {
-			return err
-		}
-
+	for _, game := range games {
 		pbReq := &registrator.GetPhotosByGameIDRequest{
-			GameId: pbGame.GetId(),
+			GameId: game.ID,
 		}
 
 		var request model.Request
@@ -410,7 +394,7 @@ func (b *Bot) handleGetListGamesWithPhotosNextPage(ctx context.Context, update *
 		}
 
 		callbackData := b.registerRequest(ctx, request)
-		text := fmt.Sprintf(gamePhotosInfoFormatString, model.ResultPlace(pbGame.GetResultPlace()).String(), leagueResp.GetLeague().GetShortName(), pbGame.GetNumber(), placeResp.GetPlace().GetShortName(), model.DateTime(pbGame.GetDate().AsTime()))
+		text := fmt.Sprintf(gamePhotosInfoFormatString, game.ResultPlace.String(), game.League.ShortName, game.Number, game.Place.ShortName, game.DateTime())
 
 		btn := tgbotapi.InlineKeyboardButton{
 			Text:         text,
@@ -448,8 +432,8 @@ func (b *Bot) handleGetListGamesWithPhotosNextPage(ctx context.Context, update *
 	}
 
 	leftNext := uint32(0)
-	if resp.GetTotal() > (req.GetOffset() + req.GetLimit()) {
-		leftNext = resp.GetTotal() - (req.GetOffset() + req.GetLimit())
+	if total > (req.GetOffset() + req.GetLimit()) {
+		leftNext = total - (req.GetOffset() + req.GetLimit())
 	}
 
 	if leftNext > 0 {
@@ -494,31 +478,15 @@ func (b *Bot) handleGetListGamesWithPhotosPrevPage(ctx context.Context, update *
 		return err
 	}
 
-	resp, err := b.photographerServiceClient.GetGamesWithPhotos(ctx, req)
+	games, total, err := b.gamesFacade.GetGamesWithPhotos(ctx, req.GetLimit(), req.GetOffset())
 	if err != nil {
 		return err
 	}
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
-	for _, pbGame := range resp.GetGames() {
-		var leagueResp *registrator.GetLeagueByIDResponse
-		leagueResp, err = b.registratorServiceClient.GetLeagueByID(ctx, &registrator.GetLeagueByIDRequest{
-			Id: pbGame.GetLeagueId(),
-		})
-		if err != nil {
-			return err
-		}
-
-		var placeResp *registrator.GetPlaceByIDResponse
-		placeResp, err = b.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
-			Id: pbGame.GetPlaceId(),
-		})
-		if err != nil {
-			return err
-		}
-
+	for _, game := range games {
 		pbReq := &registrator.GetPhotosByGameIDRequest{
-			GameId: pbGame.GetId(),
+			GameId: game.ID,
 		}
 
 		var request model.Request
@@ -528,7 +496,7 @@ func (b *Bot) handleGetListGamesWithPhotosPrevPage(ctx context.Context, update *
 		}
 
 		callbackData := b.registerRequest(ctx, request)
-		text := fmt.Sprintf(gamePhotosInfoFormatString, model.ResultPlace(pbGame.GetResultPlace()).String(), leagueResp.GetLeague().GetShortName(), pbGame.GetNumber(), placeResp.GetPlace().GetShortName(), model.DateTime(pbGame.GetDate().AsTime()))
+		text := fmt.Sprintf(gamePhotosInfoFormatString, game.ResultPlace.String(), game.League.ShortName, game.Number, game.Place.ShortName, game.DateTime())
 
 		btn := tgbotapi.InlineKeyboardButton{
 			Text:         text,
@@ -566,8 +534,8 @@ func (b *Bot) handleGetListGamesWithPhotosPrevPage(ctx context.Context, update *
 	}
 
 	leftNext := uint32(0)
-	if resp.GetTotal() > (req.GetOffset() + req.GetLimit()) {
-		leftNext = resp.GetTotal() - (req.GetOffset() + req.GetLimit())
+	if total > (req.GetOffset() + req.GetLimit()) {
+		leftNext = total - (req.GetOffset() + req.GetLimit())
 	}
 
 	if leftNext > 0 {

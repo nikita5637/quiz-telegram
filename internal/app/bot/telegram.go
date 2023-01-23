@@ -29,6 +29,7 @@ import (
 type GamesFacade interface {
 	GetGameByID(ctx context.Context, id int32) (model.Game, error)
 	GetGames(ctx context.Context, active bool) ([]model.Game, error)
+	GetGamesWithPhotos(ctx context.Context, limit, offset uint32) ([]model.Game, uint32, error)
 	GetRegisteredGames(ctx context.Context, active bool) ([]model.Game, error)
 	GetUserGames(ctx context.Context, active bool, userID int32) ([]model.Game, error)
 }

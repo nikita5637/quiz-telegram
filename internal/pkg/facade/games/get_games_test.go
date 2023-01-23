@@ -453,6 +453,241 @@ func TestFacade_GetGames(t *testing.T) {
 	})
 }
 
+func TestFacade_GetGamesWithPhotos(t *testing.T) {
+	zeroDateTime := timestamppb.Timestamp{}
+	t.Run("error while get games with photos", func(t *testing.T) {
+		fx := tearUp(t)
+
+		fx.photographerServiceClient.EXPECT().GetGamesWithPhotos(fx.ctx, &registrator.GetGamesWithPhotosRequest{
+			Limit:  4,
+			Offset: 0,
+		}).Return(nil, errors.New("some error"))
+
+		got1, got2, err := fx.facade.GetGamesWithPhotos(fx.ctx, 4, 0)
+		assert.Nil(t, got1)
+		assert.Equal(t, uint32(0), got2)
+		assert.Error(t, err)
+	})
+
+	t.Run("error while get league", func(t *testing.T) {
+		fx := tearUp(t)
+
+		fx.photographerServiceClient.EXPECT().GetGamesWithPhotos(fx.ctx, &registrator.GetGamesWithPhotosRequest{
+			Limit:  4,
+			Offset: 0,
+		}).Return(&registrator.GetGamesWithPhotosResponse{
+			Games: []*registrator.Game{
+				{
+					Id:       1,
+					LeagueId: 1,
+					PlaceId:  1,
+				},
+				{
+					Id:       2,
+					LeagueId: 1,
+					PlaceId:  2,
+				},
+				{
+					Id:       3,
+					LeagueId: 2,
+					PlaceId:  3,
+				},
+			},
+			Total: 3,
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetLeagueByID(fx.ctx, &registrator.GetLeagueByIDRequest{
+			Id: 1,
+		}).Once().Return(&registrator.GetLeagueByIDResponse{
+			League: &registrator.League{
+				Id: 1,
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetLeagueByID(fx.ctx, &registrator.GetLeagueByIDRequest{
+			Id: 2,
+		}).Once().Return(nil, errors.New("some error"))
+
+		fx.registratorServiceClient.EXPECT().GetPlaceByID(fx.ctx, &registrator.GetPlaceByIDRequest{
+			Id: 1,
+		}).Once().Return(&registrator.GetPlaceByIDResponse{
+			Place: &registrator.Place{
+				Id: 1,
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetPlaceByID(fx.ctx, &registrator.GetPlaceByIDRequest{
+			Id: 2,
+		}).Once().Return(&registrator.GetPlaceByIDResponse{
+			Place: &registrator.Place{
+				Id: 2,
+			},
+		}, nil)
+
+		got1, got2, err := fx.facade.GetGamesWithPhotos(fx.ctx, 4, 0)
+		assert.Nil(t, got1)
+		assert.Equal(t, uint32(0), got2)
+		assert.Error(t, err)
+	})
+
+	t.Run("error while get place", func(t *testing.T) {
+		fx := tearUp(t)
+
+		fx.photographerServiceClient.EXPECT().GetGamesWithPhotos(fx.ctx, &registrator.GetGamesWithPhotosRequest{
+			Limit:  4,
+			Offset: 0,
+		}).Return(&registrator.GetGamesWithPhotosResponse{
+			Games: []*registrator.Game{
+				{
+					Id:       1,
+					LeagueId: 1,
+					PlaceId:  1,
+				},
+				{
+					Id:       2,
+					LeagueId: 1,
+					PlaceId:  2,
+				},
+				{
+					Id:       3,
+					LeagueId: 2,
+					PlaceId:  3,
+				},
+			},
+			Total: 3,
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetLeagueByID(fx.ctx, &registrator.GetLeagueByIDRequest{
+			Id: 1,
+		}).Once().Return(&registrator.GetLeagueByIDResponse{
+			League: &registrator.League{
+				Id: 1,
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetPlaceByID(fx.ctx, &registrator.GetPlaceByIDRequest{
+			Id: 1,
+		}).Once().Return(&registrator.GetPlaceByIDResponse{
+			Place: &registrator.Place{
+				Id: 1,
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetPlaceByID(fx.ctx, &registrator.GetPlaceByIDRequest{
+			Id: 2,
+		}).Once().Return(nil, errors.New("some error"))
+
+		got1, got2, err := fx.facade.GetGamesWithPhotos(fx.ctx, 4, 0)
+		assert.Nil(t, got1)
+		assert.Equal(t, uint32(0), got2)
+		assert.Error(t, err)
+	})
+
+	t.Run("ok", func(t *testing.T) {
+		fx := tearUp(t)
+
+		fx.photographerServiceClient.EXPECT().GetGamesWithPhotos(fx.ctx, &registrator.GetGamesWithPhotosRequest{
+			Limit:  4,
+			Offset: 0,
+		}).Return(&registrator.GetGamesWithPhotosResponse{
+			Games: []*registrator.Game{
+				{
+					Id:       1,
+					LeagueId: 1,
+					PlaceId:  1,
+				},
+				{
+					Id:       2,
+					LeagueId: 1,
+					PlaceId:  2,
+				},
+				{
+					Id:       3,
+					LeagueId: 2,
+					PlaceId:  3,
+				},
+			},
+			Total: 3,
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetLeagueByID(fx.ctx, &registrator.GetLeagueByIDRequest{
+			Id: 1,
+		}).Once().Return(&registrator.GetLeagueByIDResponse{
+			League: &registrator.League{
+				Id: 1,
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetLeagueByID(fx.ctx, &registrator.GetLeagueByIDRequest{
+			Id: 2,
+		}).Once().Return(&registrator.GetLeagueByIDResponse{
+			League: &registrator.League{
+				Id: 2,
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetPlaceByID(fx.ctx, &registrator.GetPlaceByIDRequest{
+			Id: 1,
+		}).Once().Return(&registrator.GetPlaceByIDResponse{
+			Place: &registrator.Place{
+				Id: 1,
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetPlaceByID(fx.ctx, &registrator.GetPlaceByIDRequest{
+			Id: 2,
+		}).Once().Return(&registrator.GetPlaceByIDResponse{
+			Place: &registrator.Place{
+				Id: 2,
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetPlaceByID(fx.ctx, &registrator.GetPlaceByIDRequest{
+			Id: 3,
+		}).Once().Return(&registrator.GetPlaceByIDResponse{
+			Place: &registrator.Place{
+				Id: 3,
+			},
+		}, nil)
+
+		got1, got2, err := fx.facade.GetGamesWithPhotos(fx.ctx, 4, 0)
+		assert.Equal(t, []model.Game{
+			{
+				ID: 1,
+				League: model.League{
+					ID: 1,
+				},
+				Place: model.Place{
+					ID: 1,
+				},
+				Date: model.DateTime(zeroDateTime.AsTime()),
+			},
+			{
+				ID: 2,
+				League: model.League{
+					ID: 1,
+				},
+				Place: model.Place{
+					ID: 2,
+				},
+				Date: model.DateTime(zeroDateTime.AsTime()),
+			},
+			{
+				ID: 3,
+				League: model.League{
+					ID: 2,
+				},
+				Place: model.Place{
+					ID: 3,
+				},
+				Date: model.DateTime(zeroDateTime.AsTime()),
+			},
+		}, got1)
+		assert.Equal(t, uint32(3), got2)
+		assert.NoError(t, err)
+	})
+}
+
 func TestFacade_GetRegisteredGames(t *testing.T) {
 	zeroDateTime := timestamppb.Timestamp{}
 	t.Run("error while get registered games", func(t *testing.T) {

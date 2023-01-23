@@ -9,21 +9,27 @@ import (
 )
 
 type fixture struct {
-	ctx                      context.Context
-	facade                   *Facade
-	registratorServiceClient *mocks.RegistratorServiceClient
+	ctx    context.Context
+	facade *Facade
+
+	photographerServiceClient *mocks.PhotographerServiceClient
+	registratorServiceClient  *mocks.RegistratorServiceClient
 }
 
 func tearUp(t *testing.T) *fixture {
 	fx := &fixture{
-		ctx:                      context.Background(),
-		registratorServiceClient: mocks.NewRegistratorServiceClient(t),
+		ctx: context.Background(),
+
+		photographerServiceClient: mocks.NewPhotographerServiceClient(t),
+		registratorServiceClient:  mocks.NewRegistratorServiceClient(t),
 	}
 
 	fx.facade = &Facade{
-		leagueCache:              make(map[int32]model.League, 0),
-		placeCache:               make(map[int32]model.Place, 0),
-		registratorServiceClient: fx.registratorServiceClient,
+		leagueCache: make(map[int32]model.League, 0),
+		placeCache:  make(map[int32]model.Place, 0),
+
+		photographerServiceClient: fx.photographerServiceClient,
+		registratorServiceClient:  fx.registratorServiceClient,
 	}
 
 	t.Cleanup(func() {
