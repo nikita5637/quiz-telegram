@@ -11,9 +11,9 @@ import (
 )
 
 // GetGameByID ...
-func (f *Facade) GetGameByID(ctx context.Context, gameID int32) (model.Game, error) {
+func (f *Facade) GetGameByID(ctx context.Context, id int32) (model.Game, error) {
 	gameResp, err := f.registratorServiceClient.GetGameByID(ctx, &registrator.GetGameByIDRequest{
-		GameId: gameID,
+		GameId: id,
 	})
 	if err != nil {
 		return model.Game{}, fmt.Errorf("get game by ID error: %w", err)
@@ -78,8 +78,25 @@ func (f *Facade) GetRegisteredGames(ctx context.Context, active bool) ([]model.G
 		return nil, fmt.Errorf("get registered games error: %w", err)
 	}
 
-	games := make([]model.Game, 0, len(gamesResp.GetGames()))
-	for _, pbGame := range gamesResp.GetGames() {
+	return f.getGames(ctx, gamesResp.GetGames())
+}
+
+// GetUserGames ...
+func (f *Facade) GetUserGames(ctx context.Context, active bool, userID int32) ([]model.Game, error) {
+	gamesResp, err := f.registratorServiceClient.GetUserGames(ctx, &registrator.GetUserGamesRequest{
+		Active: active,
+		UserId: userID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("get user games error: %w", err)
+	}
+
+	return f.getGames(ctx, gamesResp.GetGames())
+}
+
+func (f *Facade) getGames(ctx context.Context, pbGames []*registrator.Game) ([]model.Game, error) {
+	games := make([]model.Game, 0, len(pbGames))
+	for _, pbGame := range pbGames {
 		game := convertPBGameToModelGame(pbGame)
 
 		league, err := f.getModelLeague(ctx, pbGame.GetLeagueId())

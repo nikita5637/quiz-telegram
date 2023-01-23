@@ -808,6 +808,365 @@ func TestFacade_GetRegisteredGames(t *testing.T) {
 	})
 }
 
+func TestFacade_GetUserGames(t *testing.T) {
+	zeroDateTime := timestamppb.Timestamp{}
+	t.Run("error while get user games", func(t *testing.T) {
+		fx := tearUp(t)
+
+		fx.registratorServiceClient.EXPECT().GetUserGames(fx.ctx, &registrator.GetUserGamesRequest{
+			Active: true,
+			UserId: 1,
+		}).Return(nil, errors.New("some error"))
+
+		got, err := fx.facade.GetUserGames(fx.ctx, true, 1)
+		assert.Nil(t, got)
+		assert.Error(t, err)
+	})
+
+	t.Run("error while get league", func(t *testing.T) {
+		fx := tearUp(t)
+
+		fx.registratorServiceClient.EXPECT().GetUserGames(fx.ctx, &registrator.GetUserGamesRequest{
+			Active: true,
+			UserId: 1,
+		}).Return(&registrator.GetUserGamesResponse{
+			Games: []*registrator.Game{
+				{
+					Id:         1,
+					LeagueId:   1,
+					PlaceId:    1,
+					Registered: true,
+				},
+				{
+					Id:         2,
+					LeagueId:   1,
+					PlaceId:    2,
+					Registered: true,
+				},
+				{
+					Id:         3,
+					LeagueId:   2,
+					PlaceId:    3,
+					Registered: true,
+				},
+				{
+					Id:         4,
+					LeagueId:   2,
+					PlaceId:    1,
+					Registered: true,
+				},
+				{
+					Id:         5,
+					LeagueId:   3,
+					PlaceId:    3,
+					Registered: true,
+				},
+				{
+					Id:         6,
+					LeagueId:   3,
+					PlaceId:    4,
+					Registered: true,
+				},
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetLeagueByID(fx.ctx, &registrator.GetLeagueByIDRequest{
+			Id: 1,
+		}).Once().Return(&registrator.GetLeagueByIDResponse{
+			League: &registrator.League{
+				Id: 1,
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetLeagueByID(fx.ctx, &registrator.GetLeagueByIDRequest{
+			Id: 2,
+		}).Once().Return(&registrator.GetLeagueByIDResponse{
+			League: &registrator.League{
+				Id: 2,
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetLeagueByID(fx.ctx, &registrator.GetLeagueByIDRequest{
+			Id: 3,
+		}).Once().Return(nil, errors.New("some error"))
+
+		fx.registratorServiceClient.EXPECT().GetPlaceByID(fx.ctx, &registrator.GetPlaceByIDRequest{
+			Id: 1,
+		}).Once().Return(&registrator.GetPlaceByIDResponse{
+			Place: &registrator.Place{
+				Id: 1,
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetPlaceByID(fx.ctx, &registrator.GetPlaceByIDRequest{
+			Id: 2,
+		}).Once().Return(&registrator.GetPlaceByIDResponse{
+			Place: &registrator.Place{
+				Id: 2,
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetPlaceByID(fx.ctx, &registrator.GetPlaceByIDRequest{
+			Id: 3,
+		}).Once().Return(&registrator.GetPlaceByIDResponse{
+			Place: &registrator.Place{
+				Id: 3,
+			},
+		}, nil)
+
+		got, err := fx.facade.GetUserGames(fx.ctx, true, 1)
+		assert.Nil(t, got)
+		assert.Error(t, err)
+	})
+
+	t.Run("error while get place", func(t *testing.T) {
+		fx := tearUp(t)
+
+		fx.registratorServiceClient.EXPECT().GetUserGames(fx.ctx, &registrator.GetUserGamesRequest{
+			Active: true,
+			UserId: 1,
+		}).Return(&registrator.GetUserGamesResponse{
+			Games: []*registrator.Game{
+				{
+					Id:         1,
+					LeagueId:   1,
+					PlaceId:    1,
+					Registered: true,
+				},
+				{
+					Id:         2,
+					LeagueId:   1,
+					PlaceId:    2,
+					Registered: true,
+				},
+				{
+					Id:         3,
+					LeagueId:   2,
+					PlaceId:    3,
+					Registered: true,
+				},
+				{
+					Id:         4,
+					LeagueId:   2,
+					PlaceId:    1,
+					Registered: true,
+				},
+				{
+					Id:         5,
+					LeagueId:   3,
+					PlaceId:    3,
+					Registered: true,
+				},
+				{
+					Id:         6,
+					LeagueId:   3,
+					PlaceId:    4,
+					Registered: true,
+				},
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetLeagueByID(fx.ctx, &registrator.GetLeagueByIDRequest{
+			Id: 1,
+		}).Once().Return(&registrator.GetLeagueByIDResponse{
+			League: &registrator.League{
+				Id: 1,
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetPlaceByID(fx.ctx, &registrator.GetPlaceByIDRequest{
+			Id: 1,
+		}).Once().Return(&registrator.GetPlaceByIDResponse{
+			Place: &registrator.Place{
+				Id: 1,
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetPlaceByID(fx.ctx, &registrator.GetPlaceByIDRequest{
+			Id: 2,
+		}).Once().Return(nil, errors.New("some error"))
+
+		got, err := fx.facade.GetUserGames(fx.ctx, true, 1)
+		assert.Nil(t, got)
+		assert.Error(t, err)
+	})
+
+	t.Run("ok", func(t *testing.T) {
+		fx := tearUp(t)
+
+		fx.registratorServiceClient.EXPECT().GetUserGames(fx.ctx, &registrator.GetUserGamesRequest{
+			Active: true,
+			UserId: 1,
+		}).Return(&registrator.GetUserGamesResponse{
+			Games: []*registrator.Game{
+				{
+					Id:         1,
+					LeagueId:   1,
+					PlaceId:    1,
+					Registered: true,
+				},
+				{
+					Id:         2,
+					LeagueId:   1,
+					PlaceId:    2,
+					Registered: true,
+				},
+				{
+					Id:         3,
+					LeagueId:   2,
+					PlaceId:    3,
+					Registered: true,
+				},
+				{
+					Id:         4,
+					LeagueId:   2,
+					PlaceId:    1,
+					Registered: true,
+				},
+				{
+					Id:         5,
+					LeagueId:   3,
+					PlaceId:    3,
+					Registered: true,
+				},
+				{
+					Id:         6,
+					LeagueId:   3,
+					PlaceId:    4,
+					Registered: true,
+				},
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetLeagueByID(fx.ctx, &registrator.GetLeagueByIDRequest{
+			Id: 1,
+		}).Once().Return(&registrator.GetLeagueByIDResponse{
+			League: &registrator.League{
+				Id: 1,
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetLeagueByID(fx.ctx, &registrator.GetLeagueByIDRequest{
+			Id: 2,
+		}).Once().Return(&registrator.GetLeagueByIDResponse{
+			League: &registrator.League{
+				Id: 2,
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetLeagueByID(fx.ctx, &registrator.GetLeagueByIDRequest{
+			Id: 3,
+		}).Once().Return(&registrator.GetLeagueByIDResponse{
+			League: &registrator.League{
+				Id: 3,
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetPlaceByID(fx.ctx, &registrator.GetPlaceByIDRequest{
+			Id: 1,
+		}).Once().Return(&registrator.GetPlaceByIDResponse{
+			Place: &registrator.Place{
+				Id: 1,
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetPlaceByID(fx.ctx, &registrator.GetPlaceByIDRequest{
+			Id: 2,
+		}).Once().Return(&registrator.GetPlaceByIDResponse{
+			Place: &registrator.Place{
+				Id: 2,
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetPlaceByID(fx.ctx, &registrator.GetPlaceByIDRequest{
+			Id: 3,
+		}).Once().Return(&registrator.GetPlaceByIDResponse{
+			Place: &registrator.Place{
+				Id: 3,
+			},
+		}, nil)
+
+		fx.registratorServiceClient.EXPECT().GetPlaceByID(fx.ctx, &registrator.GetPlaceByIDRequest{
+			Id: 4,
+		}).Once().Return(&registrator.GetPlaceByIDResponse{
+			Place: &registrator.Place{
+				Id: 4,
+			},
+		}, nil)
+
+		got, err := fx.facade.GetUserGames(fx.ctx, true, 1)
+		assert.Equal(t, []model.Game{
+			{
+				ID: 1,
+				League: model.League{
+					ID: 1,
+				},
+				Place: model.Place{
+					ID: 1,
+				},
+				Date:       model.DateTime(zeroDateTime.AsTime()),
+				Registered: true,
+			},
+			{
+				ID: 2,
+				League: model.League{
+					ID: 1,
+				},
+				Place: model.Place{
+					ID: 2,
+				},
+				Date:       model.DateTime(zeroDateTime.AsTime()),
+				Registered: true,
+			},
+			{
+				ID: 3,
+				League: model.League{
+					ID: 2,
+				},
+				Place: model.Place{
+					ID: 3,
+				},
+				Date:       model.DateTime(zeroDateTime.AsTime()),
+				Registered: true,
+			},
+			{
+				ID: 4,
+				League: model.League{
+					ID: 2,
+				},
+				Place: model.Place{
+					ID: 1,
+				},
+				Date:       model.DateTime(zeroDateTime.AsTime()),
+				Registered: true,
+			},
+			{
+				ID: 5,
+				League: model.League{
+					ID: 3,
+				},
+				Place: model.Place{
+					ID: 3,
+				},
+				Date:       model.DateTime(zeroDateTime.AsTime()),
+				Registered: true,
+			},
+			{
+				ID: 6,
+				League: model.League{
+					ID: 3,
+				},
+				Place: model.Place{
+					ID: 4,
+				},
+				Date:       model.DateTime(zeroDateTime.AsTime()),
+				Registered: true,
+			},
+		}, got)
+		assert.NoError(t, err)
+	})
+}
+
 func TestFacade_getModelLeague(t *testing.T) {
 	t.Run("error while get league", func(t *testing.T) {
 		fx := tearUp(t)

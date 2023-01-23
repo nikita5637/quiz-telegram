@@ -492,36 +492,19 @@ func (b *Bot) getListOfMyGamesMessage(ctx context.Context, update *tgbotapi.Upda
 		return nil, err
 	}
 
-	resp, err := b.registratorServiceClient.GetUserGames(ctx, &registrator.GetUserGamesRequest{
-		Active: true,
-		UserId: respUser.GetUser().GetId(),
-	})
+	games, err := b.gamesFacade.GetUserGames(ctx, true, respUser.GetUser().GetId())
 	if err != nil {
 		return nil, err
 	}
 
-	if len(resp.GetGames()) == 0 {
+	if len(games) == 0 {
 		return tgbotapi.NewMessage(clientID, getTranslator(listOfMyGamesIsEmptyLexeme)(ctx)), nil
 	}
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
-	for _, pbGame := range resp.GetGames() {
-		leagueResp, err := b.registratorServiceClient.GetLeagueByID(ctx, &registrator.GetLeagueByIDRequest{
-			Id: pbGame.GetLeagueId(),
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		placeResp, err := b.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
-			Id: pbGame.GetPlaceId(),
-		})
-		if err != nil {
-			return nil, err
-		}
-
+	for _, game := range games {
 		pbReq := &registrator.GetGameByIDRequest{
-			GameId: pbGame.GetId(),
+			GameId: game.ID,
 		}
 
 		request, err := getRequest(ctx, CommandGetGame, pbReq)
@@ -530,7 +513,7 @@ func (b *Bot) getListOfMyGamesMessage(ctx context.Context, update *tgbotapi.Upda
 		}
 
 		callbackData := b.registerRequest(ctx, request)
-		text := fmt.Sprintf(gameInfoFormatString, leagueResp.GetLeague().GetShortName(), pbGame.GetNumber(), placeResp.GetPlace().GetShortName(), model.DateTime(pbGame.GetDate().AsTime()))
+		text := fmt.Sprintf(gameInfoFormatString, game.League.ShortName, game.Number, game.Place.ShortName, game.DateTime())
 
 		btn := tgbotapi.InlineKeyboardButton{
 			Text:         text,
