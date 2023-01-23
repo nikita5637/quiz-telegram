@@ -1,13 +1,14 @@
+//go:generate mockery --case underscore --name TelegramBot --with-expecter
+//go:generate mockery --case underscore --name GamesFacade --with-expecter
+//go:generate mockery --case underscore --name RequestsFacade --with-expecter
+//go:generate mockery --case underscore --name CroupierServiceClient --with-expecter
 //go:generate mockery --case underscore --name PhotographerServiceClient --with-expecter
 //go:generate mockery --case underscore --name RegistratorServiceClient --with-expecter
-//go:generate mockery --case underscore --name RequestsFacade --with-expecter
-//go:generate mockery --case underscore --name TelegramBot --with-expecter
 
 package bot
 
 import (
 	"context"
-	"fmt"
 	"runtime/debug"
 
 	"github.com/google/uuid"
@@ -24,6 +25,12 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+// GamesFacade ...
+type GamesFacade interface {
+	GetGameByID(ctx context.Context, gameID int32) (model.Game, error)
+	GetGames(ctx context.Context, active bool) ([]model.Game, error)
+}
+
 // CroupierServiceClient ...
 type CroupierServiceClient interface {
 	registrator.CroupierServiceClient
@@ -36,7 +43,40 @@ type PhotographerServiceClient interface {
 
 // RegistratorServiceClient ...
 type RegistratorServiceClient interface {
-	registrator.RegistratorServiceClient
+	// CreateUser creates new user
+	CreateUser(ctx context.Context, in *registrator.CreateUserRequest, opts ...grpc.CallOption) (*registrator.CreateUserResponse, error)
+	// GetLeagueByID returns league by league ID
+	GetLeagueByID(ctx context.Context, in *registrator.GetLeagueByIDRequest, opts ...grpc.CallOption) (*registrator.GetLeagueByIDResponse, error)
+	// GetPlaceByID returns place by place ID
+	GetPlaceByID(ctx context.Context, in *registrator.GetPlaceByIDRequest, opts ...grpc.CallOption) (*registrator.GetPlaceByIDResponse, error)
+	// GetPlayersByGameID returns list of players by game ID
+	GetPlayersByGameID(ctx context.Context, in *registrator.GetPlayersByGameIDRequest, opts ...grpc.CallOption) (*registrator.GetPlayersByGameIDResponse, error)
+	// GetRegisteredGames returns registered games
+	GetRegisteredGames(ctx context.Context, in *registrator.GetRegisteredGamesRequest, opts ...grpc.CallOption) (*registrator.GetRegisteredGamesResponse, error)
+	// GetUserByID returns user by user ID
+	GetUserByID(ctx context.Context, in *registrator.GetUserByIDRequest, opts ...grpc.CallOption) (*registrator.GetUserByIDResponse, error)
+	// GetUserByTelegramID returns a user by telegram ID
+	GetUserByTelegramID(ctx context.Context, in *registrator.GetUserByTelegramIDRequest, opts ...grpc.CallOption) (*registrator.GetUserByTelegramIDResponse, error)
+	// GetUserGames returns games by user ID
+	GetUserGames(ctx context.Context, in *registrator.GetUserGamesRequest, opts ...grpc.CallOption) (*registrator.GetUserGamesResponse, error)
+	// RegisterGame registers game
+	RegisterGame(ctx context.Context, in *registrator.RegisterGameRequest, opts ...grpc.CallOption) (*registrator.RegisterGameResponse, error)
+	// RegisterPlayer registers player for a game
+	RegisterPlayer(ctx context.Context, in *registrator.RegisterPlayerRequest, opts ...grpc.CallOption) (*registrator.RegisterPlayerResponse, error)
+	// UnregisterGame unregisters game
+	UnregisterGame(ctx context.Context, in *registrator.UnregisterGameRequest, opts ...grpc.CallOption) (*registrator.UnregisterGameResponse, error)
+	// UnregisterPlayer unregisters player
+	UnregisterPlayer(ctx context.Context, in *registrator.UnregisterPlayerRequest, opts ...grpc.CallOption) (*registrator.UnregisterPlayerResponse, error)
+	// UpdateUserEmail updates a user email
+	UpdateUserEmail(ctx context.Context, in *registrator.UpdateUserEmailRequest, opts ...grpc.CallOption) (*registrator.UpdateUserEmailResponse, error)
+	// UpdateUserName updates a user's name
+	UpdateUserName(ctx context.Context, in *registrator.UpdateUserNameRequest, opts ...grpc.CallOption) (*registrator.UpdateUserNameResponse, error)
+	// UpdateUserPhone updates a user's phone
+	UpdateUserPhone(ctx context.Context, in *registrator.UpdateUserPhoneRequest, opts ...grpc.CallOption) (*registrator.UpdateUserPhoneResponse, error)
+	// UpdateUserState updates a user's state
+	UpdateUserState(ctx context.Context, in *registrator.UpdateUserStateRequest, opts ...grpc.CallOption) (*registrator.UpdateUserStateResponse, error)
+	// UpdatePayment updates payment
+	UpdatePayment(ctx context.Context, in *registrator.UpdatePaymentRequest, opts ...grpc.CallOption) (*registrator.UpdatePaymentResponse, error)
 }
 
 // RequestsFacade ...
@@ -57,11 +97,8 @@ type TelegramBot interface { // nolint:revive
 
 // Bot ...
 type Bot struct {
-	bot TelegramBot // *tgbotapi.BotAPI
-
-	registratorAPIAddress string
-	registratorAPIPort    uint16
-
+	bot            TelegramBot // *tgbotapi.BotAPI
+	gamesFacade    GamesFacade
 	requestsFacade RequestsFacade
 
 	croupierServiceClient     CroupierServiceClient
@@ -73,43 +110,31 @@ type Bot struct {
 
 // Config ...
 type Config struct {
-	Bot TelegramBot // *tgbotapi.BotAPI
-
+	Bot            TelegramBot // *tgbotapi.BotAPI
+	GamesFacade    GamesFacade
 	RequestsFacade RequestsFacade
 
-	RegistratorAPIAddress string
-	RegistratorAPIPort    uint16
+	CroupierServiceClient     registrator.CroupierServiceClient
+	PhotographerServiceClient registrator.PhotographerServiceClient
+	RegistratorServiceClient  registrator.RegistratorServiceClient
 }
 
 // New ...
 func New(cfg Config) (*Bot, error) {
 	bot := &Bot{
-		bot: cfg.Bot,
-
+		bot:            cfg.Bot,
+		gamesFacade:    cfg.GamesFacade,
 		requestsFacade: cfg.RequestsFacade,
 
-		registratorAPIAddress: cfg.RegistratorAPIAddress,
-		registratorAPIPort:    cfg.RegistratorAPIPort,
+		croupierServiceClient:     cfg.CroupierServiceClient,
+		photographerServiceClient: cfg.PhotographerServiceClient,
+		registratorServiceClient:  cfg.RegistratorServiceClient,
 	}
 	return bot, nil
 }
 
 // Start ...
 func (b *Bot) Start(ctx context.Context) error {
-	opts := grpc.WithInsecure()
-	target := fmt.Sprintf("%s:%d", b.registratorAPIAddress, b.registratorAPIPort)
-	cc, err := grpc.Dial(target, opts, grpc.WithChainUnaryInterceptor(
-		logInterceptor,
-		telegramInterceptor,
-	))
-	if err != nil {
-		return fmt.Errorf("could not connect: %w", err)
-	}
-
-	b.croupierServiceClient = registrator.NewCroupierServiceClient(cc)
-	b.photographerServiceClient = registrator.NewPhotographerServiceClient(cc)
-	b.registratorServiceClient = registrator.NewRegistratorServiceClient(cc)
-
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
@@ -178,7 +203,6 @@ func (b *Bot) Start(ctx context.Context) error {
 	<-ctx.Done()
 
 	b.bot.StopReceivingUpdates()
-	cc.Close()
 
 	logger.Info(ctx, "telegram bot gracefully stopped")
 	return nil

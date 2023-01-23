@@ -1,4 +1,4 @@
-package bot
+package middleware
 
 import (
 	"context"
@@ -12,7 +12,8 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-func logInterceptor(
+// LogInterceptor ...
+func LogInterceptor(
 	ctx context.Context,
 	method string,
 	req interface{},
@@ -27,7 +28,8 @@ func logInterceptor(
 	return err
 }
 
-func telegramInterceptor(
+// TelegramClientIDInterceptor ...
+func TelegramClientIDInterceptor(
 	ctx context.Context,
 	method string,
 	req interface{},

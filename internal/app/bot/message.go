@@ -437,35 +437,19 @@ func (b *Bot) getGamesWithPhotosMessage(ctx context.Context, update *tgbotapi.Up
 func (b *Bot) getListOfGamesMessage(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error) {
 	clientID := update.Message.From.ID
 
-	resp, err := b.registratorServiceClient.GetGames(ctx, &registrator.GetGamesRequest{
-		Active: true,
-	})
+	games, err := b.gamesFacade.GetGames(ctx, true)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(resp.GetGames()) == 0 {
+	if len(games) == 0 {
 		return tgbotapi.NewMessage(clientID, getTranslator(listOfGamesIsEmptyLexeme)(ctx)), nil
 	}
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
-	for _, pbGame := range resp.GetGames() {
-		leagueResp, err := b.registratorServiceClient.GetLeagueByID(ctx, &registrator.GetLeagueByIDRequest{
-			Id: pbGame.GetLeagueId(),
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		placeResp, err := b.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
-			Id: pbGame.GetPlaceId(),
-		})
-		if err != nil {
-			return nil, err
-		}
-
+	for _, game := range games {
 		pbReq := &registrator.GetGameByIDRequest{
-			GameId: pbGame.GetId(),
+			GameId: game.ID,
 		}
 
 		request, err := getRequest(ctx, CommandGetGame, pbReq)
@@ -474,12 +458,13 @@ func (b *Bot) getListOfGamesMessage(ctx context.Context, update *tgbotapi.Update
 		}
 
 		callbackData := b.registerRequest(ctx, request)
-		text := fmt.Sprintf(gameInfoFormatString, leagueResp.GetLeague().GetShortName(), pbGame.GetNumber(), placeResp.GetPlace().GetShortName(), model.DateTime(pbGame.GetDate().AsTime()))
 
-		if pbGame.GetMy() {
+		text := fmt.Sprintf(gameInfoFormatString, game.League.ShortName, game.Number, game.Place.ShortName, game.DateTime())
+
+		if game.My {
 			text = myGamePrefix + text
 		} else {
-			if pbGame.GetNumberOfLegioners()+pbGame.GetNumberOfPlayers() > 0 {
+			if game.NumberOfLegioners+game.NumberOfPlayers > 0 {
 				text = gameWithPlayersPrefix + text
 			}
 		}

@@ -3,19 +3,24 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 
+	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	telegram "github.com/nikita5637/quiz-telegram/internal/app/bot"
 	"github.com/nikita5637/quiz-telegram/internal/app/reminder"
 	"github.com/nikita5637/quiz-telegram/internal/app/telegramapi"
 	"github.com/nikita5637/quiz-telegram/internal/config"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/elasticsearch"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/games"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/middleware"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/request"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/storage"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
@@ -96,6 +101,21 @@ func main() {
 	registratorAPIAddress := config.GetValue("RegistratorAPIAddress").String()
 	registratorAPIPort := config.GetValue("RegistratorAPIPort").Uint16()
 
+	opts := grpc.WithInsecure()
+	target := fmt.Sprintf("%s:%d", registratorAPIAddress, registratorAPIPort)
+	clientConn, err := grpc.Dial(target, opts, grpc.WithChainUnaryInterceptor(
+		middleware.LogInterceptor,
+		middleware.TelegramClientIDInterceptor,
+	))
+	if err != nil {
+		panic(err)
+	}
+	defer clientConn.Close()
+
+	croupierServiceClient := registrator.NewCroupierServiceClient(clientConn)
+	photographerServiceClient := registrator.NewPhotographerServiceClient(clientConn)
+	registratorServiceClient := registrator.NewRegistratorServiceClient(clientConn)
+
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
@@ -106,13 +126,19 @@ func main() {
 		}
 		requestsFacade := request.NewFacade(requestsFacadeConfig)
 
-		telegramBotConfig := telegram.Config{
-			Bot: bot,
+		gamesFacadeConfig := games.Config{
+			RegistratorServiceClient: registratorServiceClient,
+		}
+		gamesFacade := games.NewFacade(gamesFacadeConfig)
 
+		telegramBotConfig := telegram.Config{
+			Bot:            bot,
+			GamesFacade:    gamesFacade,
 			RequestsFacade: requestsFacade,
 
-			RegistratorAPIAddress: registratorAPIAddress,
-			RegistratorAPIPort:    registratorAPIPort,
+			CroupierServiceClient:     croupierServiceClient,
+			PhotographerServiceClient: photographerServiceClient,
+			RegistratorServiceClient:  registratorServiceClient,
 		}
 
 		tgBot, err2 := telegram.New(telegramBotConfig)
