@@ -69,6 +69,39 @@ func (f *Facade) GetGames(ctx context.Context, active bool) ([]model.Game, error
 	return games, nil
 }
 
+// GetRegisteredGames ...
+func (f *Facade) GetRegisteredGames(ctx context.Context, active bool) ([]model.Game, error) {
+	gamesResp, err := f.registratorServiceClient.GetRegisteredGames(ctx, &registrator.GetRegisteredGamesRequest{
+		Active: active,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("get registered games error: %w", err)
+	}
+
+	games := make([]model.Game, 0, len(gamesResp.GetGames()))
+	for _, pbGame := range gamesResp.GetGames() {
+		game := convertPBGameToModelGame(pbGame)
+
+		league, err := f.getModelLeague(ctx, pbGame.GetLeagueId())
+		if err != nil {
+			return nil, fmt.Errorf("get league by ID error: %w", err)
+		}
+
+		game.League = league
+
+		place, err := f.getModelPlace(ctx, pbGame.GetPlaceId())
+		if err != nil {
+			return nil, fmt.Errorf("get place by ID error: %w", err)
+		}
+
+		game.Place = place
+
+		games = append(games, game)
+	}
+
+	return games, nil
+}
+
 func (f *Facade) getModelLeague(ctx context.Context, leagueID int32) (model.League, error) {
 	if league, ok := f.leagueCache[leagueID]; ok {
 		return league, nil

@@ -603,9 +603,9 @@ func (b *Bot) handleGetVenue(ctx context.Context, update *tgbotapi.Update, teleg
 	clientID := update.CallbackQuery.From.ID
 	messageID := update.CallbackQuery.Message.MessageID
 
-	venue := &VenueData{}
+	venueData := &GetVenueData{}
 
-	err := json.Unmarshal(telegramRequest.Body, venue)
+	err := json.Unmarshal(telegramRequest.Body, venueData)
 	if err != nil {
 		return err
 	}
@@ -616,7 +616,7 @@ func (b *Bot) handleGetVenue(ctx context.Context, update *tgbotapi.Update, teleg
 		return err
 	}
 
-	venueConfig := tgbotapi.NewVenue(clientID, venue.Title, venue.Address, float64(venue.Latitude), float64(venue.Longitude))
+	venueConfig := tgbotapi.NewVenue(clientID, venueData.Title, venueData.Address, float64(venueData.Latitude), float64(venueData.Longitude))
 	_, err = b.bot.Request(venueConfig)
 	return err
 }

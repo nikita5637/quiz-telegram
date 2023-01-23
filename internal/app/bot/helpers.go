@@ -448,14 +448,14 @@ func (b *Bot) unregisterRequest(ctx context.Context, uuid string) error {
 }
 
 func (b *Bot) venueButton(ctx context.Context, title, address string, latitude, longitude float32) (tgbotapi.InlineKeyboardButton, error) {
-	venue := VenueData{
+	venueData := GetVenueData{
 		Title:     title,
 		Address:   address,
 		Latitude:  latitude,
 		Longitude: longitude,
 	}
 
-	request, err := getRequest(ctx, CommandGetVenue, venue)
+	request, err := getRequest(ctx, CommandGetVenue, venueData)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
@@ -467,25 +467,6 @@ func (b *Bot) venueButton(ctx context.Context, title, address string, latitude, 
 		Text:         text,
 		CallbackData: &callbackData,
 	}, nil
-}
-
-func convertPBGameToModelGame(pbGame *registrator.Game) model.Game {
-	ret := model.Game{
-		Date:       model.DateTime(pbGame.GetDate().AsTime()),
-		ID:         pbGame.GetId(),
-		ExternalID: pbGame.GetExternalId(),
-		MaxPlayers: pbGame.GetMaxPlayers(),
-		Number:     pbGame.GetNumber(),
-		Registered: pbGame.GetRegistered(),
-		Payment:    model.PaymentType(pbGame.GetPayment()),
-	}
-
-	ret.My = pbGame.GetMy()
-	ret.NumberOfMyLegioners = pbGame.GetNumberOfMyLegioners()
-	ret.NumberOfLegioners = pbGame.GetNumberOfLegioners()
-	ret.NumberOfPlayers = pbGame.GetNumberOfPlayers()
-
-	return ret
 }
 
 func getTranslator(lexeme i18n.Lexeme) func(ctx context.Context) string {
@@ -516,16 +497,4 @@ func getRequest[T any](ctx context.Context, command Command, pbReq T) (model.Req
 	}
 
 	return request, nil
-}
-
-func convertPBPlaceToModelPlace(place *registrator.Place) model.Place {
-	return model.Place{
-		ID:        place.GetId(),
-		Address:   place.GetAddress(),
-		Name:      place.GetName(),
-		ShortName: place.GetShortName(),
-		Longitude: place.GetLongitude(),
-		Latitude:  place.GetLatitude(),
-		MenuLink:  place.GetMenuLink(),
-	}
 }

@@ -29,6 +29,7 @@ import (
 type GamesFacade interface {
 	GetGameByID(ctx context.Context, gameID int32) (model.Game, error)
 	GetGames(ctx context.Context, active bool) ([]model.Game, error)
+	GetRegisteredGames(ctx context.Context, active bool) ([]model.Game, error)
 }
 
 // CroupierServiceClient ...
@@ -51,8 +52,6 @@ type RegistratorServiceClient interface {
 	GetPlaceByID(ctx context.Context, in *registrator.GetPlaceByIDRequest, opts ...grpc.CallOption) (*registrator.GetPlaceByIDResponse, error)
 	// GetPlayersByGameID returns list of players by game ID
 	GetPlayersByGameID(ctx context.Context, in *registrator.GetPlayersByGameIDRequest, opts ...grpc.CallOption) (*registrator.GetPlayersByGameIDResponse, error)
-	// GetRegisteredGames returns registered games
-	GetRegisteredGames(ctx context.Context, in *registrator.GetRegisteredGamesRequest, opts ...grpc.CallOption) (*registrator.GetRegisteredGamesResponse, error)
 	// GetUserByID returns user by user ID
 	GetUserByID(ctx context.Context, in *registrator.GetUserByIDRequest, opts ...grpc.CallOption) (*registrator.GetUserByIDResponse, error)
 	// GetUserByTelegramID returns a user by telegram ID

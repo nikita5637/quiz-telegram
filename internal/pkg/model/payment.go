@@ -1,7 +1,7 @@
 package model
 
 // PaymentType ...
-type PaymentType byte
+type PaymentType int32
 
 const (
 	// PaymentTypeInvalid ...

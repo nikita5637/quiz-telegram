@@ -8,7 +8,6 @@ import (
 
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
-	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/google/uuid"
@@ -54,46 +53,26 @@ func (b *Bot) HandleInlineQuery(ctx context.Context, update *tgbotapi.Update) er
 		return err
 	}
 
-	resp, err := b.registratorServiceClient.GetRegisteredGames(ctx, &registrator.GetRegisteredGamesRequest{
-		Active: true,
-	})
+	games, err := b.gamesFacade.GetRegisteredGames(ctx, true)
 	if err != nil {
 		return err
 	}
 
-	if len(resp.GetGames()) == 0 {
+	if len(games) == 0 {
 		_, err = b.bot.Request(inline)
 		return err
 	}
 
-	for _, game := range resp.GetGames() {
-		var gameResp *registrator.GetPlaceByIDResponse
-		gameResp, err = b.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
-			Id: game.GetPlaceId(),
-		})
-		if err != nil {
-			return err
-		}
-
-		title := fmt.Sprintf("%s %s", model.DateTime(game.GetDate().AsTime()), gameResp.GetPlace().GetName())
+	for _, game := range games {
+		title := fmt.Sprintf("%s %s", game.DateTime(), game.Place.Name)
 		article := tgbotapi.NewInlineQueryResultArticle(uuid.NewString(), title, "Приглашаю зарегистрироваться на игру")
-		if game.LeagueId == 1 {
-			article.ThumbURL = "https://quizplease.ru//img/header-logo-white-2.png"
-			article.ThumbHeight = 100
-			article.ThumbWidth = 100
-		} else if game.LeagueId == 2 {
-			article.ThumbURL = "https://static.tildacdn.com/tild3931-3231-4334-b961-653062386133/_2.png"
-			article.ThumbHeight = 100
-			article.ThumbWidth = 100
-		} else if game.LeagueId == 4 {
-			article.ThumbURL = "https://sun9-14.userapi.com/impg/rokB7N7skTBT_4LELlQx6equHNPwMWPeGSQ5bQ/RykvYSWo5CA.jpg?size=500x500&quality=95&sign=40621a7260bd5eb2c20ae16111b537cc&type=album"
-			article.ThumbHeight = 100
-			article.ThumbWidth = 100
-		}
+		article.ThumbURL = game.League.LogoLink
+		article.ThumbHeight = 100
+		article.ThumbWidth = 100
 
 		var playersResp *registrator.GetPlayersByGameIDResponse
 		playersResp, err = b.registratorServiceClient.GetPlayersByGameID(ctx, &registrator.GetPlayersByGameIDRequest{
-			GameId: game.GetId(),
+			GameId: game.ID,
 		})
 		if err != nil {
 			continue
@@ -130,7 +109,7 @@ func (b *Bot) HandleInlineQuery(ctx context.Context, update *tgbotapi.Update) er
 
 		article.Description = textBuilder.String()
 
-		btn := tgbotapi.NewInlineKeyboardButtonData(title, strconv.Itoa(int(game.GetId())))
+		btn := tgbotapi.NewInlineKeyboardButtonData(title, strconv.Itoa(int(game.ID)))
 		replyMarkup := tgbotapi.NewInlineKeyboardMarkup([]tgbotapi.InlineKeyboardButton{
 			btn,
 		})

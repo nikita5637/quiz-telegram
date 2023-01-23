@@ -114,6 +114,53 @@ func (_c *GamesFacade_GetGames_Call) Return(_a0 []model.Game, _a1 error) *GamesF
 	return _c
 }
 
+// GetRegisteredGames provides a mock function with given fields: ctx, active
+func (_m *GamesFacade) GetRegisteredGames(ctx context.Context, active bool) ([]model.Game, error) {
+	ret := _m.Called(ctx, active)
+
+	var r0 []model.Game
+	if rf, ok := ret.Get(0).(func(context.Context, bool) []model.Game); ok {
+		r0 = rf(ctx, active)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]model.Game)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, bool) error); ok {
+		r1 = rf(ctx, active)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GamesFacade_GetRegisteredGames_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetRegisteredGames'
+type GamesFacade_GetRegisteredGames_Call struct {
+	*mock.Call
+}
+
+// GetRegisteredGames is a helper method to define mock.On call
+//  - ctx context.Context
+//  - active bool
+func (_e *GamesFacade_Expecter) GetRegisteredGames(ctx interface{}, active interface{}) *GamesFacade_GetRegisteredGames_Call {
+	return &GamesFacade_GetRegisteredGames_Call{Call: _e.mock.On("GetRegisteredGames", ctx, active)}
+}
+
+func (_c *GamesFacade_GetRegisteredGames_Call) Run(run func(ctx context.Context, active bool)) *GamesFacade_GetRegisteredGames_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(bool))
+	})
+	return _c
+}
+
+func (_c *GamesFacade_GetRegisteredGames_Call) Return(_a0 []model.Game, _a1 error) *GamesFacade_GetRegisteredGames_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
 type mockConstructorTestingTNewGamesFacade interface {
 	mock.TestingT
 	Cleanup(func())

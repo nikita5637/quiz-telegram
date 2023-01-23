@@ -51,13 +51,13 @@ type TelegramRequest struct {
 	Body    []byte  `json:"body,omitempty"`
 }
 
-// GetGameID is data for CommandGetGame
+// GetGameData is data for CommandGetGame
 type GetGameData struct {
 	GameID int32
 }
 
-// VenueData is data for CommandGetVenue
-type VenueData struct {
+// GetVenueData is data for CommandGetVenue
+type GetVenueData struct {
 	Title     string
 	Address   string
 	Latitude  float32
