@@ -21,15 +21,10 @@ type ReminderConfig struct {
 func GetRabbitMQURL() string {
 	rabbitMQPassword := GetSecretValue(RabbitMQPassword)
 
-	switch globalConfig.Driver {
-	case DriverMySQL:
-		return fmt.Sprintf(rabbitMQURLFormat,
-			globalConfig.RabbitMQUserName,
-			rabbitMQPassword,
-			globalConfig.RabbitMQAddress,
-			globalConfig.RabbitMQPort,
-		)
-	}
-
-	return ""
+	return fmt.Sprintf(rabbitMQURLFormat,
+		globalConfig.RabbitMQUserName,
+		rabbitMQPassword,
+		globalConfig.RabbitMQAddress,
+		globalConfig.RabbitMQPort,
+	)
 }

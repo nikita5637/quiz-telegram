@@ -16,8 +16,6 @@ import (
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/games"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/middleware"
-	"github.com/nikita5637/quiz-telegram/internal/pkg/request"
-	"github.com/nikita5637/quiz-telegram/internal/pkg/storage"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -71,12 +69,6 @@ func main() {
 	)))
 	logger.InfoKV(ctx, "initialized logger", "log level", logLevel)
 
-	db, err := storage.NewDB()
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 
@@ -119,13 +111,6 @@ func main() {
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
-		requestStorage := storage.NewRequestStorage(db)
-
-		requestsFacadeConfig := request.Config{
-			RequestStorage: requestStorage,
-		}
-		requestsFacade := request.NewFacade(requestsFacadeConfig)
-
 		gamesFacadeConfig := games.Config{
 			PhotographerServiceClient: photographerServiceClient,
 			RegistratorServiceClient:  registratorServiceClient,
@@ -133,9 +118,8 @@ func main() {
 		gamesFacade := games.NewFacade(gamesFacadeConfig)
 
 		telegramBotConfig := telegram.Config{
-			Bot:            bot,
-			GamesFacade:    gamesFacade,
-			RequestsFacade: requestsFacade,
+			Bot:         bot,
+			GamesFacade: gamesFacade,
 
 			CroupierServiceClient:     croupierServiceClient,
 			PhotographerServiceClient: photographerServiceClient,

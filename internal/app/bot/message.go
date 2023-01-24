@@ -366,16 +366,15 @@ func (b *Bot) getGamesWithPhotosMessage(ctx context.Context, update *tgbotapi.Up
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
 	for _, game := range games {
-		pbReq := &registrator.GetPhotosByGameIDRequest{
-			GameId: game.ID,
+		payload := &GetGamePhotosData{
+			GameID: game.ID,
 		}
 
-		request, err := getRequest(ctx, CommandGetGamePhotos, pbReq)
+		callbackData, err := getCallbackData(ctx, CommandGetGamePhotos, payload)
 		if err != nil {
 			return nil, err
 		}
 
-		callbackData := b.registerRequest(ctx, request)
 		text := fmt.Sprintf(gamePhotosInfoFormatString, game.ResultPlace.String(), game.League.ShortName, game.Number, game.Place.ShortName, game.DateTime())
 
 		btn := tgbotapi.InlineKeyboardButton{
@@ -391,17 +390,15 @@ func (b *Bot) getGamesWithPhotosMessage(ctx context.Context, update *tgbotapi.Up
 	}
 
 	if leftNext > 0 {
-		pbReq := &registrator.GetGamesWithPhotosRequest{
+		payload := &GetGamesWithPhotosData{
 			Limit:  gamesWithPhotosListLimit,
 			Offset: gamesWithPhotosListLimit,
 		}
 
-		request, err := getRequest(ctx, CommandGetListGamesWithPhotosNextPage, pbReq)
+		callbackData, err := getCallbackData(ctx, CommandGetListGamesWithPhotosNextPage, payload)
 		if err != nil {
 			return nil, err
 		}
-
-		callbackData := b.registerRequest(ctx, request)
 
 		btnNext := tgbotapi.InlineKeyboardButton{
 			Text:         nextPageStringText,
@@ -430,18 +427,16 @@ func (b *Bot) getListOfGamesMessage(ctx context.Context, update *tgbotapi.Update
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
 	for _, game := range games {
-		pbReq := &registrator.GetGameByIDRequest{
-			GameId: game.ID,
+		payload := &GetGameData{
+			GameID: game.ID,
 		}
 
-		request, err := getRequest(ctx, CommandGetGame, pbReq)
+		callbackData, err := getCallbackData(ctx, CommandGetGame, payload)
 		if err != nil {
 			return nil, err
 		}
 
-		callbackData := b.registerRequest(ctx, request)
-
-		text := fmt.Sprintf(gameInfoFormatString, game.League.ShortName, game.Number, game.Place.ShortName, game.DateTime())
+		text := fmt.Sprintf(gameInfoFormatString, game.League.ShortName, game.Number, game.Place.ShortName, game.Date)
 
 		if game.My {
 			text = myGamePrefix + text
@@ -485,16 +480,15 @@ func (b *Bot) getListOfMyGamesMessage(ctx context.Context, update *tgbotapi.Upda
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
 	for _, game := range games {
-		pbReq := &registrator.GetGameByIDRequest{
-			GameId: game.ID,
+		payload := &GetGameData{
+			GameID: game.ID,
 		}
 
-		request, err := getRequest(ctx, CommandGetGame, pbReq)
+		callbackData, err := getCallbackData(ctx, CommandGetGame, payload)
 		if err != nil {
 			return nil, err
 		}
 
-		callbackData := b.registerRequest(ctx, request)
 		text := fmt.Sprintf(gameInfoFormatString, game.League.ShortName, game.Number, game.Place.ShortName, game.DateTime())
 
 		btn := tgbotapi.InlineKeyboardButton{
@@ -524,16 +518,15 @@ func (b *Bot) getListOfRegisteredGamesMessage(ctx context.Context, update *tgbot
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
 	for _, game := range games {
-		pbReq := &registrator.GetGameByIDRequest{
-			GameId: game.ID,
+		payload := &GetGameData{
+			GameID: game.ID,
 		}
 
-		request, err := getRequest(ctx, CommandGetGame, pbReq)
+		callbackData, err := getCallbackData(ctx, CommandGetGame, payload)
 		if err != nil {
 			return nil, err
 		}
 
-		callbackData := b.registerRequest(ctx, request)
 		text := fmt.Sprintf(gameInfoFormatString, game.League.ShortName, game.Number, game.Place.ShortName, game.DateTime())
 
 		btn := tgbotapi.InlineKeyboardButton{
@@ -561,12 +554,11 @@ func (b *Bot) getSettingsMessage(ctx context.Context, update *tgbotapi.Update) (
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0, 3)
 	{
-		request, err := getRequest(ctx, CommandChangeEmail, "")
+		callbackData, err := getCallbackData(ctx, CommandChangeEmail, "")
 		if err != nil {
 			return nil, err
 		}
 
-		callbackData := b.registerRequest(ctx, request)
 		btnEmail := tgbotapi.InlineKeyboardButton{
 			Text:         fmt.Sprintf(settingFormatString, getTranslator(changeEmailLexeme)(ctx), user.GetUser().GetEmail()),
 			CallbackData: &callbackData,
@@ -575,12 +567,11 @@ func (b *Bot) getSettingsMessage(ctx context.Context, update *tgbotapi.Update) (
 	}
 
 	{
-		request, err := getRequest(ctx, CommandChangeName, "")
+		callbackData, err := getCallbackData(ctx, CommandChangeName, "")
 		if err != nil {
 			return nil, err
 		}
 
-		callbackData := b.registerRequest(ctx, request)
 		btnName := tgbotapi.InlineKeyboardButton{
 			Text:         fmt.Sprintf(settingFormatString, getTranslator(changeNameLexeme)(ctx), user.GetUser().GetName()),
 			CallbackData: &callbackData,
@@ -589,12 +580,11 @@ func (b *Bot) getSettingsMessage(ctx context.Context, update *tgbotapi.Update) (
 	}
 
 	{
-		request, err := getRequest(ctx, CommandChangePhone, "")
+		callbackData, err := getCallbackData(ctx, CommandChangePhone, "")
 		if err != nil {
 			return nil, err
 		}
 
-		callbackData := b.registerRequest(ctx, request)
 		btnPhone := tgbotapi.InlineKeyboardButton{
 			Text:         fmt.Sprintf(settingFormatString, getTranslator(changePhoneLexeme)(ctx), user.GetUser().GetPhone()),
 			CallbackData: &callbackData,

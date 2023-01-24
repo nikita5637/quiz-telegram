@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -10,7 +11,6 @@ import (
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
-	uuid_utils "github.com/nikita5637/quiz-telegram/utils/uuid"
 )
 
 const (
@@ -96,16 +96,14 @@ func (b *Bot) checkAuth(ctx context.Context, clientID int64) error {
 }
 
 func (b *Bot) gamesListButton(ctx context.Context) (tgbotapi.InlineKeyboardButton, error) {
-	pbReq := &registrator.GetGamesRequest{
+	payload := &GetGamesListData{
 		Active: true,
 	}
 
-	request, err := getRequest(ctx, CommandGamesList, pbReq)
+	callbackData, err := getCallbackData(ctx, CommandGetGamesList, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
-
-	callbackData := b.registerRequest(ctx, request)
 
 	btn := tgbotapi.InlineKeyboardButton{
 		Text:         fmt.Sprintf("%s %s", prevPageIcon, getTranslator(backToTheGamesListLexeme)(ctx)),
@@ -225,7 +223,7 @@ func (b *Bot) getGameMenu(ctx context.Context, game model.Game) (tgbotapi.Inline
 
 	if game.Place.Latitude != 0 && game.Place.Longitude != 0 {
 		var btnVenue tgbotapi.InlineKeyboardButton
-		btnVenue, err = b.venueButton(ctx, game.Place.Name, game.Place.Address, game.Place.Latitude, game.Place.Longitude)
+		btnVenue, err = b.venueButton(ctx, game.Place.ID)
 		if err != nil {
 			return tgbotapi.InlineKeyboardMarkup{}, err
 		}
@@ -244,15 +242,14 @@ func (b *Bot) getGameMenu(ctx context.Context, game model.Game) (tgbotapi.Inline
 }
 
 func (b *Bot) lotteryButton(ctx context.Context, gameID int32) (tgbotapi.InlineKeyboardButton, error) {
-	pbReq := &registrator.RegisterForLotteryRequest{
-		GameId: gameID,
+	payload := &LotteryData{
+		GameID: gameID,
 	}
 
-	request, err := getRequest(ctx, CommandLottery, pbReq)
+	callbackData, err := getCallbackData(ctx, CommandLottery, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
-	callbackData := b.registerRequest(ctx, request)
 
 	btn := tgbotapi.InlineKeyboardButton{
 		Text:         fmt.Sprintf("%s %s", lotteryIcon, getTranslator(registerForLotteryLexeme)(ctx)),
@@ -277,17 +274,15 @@ func (b *Bot) nextPaymentButton(ctx context.Context, gameID int32, currentPaymen
 		text = fmt.Sprintf("%s %s :(", cashGamePaymentIcon, getTranslator(cashGamePaymentLexeme)(ctx))
 	}
 
-	pbReq := &registrator.UpdatePaymentRequest{
-		GameId:  gameID,
-		Payment: registrator.Payment(nextPayment),
+	payload := &UpdatePaymentData{
+		GameID:  gameID,
+		Payment: int32(nextPayment),
 	}
 
-	request, err := getRequest(ctx, CommandUpdatePayment, pbReq)
+	callbackData, err := getCallbackData(ctx, CommandUpdatePayment, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
-
-	callbackData := b.registerRequest(ctx, request)
 
 	btn := tgbotapi.InlineKeyboardButton{
 		Text:         text,
@@ -298,16 +293,14 @@ func (b *Bot) nextPaymentButton(ctx context.Context, gameID int32, currentPaymen
 }
 
 func (b *Bot) playersListButton(ctx context.Context, gameID int32) (tgbotapi.InlineKeyboardButton, error) {
-	pbReq := &registrator.GetPlayersByGameIDRequest{
-		GameId: gameID,
+	payload := &PlayersListByGameData{
+		GameID: gameID,
 	}
 
-	request, err := getRequest(ctx, CommandPlayersListByGame, pbReq)
+	callbackData, err := getCallbackData(ctx, CommandPlayersListByGame, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
-
-	callbackData := b.registerRequest(ctx, request)
 
 	btn := tgbotapi.InlineKeyboardButton{
 		Text:         fmt.Sprintf("%s %s", listOfPlayersIcon, getTranslator(listOfPlayersLexeme)(ctx)),
@@ -318,16 +311,14 @@ func (b *Bot) playersListButton(ctx context.Context, gameID int32) (tgbotapi.Inl
 }
 
 func (b *Bot) registerGameButton(ctx context.Context, gameID int32) (tgbotapi.InlineKeyboardButton, error) {
-	pbReq := &registrator.RegisterGameRequest{
-		GameId: gameID,
+	payload := &RegisterGameData{
+		GameID: gameID,
 	}
 
-	request, err := getRequest(ctx, CommandRegisterGame, pbReq)
+	callbackData, err := getCallbackData(ctx, CommandRegisterGame, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
-
-	callbackData := b.registerRequest(ctx, request)
 
 	btn := tgbotapi.InlineKeyboardButton{
 		Text:         fmt.Sprintf("%s %s :)", registeredGameIcon, getTranslator(registeredGameLexeme)(ctx)),
@@ -338,18 +329,16 @@ func (b *Bot) registerGameButton(ctx context.Context, gameID int32) (tgbotapi.In
 }
 
 func (b *Bot) registerPlayerButton(ctx context.Context, gameID int32, playerType registrator.PlayerType, degree registrator.Degree) (tgbotapi.InlineKeyboardButton, error) {
-	pbReq := &registrator.RegisterPlayerRequest{
-		GameId:     gameID,
-		PlayerType: playerType,
-		Degree:     degree,
+	payload := &RegisterPlayerData{
+		GameID:     gameID,
+		PlayerType: int32(playerType),
+		Degree:     int32(degree),
 	}
 
-	request, err := getRequest(ctx, CommandRegisterPlayer, pbReq)
+	callbackData, err := getCallbackData(ctx, CommandRegisterPlayer, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
-
-	callbackData := b.registerRequest(ctx, request)
 
 	text := ""
 	if playerType == registrator.PlayerType_PLAYER_TYPE_MAIN && degree == registrator.Degree_DEGREE_LIKELY {
@@ -372,34 +361,15 @@ func (b *Bot) registerPlayerButton(ctx context.Context, gameID int32, playerType
 	return btn, nil
 }
 
-func (b *Bot) registerRequest(ctx context.Context, request model.Request) string {
-	var err error
-	var requestUUID string
-	for i := 0; i < 10; i++ {
-		requestUUID, err = b.requestsFacade.RegisterRequest(ctx, request)
-		if err != nil {
-			continue
-		}
-
-		logger.DebugKV(ctx, "registered new request", "uuid", requestUUID, "groupUUID", request.GroupUUID, "body", string(request.Body))
-		return requestUUID
-	}
-
-	logger.Errorf(ctx, "register request error: %w", err)
-	return ""
-}
-
 func (b *Bot) unregisterGameButton(ctx context.Context, gameID int32) (tgbotapi.InlineKeyboardButton, error) {
-	pbReq := &registrator.UnregisterGameRequest{
-		GameId: gameID,
+	payload := &UnregisterGameData{
+		GameID: gameID,
 	}
 
-	request, err := getRequest(ctx, CommandUnregisterGame, pbReq)
+	callbackData, err := getCallbackData(ctx, CommandUnregisterGame, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
-
-	callbackData := b.registerRequest(ctx, request)
 
 	btn := tgbotapi.InlineKeyboardButton{
 		Text:         fmt.Sprintf("%s %s :(", unregisteredGameIcon, getTranslator(unregisteredGameLexeme)(ctx)),
@@ -410,16 +380,15 @@ func (b *Bot) unregisterGameButton(ctx context.Context, gameID int32) (tgbotapi.
 }
 
 func (b *Bot) unregisterPlayerButton(ctx context.Context, gameID int32, playerType registrator.PlayerType) (tgbotapi.InlineKeyboardButton, error) {
-	pbReq := &registrator.UnregisterPlayerRequest{
-		GameId:     gameID,
-		PlayerType: playerType,
+	payload := &UnregisterPlayerData{
+		GameID:     gameID,
+		PlayerType: int32(playerType),
 	}
 
-	request, err := getRequest(ctx, CommandUnregisterPlayer, pbReq)
+	callbackData, err := getCallbackData(ctx, CommandUnregisterPlayer, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
-	callbackData := b.registerRequest(ctx, request)
 
 	text := ""
 	if playerType == registrator.PlayerType_PLAYER_TYPE_MAIN {
@@ -436,32 +405,17 @@ func (b *Bot) unregisterPlayerButton(ctx context.Context, gameID int32, playerTy
 	return btn, nil
 }
 
-func (b *Bot) unregisterRequest(ctx context.Context, uuid string) error {
-	err := b.requestsFacade.UnregisterRequest(ctx, uuid)
-	if err != nil {
-		logger.Errorf(ctx, "unregister request error: %w", err)
-		return err
+func (b *Bot) venueButton(ctx context.Context, placeID int32) (tgbotapi.InlineKeyboardButton, error) {
+	payload := GetVenueData{
+		PlaceID: placeID,
 	}
 
-	logger.DebugKV(ctx, "unregistered request", "uuid", uuid)
-	return nil
-}
-
-func (b *Bot) venueButton(ctx context.Context, title, address string, latitude, longitude float32) (tgbotapi.InlineKeyboardButton, error) {
-	venueData := GetVenueData{
-		Title:     title,
-		Address:   address,
-		Latitude:  latitude,
-		Longitude: longitude,
-	}
-
-	request, err := getRequest(ctx, CommandGetVenue, venueData)
+	callbackData, err := getCallbackData(ctx, CommandGetVenue, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
 
 	text := fmt.Sprintf("%s %s", routeIcon, getTranslator(routeToBarLexeme)(ctx))
-	callbackData := b.registerRequest(ctx, request)
 
 	return tgbotapi.InlineKeyboardButton{
 		Text:         text,
@@ -475,10 +429,10 @@ func getTranslator(lexeme i18n.Lexeme) func(ctx context.Context) string {
 	}
 }
 
-func getRequest[T any](ctx context.Context, command Command, pbReq T) (model.Request, error) {
-	body, err := json.Marshal(pbReq)
+func getCallbackData(ctx context.Context, command Command, payload interface{}) (string, error) {
+	body, err := json.Marshal(payload)
 	if err != nil {
-		return model.Request{}, err
+		return "", err
 	}
 
 	req := TelegramRequest{
@@ -486,15 +440,15 @@ func getRequest[T any](ctx context.Context, command Command, pbReq T) (model.Req
 		Body:    body,
 	}
 
-	requestBody, err := json.Marshal(req)
+	callbackData, err := json.Marshal(req)
 	if err != nil {
-		return model.Request{}, err
+		return "", err
 	}
 
-	request := model.Request{
-		GroupUUID: uuid_utils.GroupUUIDFromContext(ctx),
-		Body:      requestBody,
+	if len(callbackData) > 64 {
+		logger.ErrorKV(ctx, "callback data too long", "data", callbackData)
+		return "", errors.New("callback data too long")
 	}
 
-	return request, nil
+	return string(callbackData), nil
 }

@@ -22,12 +22,3 @@ registrator_api_address = "localhost"
 registrator_api_port = 8080
 telegram_api_bind_address = "localhost"
 telegram_api_bind_port = 8081
-
-#
-# DB Settings
-#
-driver = "mysql"
-database_address = "localhost"
-database_name = "quiz_telegram_prod"
-database_port = 3306
-database_username = "quiz_prod"
