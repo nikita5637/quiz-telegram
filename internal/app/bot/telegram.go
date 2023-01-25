@@ -1,8 +1,8 @@
-//go:generate mockery --case underscore --name TelegramBot --with-expecter
 //go:generate mockery --case underscore --name GamesFacade --with-expecter
+//go:generate mockery --case underscore --name GamePhotosFacade --with-expecter
 //go:generate mockery --case underscore --name CroupierServiceClient --with-expecter
-//go:generate mockery --case underscore --name PhotographerServiceClient --with-expecter
 //go:generate mockery --case underscore --name RegistratorServiceClient --with-expecter
+//go:generate mockery --case underscore --name TelegramBot --with-expecter
 
 package bot
 
@@ -28,19 +28,19 @@ import (
 type GamesFacade interface {
 	GetGameByID(ctx context.Context, id int32) (model.Game, error)
 	GetGames(ctx context.Context, active bool) ([]model.Game, error)
-	GetGamesWithPhotos(ctx context.Context, limit, offset uint32) ([]model.Game, uint32, error)
 	GetRegisteredGames(ctx context.Context, active bool) ([]model.Game, error)
 	GetUserGames(ctx context.Context, active bool, userID int32) ([]model.Game, error)
+}
+
+// GamePhotosFacade ...
+type GamePhotosFacade interface {
+	GetGamesWithPhotos(ctx context.Context, limit, offset uint32) ([]model.Game, uint32, error)
+	GetPhotosByGameID(ctx context.Context, gameID int32) ([]string, error)
 }
 
 // CroupierServiceClient ...
 type CroupierServiceClient interface {
 	registrator.CroupierServiceClient
-}
-
-// PhotographerServiceClient ...
-type PhotographerServiceClient interface {
-	registrator.PhotographerServiceClient
 }
 
 // RegistratorServiceClient ...
@@ -85,35 +85,35 @@ type TelegramBot interface { // nolint:revive
 
 // Bot ...
 type Bot struct {
-	bot         TelegramBot // *tgbotapi.BotAPI
-	gamesFacade GamesFacade
+	bot              TelegramBot // *tgbotapi.BotAPI
+	gamesFacade      GamesFacade
+	gamePhotosFacade GamePhotosFacade
 
-	croupierServiceClient     CroupierServiceClient
-	photographerServiceClient PhotographerServiceClient
-	registratorServiceClient  RegistratorServiceClient
+	croupierServiceClient    CroupierServiceClient
+	registratorServiceClient RegistratorServiceClient
 
 	telegrampb.UnimplementedMessageSenderServiceServer
 }
 
 // Config ...
 type Config struct {
-	Bot         TelegramBot // *tgbotapi.BotAPI
-	GamesFacade GamesFacade
+	Bot              TelegramBot // *tgbotapi.BotAPI
+	GamesFacade      GamesFacade
+	GamePhotosFacade GamePhotosFacade
 
-	CroupierServiceClient     registrator.CroupierServiceClient
-	PhotographerServiceClient registrator.PhotographerServiceClient
-	RegistratorServiceClient  registrator.RegistratorServiceClient
+	CroupierServiceClient    registrator.CroupierServiceClient
+	RegistratorServiceClient registrator.RegistratorServiceClient
 }
 
 // New ...
 func New(cfg Config) (*Bot, error) {
 	bot := &Bot{
-		bot:         cfg.Bot,
-		gamesFacade: cfg.GamesFacade,
+		bot:              cfg.Bot,
+		gamesFacade:      cfg.GamesFacade,
+		gamePhotosFacade: cfg.GamePhotosFacade,
 
-		croupierServiceClient:     cfg.CroupierServiceClient,
-		photographerServiceClient: cfg.PhotographerServiceClient,
-		registratorServiceClient:  cfg.RegistratorServiceClient,
+		croupierServiceClient:    cfg.CroupierServiceClient,
+		registratorServiceClient: cfg.RegistratorServiceClient,
 	}
 	return bot, nil
 }

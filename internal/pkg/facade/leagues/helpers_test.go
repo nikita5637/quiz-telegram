@@ -1,18 +1,16 @@
-package games
+package leagues
 
 import (
 	"context"
 	"testing"
 
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/games/mocks"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 )
 
 type fixture struct {
 	ctx    context.Context
 	facade *Facade
-
-	leaguesFacade *mocks.LeaguesFacade
-	placesFacade  *mocks.PlacesFacade
 
 	registratorServiceClient *mocks.RegistratorServiceClient
 }
@@ -21,15 +19,11 @@ func tearUp(t *testing.T) *fixture {
 	fx := &fixture{
 		ctx: context.Background(),
 
-		leaguesFacade: mocks.NewLeaguesFacade(t),
-		placesFacade:  mocks.NewPlacesFacade(t),
-
 		registratorServiceClient: mocks.NewRegistratorServiceClient(t),
 	}
 
 	fx.facade = &Facade{
-		leaguesFacade: fx.leaguesFacade,
-		placesFacade:  fx.placesFacade,
+		leaguesCache: make(map[int32]model.League, 0),
 
 		registratorServiceClient: fx.registratorServiceClient,
 	}

@@ -1,10 +1,10 @@
-package games
+package gamephotos
 
 import (
 	"context"
 	"testing"
 
-	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/games/mocks"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/gamephotos/mocks"
 )
 
 type fixture struct {
@@ -14,7 +14,8 @@ type fixture struct {
 	leaguesFacade *mocks.LeaguesFacade
 	placesFacade  *mocks.PlacesFacade
 
-	registratorServiceClient *mocks.RegistratorServiceClient
+	photographerServiceClient *mocks.PhotographerServiceClient
+	registratorServiceClient  *mocks.RegistratorServiceClient
 }
 
 func tearUp(t *testing.T) *fixture {
@@ -24,14 +25,16 @@ func tearUp(t *testing.T) *fixture {
 		leaguesFacade: mocks.NewLeaguesFacade(t),
 		placesFacade:  mocks.NewPlacesFacade(t),
 
-		registratorServiceClient: mocks.NewRegistratorServiceClient(t),
+		photographerServiceClient: mocks.NewPhotographerServiceClient(t),
+		registratorServiceClient:  mocks.NewRegistratorServiceClient(t),
 	}
 
 	fx.facade = &Facade{
 		leaguesFacade: fx.leaguesFacade,
 		placesFacade:  fx.placesFacade,
 
-		registratorServiceClient: fx.registratorServiceClient,
+		photographerServiceClient: fx.photographerServiceClient,
+		registratorServiceClient:  fx.registratorServiceClient,
 	}
 
 	t.Cleanup(func() {

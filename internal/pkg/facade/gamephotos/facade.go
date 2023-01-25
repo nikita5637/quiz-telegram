@@ -1,8 +1,9 @@
 //go:generate mockery --case underscore --name LeaguesFacade --with-expecter
 //go:generate mockery --case underscore --name PlacesFacade --with-expecter
+//go:generate mockery --case underscore --name PhotographerServiceClient --with-expecter
 //go:generate mockery --case underscore --name RegistratorServiceClient --with-expecter
 
-package games
+package gamephotos
 
 import (
 	"context"
@@ -21,6 +22,11 @@ type PlacesFacade interface {
 	GetPlaceByID(ctx context.Context, placeID int32) (model.Place, error)
 }
 
+// PhotographerServiceClient ...
+type PhotographerServiceClient interface {
+	registrator.PhotographerServiceClient
+}
+
 // RegistratorServiceClient ...
 type RegistratorServiceClient interface {
 	registrator.RegistratorServiceClient
@@ -31,7 +37,8 @@ type Facade struct {
 	leaguesFacade LeaguesFacade
 	placesFacade  PlacesFacade
 
-	registratorServiceClient RegistratorServiceClient
+	photographerServiceClient PhotographerServiceClient
+	registratorServiceClient  RegistratorServiceClient
 }
 
 // Config ...
@@ -39,7 +46,8 @@ type Config struct {
 	LeaguesFacade LeaguesFacade
 	PlacesFacade  PlacesFacade
 
-	RegistratorServiceClient RegistratorServiceClient
+	PhotographerServiceClient PhotographerServiceClient
+	RegistratorServiceClient  RegistratorServiceClient
 }
 
 // NewFacade ...
@@ -48,6 +56,7 @@ func NewFacade(cfg Config) *Facade {
 		leaguesFacade: cfg.LeaguesFacade,
 		placesFacade:  cfg.PlacesFacade,
 
-		registratorServiceClient: cfg.RegistratorServiceClient,
+		photographerServiceClient: cfg.PhotographerServiceClient,
+		registratorServiceClient:  cfg.RegistratorServiceClient,
 	}
 }

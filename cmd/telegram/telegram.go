@@ -13,7 +13,10 @@ import (
 	"github.com/nikita5637/quiz-telegram/internal/app/telegramapi"
 	"github.com/nikita5637/quiz-telegram/internal/config"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/elasticsearch"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/gamephotos"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/games"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/leagues"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/places"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/middleware"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -111,19 +114,40 @@ func main() {
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
-		gamesFacadeConfig := games.Config{
+		leaguesFacadeConfig := leagues.Config{
+			RegistratorServiceClient: registratorServiceClient,
+		}
+		leaguesFacade := leagues.NewFacade(leaguesFacadeConfig)
+
+		placesFacadeConfig := places.Config{
+			RegistratorServiceClient: registratorServiceClient,
+		}
+		placesFacade := places.NewFacade(placesFacadeConfig)
+
+		gamePhotosFacadeConfig := gamephotos.Config{
+			LeaguesFacade: leaguesFacade,
+			PlacesFacade:  placesFacade,
+
 			PhotographerServiceClient: photographerServiceClient,
 			RegistratorServiceClient:  registratorServiceClient,
+		}
+		gamePhotosFacade := gamephotos.NewFacade(gamePhotosFacadeConfig)
+
+		gamesFacadeConfig := games.Config{
+			LeaguesFacade: leaguesFacade,
+			PlacesFacade:  placesFacade,
+
+			RegistratorServiceClient: registratorServiceClient,
 		}
 		gamesFacade := games.NewFacade(gamesFacadeConfig)
 
 		telegramBotConfig := telegram.Config{
-			Bot:         bot,
-			GamesFacade: gamesFacade,
+			Bot:              bot,
+			GamePhotosFacade: gamePhotosFacade,
+			GamesFacade:      gamesFacade,
 
-			CroupierServiceClient:     croupierServiceClient,
-			PhotographerServiceClient: photographerServiceClient,
-			RegistratorServiceClient:  registratorServiceClient,
+			CroupierServiceClient:    croupierServiceClient,
+			RegistratorServiceClient: registratorServiceClient,
 		}
 
 		tgBot, err2 := telegram.New(telegramBotConfig)

@@ -355,7 +355,7 @@ func (b *Bot) getGamesWithPhotosMessage(ctx context.Context, update *tgbotapi.Up
 	clientID := update.Message.From.ID
 	gamesWithPhotosListLimit := uint32(config.GetValue("GamesWithPhotosListLimit").Uint64())
 
-	games, total, err := b.gamesFacade.GetGamesWithPhotos(ctx, gamesWithPhotosListLimit, 0)
+	games, total, err := b.gamePhotosFacade.GetGamesWithPhotos(ctx, gamesWithPhotosListLimit, 0)
 	if err != nil {
 		return nil, err
 	}

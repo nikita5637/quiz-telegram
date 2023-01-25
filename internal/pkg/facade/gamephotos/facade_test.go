@@ -1,4 +1,4 @@
-package games
+package gamephotos
 
 import (
 	"testing"
@@ -12,7 +12,8 @@ func TestNewFacade(t *testing.T) {
 			LeaguesFacade: nil,
 			PlacesFacade:  nil,
 
-			RegistratorServiceClient: nil,
+			PhotographerServiceClient: nil,
+			RegistratorServiceClient:  nil,
 		})
 
 		assert.Equal(t, &Facade{}, f)

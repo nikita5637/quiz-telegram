@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -52,6 +53,10 @@ var (
 	enterYourPhoneLexeme = i18n.Lexeme{
 		Key:      "enter_your_phone",
 		FallBack: "OK. Enter your phone(format +79XXXXXXXXX).",
+	}
+	gameNotFoundLexeme = i18n.Lexeme{
+		Key:      "game_not_found",
+		FallBack: "Game not found",
 	}
 	legionerByLexeme = i18n.Lexeme{
 		Key:      "legioner_by",
@@ -323,23 +328,14 @@ func (b *Bot) handleGetGamePhotos(ctx context.Context, update *tgbotapi.Update, 
 		return err
 	}
 
-	resp, err := b.photographerServiceClient.GetPhotosByGameID(ctx, &registrator.GetPhotosByGameIDRequest{
-		GameId: data.GameID,
-	})
+	urls, err := b.gamePhotosFacade.GetPhotosByGameID(ctx, data.GameID)
 	if err != nil {
-		st := status.Convert(err)
-		// unlikely
-		if st.Code() == codes.NotFound {
-			for _, detail := range st.Details() {
-				switch t := detail.(type) {
-				case *errdetails.LocalizedMessage:
-					localizedMessage := t.GetMessage()
-					msg := tgbotapi.NewEditMessageText(clientID, messageID, localizedMessage)
-					_, err = b.bot.Send(msg)
-					return err
-				}
-			}
+		if errors.Is(err, model.ErrGameNotFound) {
+			msg := tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(gameNotFoundLexeme)(ctx))
+			_, err = b.bot.Send(msg)
+			return err
 		}
+
 		return err
 	}
 
@@ -349,7 +345,7 @@ func (b *Bot) handleGetGamePhotos(ctx context.Context, update *tgbotapi.Update, 
 		return err
 	}
 
-	for _, url := range resp.GetUrls() {
+	for _, url := range urls {
 		msg := tgbotapi.NewMessage(clientID, url)
 		_, err := b.bot.Send(msg)
 		if err != nil {
@@ -373,7 +369,7 @@ func (b *Bot) handleGetListGamesWithPhotosNextPage(ctx context.Context, update *
 		return err
 	}
 
-	games, total, err := b.gamesFacade.GetGamesWithPhotos(ctx, data.Limit, data.Offset)
+	games, total, err := b.gamePhotosFacade.GetGamesWithPhotos(ctx, data.Limit, data.Offset)
 	if err != nil {
 		return err
 	}
@@ -470,7 +466,7 @@ func (b *Bot) handleGetListGamesWithPhotosPrevPage(ctx context.Context, update *
 		return err
 	}
 
-	games, total, err := b.gamesFacade.GetGamesWithPhotos(ctx, data.Limit, data.Offset)
+	games, total, err := b.gamePhotosFacade.GetGamesWithPhotos(ctx, data.Limit, data.Offset)
 	if err != nil {
 		return err
 	}
