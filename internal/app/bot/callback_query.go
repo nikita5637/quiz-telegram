@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	telegram_utils "github.com/nikita5637/quiz-telegram/utils/telegram"
@@ -219,7 +220,8 @@ func (b *Bot) handleGetGamesList(ctx context.Context, update *tgbotapi.Update, t
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
 	for _, game := range games {
 		payload := &GetGameData{
-			GameID: game.ID,
+			GameID:    game.ID,
+			PageIndex: 0,
 		}
 
 		var callbackData string
@@ -290,7 +292,7 @@ func (b *Bot) handleGetGame(ctx context.Context, update *tgbotapi.Update, telegr
 	}
 
 	var menu tgbotapi.InlineKeyboardMarkup
-	menu, err = b.getGameMenu(ctx, game)
+	menu, err = b.getGameMenu(ctx, game, data.PageIndex)
 	if err != nil {
 		return err
 	}
@@ -675,7 +677,7 @@ func (b *Bot) handlePlayersList(ctx context.Context, update *tgbotapi.Update, te
 		text = fmt.Sprintf("%s :(", getTranslator(listOfPlayersIsEmptyLexeme)(ctx))
 	}
 
-	msg := tgbotapi.NewEditMessageText(clientID, messageID, text)
+	msg := tgbotapi.NewMessage(clientID, text)
 	_, err = b.bot.Send(msg)
 
 	return err
@@ -718,7 +720,7 @@ func (b *Bot) handleRegisterGame(ctx context.Context, update *tgbotapi.Update, t
 	}
 
 	var menu tgbotapi.InlineKeyboardMarkup
-	menu, err = b.getGameMenu(ctx, game)
+	menu, err = b.getGameMenu(ctx, game, 0)
 	if err != nil {
 		return err
 	}
@@ -775,7 +777,7 @@ func (b *Bot) handleRegisterPlayer(ctx context.Context, update *tgbotapi.Update,
 	}
 
 	var menu tgbotapi.InlineKeyboardMarkup
-	menu, err = b.getGameMenu(ctx, game)
+	menu, err = b.getGameMenu(ctx, game, 0)
 	if err != nil {
 		return err
 	}
@@ -828,7 +830,7 @@ func (b *Bot) handleUnregisterGame(ctx context.Context, update *tgbotapi.Update,
 	}
 
 	var menu tgbotapi.InlineKeyboardMarkup
-	menu, err = b.getGameMenu(ctx, game)
+	menu, err = b.getGameMenu(ctx, game, 0)
 	if err != nil {
 		return err
 	}
@@ -881,7 +883,7 @@ func (b *Bot) handleUnregisterPlayer(ctx context.Context, update *tgbotapi.Updat
 	}
 
 	var menu tgbotapi.InlineKeyboardMarkup
-	menu, err = b.getGameMenu(ctx, game)
+	menu, err = b.getGameMenu(ctx, game, 0)
 	if err != nil {
 		return err
 	}
@@ -934,7 +936,7 @@ func (b *Bot) handleUpdatePayment(ctx context.Context, update *tgbotapi.Update, 
 	}
 
 	var menu tgbotapi.InlineKeyboardMarkup
-	menu, err = b.getGameMenu(ctx, game)
+	menu, err = b.getGameMenu(ctx, game, 1)
 	if err != nil {
 		return err
 	}
@@ -1004,6 +1006,12 @@ func detailInfo(ctx context.Context, game model.Game) string {
 	}
 
 	info.WriteString("#️⃣ Номер пакета: " + game.Number + "\n")
+
+	if game.Price > 0 {
+		price := strconv.Itoa(int(game.Price))
+		info.WriteString("💲 Стоимость игры: " + price + "₽\n")
+	}
+
 	info.WriteString("📍 Адрес: " + game.Place.Address + "\n")
 	info.WriteString("📅 Дата и время: " + game.DateTime().String() + "\n")
 	info.WriteString(fmt.Sprintf("👥 Количество игроков: %d/%d/%d", game.NumberOfPlayers, game.NumberOfLegioners, game.MaxPlayers))

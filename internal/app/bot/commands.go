@@ -53,7 +53,8 @@ type TelegramRequest struct {
 
 // GetGameData is a payload for command CommandGetGame
 type GetGameData struct {
-	GameID int32 `json:"g,omitempty"`
+	GameID    int32  `json:"g,omitempty"`
+	PageIndex uint32 `json:"p,omitempty"`
 }
 
 // GetGamePhotosData is a payload for command CommandGetGamePhotos

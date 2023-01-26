@@ -111,10 +111,30 @@ func (b *Bot) gamesListButton(ctx context.Context) (tgbotapi.InlineKeyboardButto
 	return btn, nil
 }
 
-func (b *Bot) getGameMenu(ctx context.Context, game model.Game) (tgbotapi.InlineKeyboardMarkup, error) {
+func (b *Bot) getGameMenu(ctx context.Context, game model.Game, page uint32) (tgbotapi.InlineKeyboardMarkup, error) {
+	switch page {
+	case 0:
+		return b.getGameMenuFirstPage(ctx, game)
+	case 1:
+		return b.getGameMenuSecondPage(ctx, game)
+	}
+
+	return tgbotapi.InlineKeyboardMarkup{}, nil
+}
+
+func (b *Bot) getGameMenuFirstPage(ctx context.Context, game model.Game) (tgbotapi.InlineKeyboardMarkup, error) {
 	var err error
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
+	if game.WithLottery {
+		var btnLottery tgbotapi.InlineKeyboardButton
+		btnLottery, err = b.lotteryButton(ctx, game.ID)
+		if err != nil {
+			return tgbotapi.InlineKeyboardMarkup{}, err
+		}
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnLottery))
+	}
+
 	if game.NumberOfLegioners+game.NumberOfPlayers == game.MaxPlayers {
 		if game.My {
 			var btn1 tgbotapi.InlineKeyboardButton
@@ -152,7 +172,7 @@ func (b *Bot) getGameMenu(ctx context.Context, game model.Game) (tgbotapi.Inline
 			if err != nil {
 				return tgbotapi.InlineKeyboardMarkup{}, err
 			}
-			rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn1), tgbotapi.NewInlineKeyboardRow(btn2))
+			rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn1, btn2))
 		}
 
 		var btn1 tgbotapi.InlineKeyboardButton
@@ -167,7 +187,7 @@ func (b *Bot) getGameMenu(ctx context.Context, game model.Game) (tgbotapi.Inline
 			return tgbotapi.InlineKeyboardMarkup{}, err
 		}
 
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn1), tgbotapi.NewInlineKeyboardRow(btn2))
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn1, btn2))
 		if game.NumberOfMyLegioners > 0 {
 			var btn3 tgbotapi.InlineKeyboardButton
 			btn3, err = b.unregisterPlayerButton(ctx, game.ID, registrator.PlayerType_PLAYER_TYPE_LEGIONER)
@@ -201,31 +221,6 @@ func (b *Bot) getGameMenu(ctx context.Context, game model.Game) (tgbotapi.Inline
 			return tgbotapi.InlineKeyboardMarkup{}, err
 		}
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnUnregisterGame))
-
-		var btnNextPayment tgbotapi.InlineKeyboardButton
-		btnNextPayment, err = b.nextPaymentButton(ctx, game.ID, game.Payment)
-		if err != nil {
-			return tgbotapi.InlineKeyboardMarkup{}, err
-		}
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnNextPayment))
-	}
-
-	if game.WithLottery {
-		var btnLottery tgbotapi.InlineKeyboardButton
-		btnLottery, err = b.lotteryButton(ctx, game.ID)
-		if err != nil {
-			return tgbotapi.InlineKeyboardMarkup{}, err
-		}
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnLottery))
-	}
-
-	if game.Place.Latitude != 0 && game.Place.Longitude != 0 {
-		var btnVenue tgbotapi.InlineKeyboardButton
-		btnVenue, err = b.venueButton(ctx, game.Place.ID)
-		if err != nil {
-			return tgbotapi.InlineKeyboardMarkup{}, err
-		}
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnVenue))
 	}
 
 	var btnGamesList tgbotapi.InlineKeyboardButton
@@ -234,7 +229,76 @@ func (b *Bot) getGameMenu(ctx context.Context, game model.Game) (tgbotapi.Inline
 		return tgbotapi.InlineKeyboardMarkup{}, err
 	}
 
-	rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnGamesList))
+	getGameData := &GetGameData{
+		GameID:    game.ID,
+		PageIndex: 1,
+	}
+
+	var callbackData string
+	callbackData, err = getCallbackData(ctx, CommandGetGame, getGameData)
+	if err != nil {
+		return tgbotapi.InlineKeyboardMarkup{}, err
+	}
+
+	btnNextMenuPage := tgbotapi.InlineKeyboardButton{
+		Text:         nextPageStringText,
+		CallbackData: &callbackData,
+	}
+
+	rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnGamesList, btnNextMenuPage))
+
+	return tgbotapi.NewInlineKeyboardMarkup(rows...), nil
+}
+
+func (b *Bot) getGameMenuSecondPage(ctx context.Context, game model.Game) (tgbotapi.InlineKeyboardMarkup, error) {
+	var err error
+
+	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
+	if game.Registered {
+		var btnNextPayment tgbotapi.InlineKeyboardButton
+		btnNextPayment, err = b.nextPaymentButton(ctx, game.ID, game.Payment)
+		if err != nil {
+			return tgbotapi.InlineKeyboardMarkup{}, err
+		}
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnNextPayment))
+	}
+
+	barButtonsRow := []tgbotapi.InlineKeyboardButton{}
+	if game.Place.Latitude != 0 && game.Place.Longitude != 0 {
+		var btnVenue tgbotapi.InlineKeyboardButton
+		btnVenue, err = b.venueButton(ctx, game.Place.ID)
+		if err != nil {
+			return tgbotapi.InlineKeyboardMarkup{}, err
+		}
+		barButtonsRow = append(barButtonsRow, btnVenue)
+	}
+
+	if game.Place.MenuLink != "" {
+		btnMenu := tgbotapi.NewInlineKeyboardButtonURL("🍴 Меню ресторана", game.Place.MenuLink)
+		barButtonsRow = append(barButtonsRow, btnMenu)
+	}
+
+	if len(barButtonsRow) > 0 {
+		rows = append(rows, barButtonsRow)
+	}
+
+	getGameData := &GetGameData{
+		GameID:    game.ID,
+		PageIndex: 0,
+	}
+
+	var callbackData string
+	callbackData, err = getCallbackData(ctx, CommandGetGame, getGameData)
+	if err != nil {
+		return tgbotapi.InlineKeyboardMarkup{}, err
+	}
+
+	btnPrevMenuPage := tgbotapi.InlineKeyboardButton{
+		Text:         prevPageStringText,
+		CallbackData: &callbackData,
+	}
+
+	rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnPrevMenuPage))
 
 	return tgbotapi.NewInlineKeyboardMarkup(rows...), nil
 }
