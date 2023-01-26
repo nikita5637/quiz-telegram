@@ -85,9 +85,7 @@ var (
 )
 
 func (b *Bot) checkAuth(ctx context.Context, clientID int64) error {
-	_, err := b.registratorServiceClient.GetUserByTelegramID(ctx, &registrator.GetUserByTelegramIDRequest{
-		TelegramId: clientID,
-	})
+	_, err := b.usersFacade.GetUserByTelegramID(ctx, clientID)
 	if err != nil {
 		return err
 	}

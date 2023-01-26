@@ -127,11 +127,7 @@ func (b *Bot) HandleMessage(ctx context.Context, update *tgbotapi.Update) error 
 			name = userName
 		}
 
-		_, err = b.registratorServiceClient.CreateUser(ctx, &registrator.CreateUserRequest{
-			Name:       name,
-			TelegramId: clientID,
-			State:      registrator.UserState_USER_STATE_WELCOME,
-		})
+		_, err = b.usersFacade.CreateUser(ctx, name, clientID, int32(registrator.UserState_USER_STATE_WELCOME))
 		if err != nil {
 			st := status.Convert(err)
 
@@ -272,9 +268,7 @@ func (b *Bot) HandleMessage(ctx context.Context, update *tgbotapi.Update) error 
 
 func (b *Bot) handleDefaultMessage(ctx context.Context, update *tgbotapi.Update) error {
 	clientID := update.Message.From.ID
-	resp, err := b.registratorServiceClient.GetUserByTelegramID(ctx, &registrator.GetUserByTelegramIDRequest{
-		TelegramId: clientID,
-	})
+	user, err := b.usersFacade.GetUserByTelegramID(ctx, clientID)
 	if err != nil {
 		st := status.Convert(err)
 		if st.Code() == codes.Unauthenticated {
@@ -288,11 +282,7 @@ func (b *Bot) handleDefaultMessage(ctx context.Context, update *tgbotapi.Update)
 							name = update.Message.Chat.UserName
 						}
 
-						_, err = b.registratorServiceClient.CreateUser(ctx, &registrator.CreateUserRequest{
-							Name:       name,
-							TelegramId: clientID,
-							State:      registrator.UserState_USER_STATE_WELCOME,
-						})
+						_, err = b.usersFacade.CreateUser(ctx, name, clientID, int32(registrator.UserState_USER_STATE_WELCOME))
 						if err != nil {
 							logger.Errorf(ctx, "error while create user: %s", err.Error())
 						}
@@ -308,34 +298,25 @@ func (b *Bot) handleDefaultMessage(ctx context.Context, update *tgbotapi.Update)
 		return err
 	}
 
-	switch resp.GetUser().GetState() {
-	case registrator.UserState_USER_STATE_CHANGING_EMAIL:
-		_, err = b.registratorServiceClient.UpdateUserEmail(ctx, &registrator.UpdateUserEmailRequest{
-			UserId: resp.GetUser().GetId(),
-			Email:  update.Message.Text,
-		})
+	switch user.State {
+	case int32(registrator.UserState_USER_STATE_CHANGING_EMAIL):
+		err = b.usersFacade.UpdateUserEmail(ctx, user.ID, update.Message.Text)
 		if err != nil {
 			return err
 		}
 
 		msg := tgbotapi.NewMessage(clientID, getTranslator(emailChangedLexeme)(ctx))
 		_, err = b.bot.Send(msg)
-	case registrator.UserState_USER_STATE_CHANGINE_NAME:
-		_, err = b.registratorServiceClient.UpdateUserName(ctx, &registrator.UpdateUserNameRequest{
-			UserId: resp.GetUser().GetId(),
-			Name:   update.Message.Text,
-		})
+	case int32(registrator.UserState_USER_STATE_CHANGINE_NAME):
+		err = b.usersFacade.UpdateUserName(ctx, user.ID, update.Message.Text)
 		if err != nil {
 			return err
 		}
 
 		msg := tgbotapi.NewMessage(clientID, getTranslator(nameChangedLexeme)(ctx))
 		_, err = b.bot.Send(msg)
-	case registrator.UserState_USER_STATE_CHANGING_PHONE:
-		_, err = b.registratorServiceClient.UpdateUserPhone(ctx, &registrator.UpdateUserPhoneRequest{
-			UserId: resp.GetUser().GetId(),
-			Phone:  update.Message.Text,
-		})
+	case int32(registrator.UserState_USER_STATE_CHANGING_PHONE):
+		err = b.usersFacade.UpdateUserPhone(ctx, user.ID, update.Message.Text)
 		if err != nil {
 			return err
 		}
@@ -462,14 +443,12 @@ func (b *Bot) getListOfGamesMessage(ctx context.Context, update *tgbotapi.Update
 func (b *Bot) getListOfMyGamesMessage(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error) {
 	clientID := update.Message.From.ID
 
-	respUser, err := b.registratorServiceClient.GetUserByTelegramID(ctx, &registrator.GetUserByTelegramIDRequest{
-		TelegramId: clientID,
-	})
+	user, err := b.usersFacade.GetUserByTelegramID(ctx, clientID)
 	if err != nil {
 		return nil, err
 	}
 
-	games, err := b.gamesFacade.GetUserGames(ctx, true, respUser.GetUser().GetId())
+	games, err := b.gamesFacade.GetUserGames(ctx, true, user.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -545,9 +524,7 @@ func (b *Bot) getListOfRegisteredGamesMessage(ctx context.Context, update *tgbot
 func (b *Bot) getSettingsMessage(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error) {
 	clientID := update.Message.From.ID
 
-	user, err := b.registratorServiceClient.GetUserByTelegramID(ctx, &registrator.GetUserByTelegramIDRequest{
-		TelegramId: clientID,
-	})
+	user, err := b.usersFacade.GetUserByTelegramID(ctx, clientID)
 	if err != nil {
 		return nil, err
 	}
@@ -560,7 +537,7 @@ func (b *Bot) getSettingsMessage(ctx context.Context, update *tgbotapi.Update) (
 		}
 
 		btnEmail := tgbotapi.InlineKeyboardButton{
-			Text:         fmt.Sprintf(settingFormatString, getTranslator(changeEmailLexeme)(ctx), user.GetUser().GetEmail()),
+			Text:         fmt.Sprintf(settingFormatString, getTranslator(changeEmailLexeme)(ctx), user.Email),
 			CallbackData: &callbackData,
 		}
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnEmail))
@@ -573,7 +550,7 @@ func (b *Bot) getSettingsMessage(ctx context.Context, update *tgbotapi.Update) (
 		}
 
 		btnName := tgbotapi.InlineKeyboardButton{
-			Text:         fmt.Sprintf(settingFormatString, getTranslator(changeNameLexeme)(ctx), user.GetUser().GetName()),
+			Text:         fmt.Sprintf(settingFormatString, getTranslator(changeNameLexeme)(ctx), user.Name),
 			CallbackData: &callbackData,
 		}
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnName))
@@ -586,7 +563,7 @@ func (b *Bot) getSettingsMessage(ctx context.Context, update *tgbotapi.Update) (
 		}
 
 		btnPhone := tgbotapi.InlineKeyboardButton{
-			Text:         fmt.Sprintf(settingFormatString, getTranslator(changePhoneLexeme)(ctx), user.GetUser().GetPhone()),
+			Text:         fmt.Sprintf(settingFormatString, getTranslator(changePhoneLexeme)(ctx), user.Phone),
 			CallbackData: &callbackData,
 		}
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnPhone))

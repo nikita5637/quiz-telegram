@@ -17,6 +17,7 @@ import (
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/games"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/leagues"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/places"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/users"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/middleware"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -141,10 +142,17 @@ func main() {
 		}
 		gamesFacade := games.NewFacade(gamesFacadeConfig)
 
+		usersFacadeConfig := users.Config{
+			RegistratorServiceClient: registratorServiceClient,
+		}
+		usersFacade := users.NewFacade(usersFacadeConfig)
+
 		telegramBotConfig := telegram.Config{
 			Bot:              bot,
 			GamePhotosFacade: gamePhotosFacade,
 			GamesFacade:      gamesFacade,
+			PlacesFacade:     placesFacade,
+			UsersFacade:      usersFacade,
 
 			CroupierServiceClient:    croupierServiceClient,
 			RegistratorServiceClient: registratorServiceClient,

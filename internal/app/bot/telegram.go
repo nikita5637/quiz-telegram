@@ -1,5 +1,7 @@
 //go:generate mockery --case underscore --name GamesFacade --with-expecter
 //go:generate mockery --case underscore --name GamePhotosFacade --with-expecter
+//go:generate mockery --case underscore --name PlacesFacade --with-expecter
+//go:generate mockery --case underscore --name UsersFacade --with-expecter
 //go:generate mockery --case underscore --name CroupierServiceClient --with-expecter
 //go:generate mockery --case underscore --name RegistratorServiceClient --with-expecter
 //go:generate mockery --case underscore --name TelegramBot --with-expecter
@@ -38,6 +40,22 @@ type GamePhotosFacade interface {
 	GetPhotosByGameID(ctx context.Context, gameID int32) ([]string, error)
 }
 
+// PlacesFacade ...
+type PlacesFacade interface {
+	GetPlaceByID(ctx context.Context, id int32) (model.Place, error)
+}
+
+// UsersFacade ...
+type UsersFacade interface {
+	CreateUser(ctx context.Context, name string, telegramID int64, state int32) (int32, error)
+	GetUserByID(ctx context.Context, userID int32) (model.User, error)
+	GetUserByTelegramID(ctx context.Context, telegramID int64) (model.User, error)
+	UpdateUserEmail(ctx context.Context, userID int32, email string) error
+	UpdateUserName(ctx context.Context, userID int32, name string) error
+	UpdateUserPhone(ctx context.Context, userID int32, phone string) error
+	UpdateUserState(ctx context.Context, userID, state int32) error
+}
+
 // CroupierServiceClient ...
 type CroupierServiceClient interface {
 	registrator.CroupierServiceClient
@@ -45,16 +63,8 @@ type CroupierServiceClient interface {
 
 // RegistratorServiceClient ...
 type RegistratorServiceClient interface {
-	// CreateUser creates new user
-	CreateUser(ctx context.Context, in *registrator.CreateUserRequest, opts ...grpc.CallOption) (*registrator.CreateUserResponse, error)
-	// GetPlaceByID returns place by place ID
-	GetPlaceByID(ctx context.Context, in *registrator.GetPlaceByIDRequest, opts ...grpc.CallOption) (*registrator.GetPlaceByIDResponse, error)
 	// GetPlayersByGameID returns list of players by game ID
 	GetPlayersByGameID(ctx context.Context, in *registrator.GetPlayersByGameIDRequest, opts ...grpc.CallOption) (*registrator.GetPlayersByGameIDResponse, error)
-	// GetUserByID returns user by user ID
-	GetUserByID(ctx context.Context, in *registrator.GetUserByIDRequest, opts ...grpc.CallOption) (*registrator.GetUserByIDResponse, error)
-	// GetUserByTelegramID returns a user by telegram ID
-	GetUserByTelegramID(ctx context.Context, in *registrator.GetUserByTelegramIDRequest, opts ...grpc.CallOption) (*registrator.GetUserByTelegramIDResponse, error)
 	// RegisterGame registers game
 	RegisterGame(ctx context.Context, in *registrator.RegisterGameRequest, opts ...grpc.CallOption) (*registrator.RegisterGameResponse, error)
 	// RegisterPlayer registers player for a game
@@ -63,14 +73,6 @@ type RegistratorServiceClient interface {
 	UnregisterGame(ctx context.Context, in *registrator.UnregisterGameRequest, opts ...grpc.CallOption) (*registrator.UnregisterGameResponse, error)
 	// UnregisterPlayer unregisters player
 	UnregisterPlayer(ctx context.Context, in *registrator.UnregisterPlayerRequest, opts ...grpc.CallOption) (*registrator.UnregisterPlayerResponse, error)
-	// UpdateUserEmail updates a user email
-	UpdateUserEmail(ctx context.Context, in *registrator.UpdateUserEmailRequest, opts ...grpc.CallOption) (*registrator.UpdateUserEmailResponse, error)
-	// UpdateUserName updates a user's name
-	UpdateUserName(ctx context.Context, in *registrator.UpdateUserNameRequest, opts ...grpc.CallOption) (*registrator.UpdateUserNameResponse, error)
-	// UpdateUserPhone updates a user's phone
-	UpdateUserPhone(ctx context.Context, in *registrator.UpdateUserPhoneRequest, opts ...grpc.CallOption) (*registrator.UpdateUserPhoneResponse, error)
-	// UpdateUserState updates a user's state
-	UpdateUserState(ctx context.Context, in *registrator.UpdateUserStateRequest, opts ...grpc.CallOption) (*registrator.UpdateUserStateResponse, error)
 	// UpdatePayment updates payment
 	UpdatePayment(ctx context.Context, in *registrator.UpdatePaymentRequest, opts ...grpc.CallOption) (*registrator.UpdatePaymentResponse, error)
 }
@@ -88,6 +90,8 @@ type Bot struct {
 	bot              TelegramBot // *tgbotapi.BotAPI
 	gamesFacade      GamesFacade
 	gamePhotosFacade GamePhotosFacade
+	placesFacade     PlacesFacade
+	usersFacade      UsersFacade
 
 	croupierServiceClient    CroupierServiceClient
 	registratorServiceClient RegistratorServiceClient
@@ -100,6 +104,8 @@ type Config struct {
 	Bot              TelegramBot // *tgbotapi.BotAPI
 	GamesFacade      GamesFacade
 	GamePhotosFacade GamePhotosFacade
+	PlacesFacade     PlacesFacade
+	UsersFacade      UsersFacade
 
 	CroupierServiceClient    registrator.CroupierServiceClient
 	RegistratorServiceClient registrator.RegistratorServiceClient
@@ -111,6 +117,8 @@ func New(cfg Config) (*Bot, error) {
 		bot:              cfg.Bot,
 		gamesFacade:      cfg.GamesFacade,
 		gamePhotosFacade: cfg.GamePhotosFacade,
+		placesFacade:     cfg.PlacesFacade,
+		usersFacade:      cfg.UsersFacade,
 
 		croupierServiceClient:    cfg.CroupierServiceClient,
 		registratorServiceClient: cfg.RegistratorServiceClient,

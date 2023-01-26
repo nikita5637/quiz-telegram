@@ -96,11 +96,7 @@ func (b *Bot) HandleCallbackQuery(ctx context.Context, update *tgbotapi.Update) 
 			name = update.CallbackQuery.Message.Chat.UserName
 		}
 
-		_, err = b.registratorServiceClient.CreateUser(ctx, &registrator.CreateUserRequest{
-			Name:       name,
-			TelegramId: clientID,
-			State:      registrator.UserState_USER_STATE_WELCOME,
-		})
+		_, err = b.usersFacade.CreateUser(ctx, name, clientID, int32(registrator.UserState_USER_STATE_WELCOME))
 		if err != nil {
 			st := status.Convert(err)
 
@@ -201,15 +197,15 @@ func (b *Bot) HandleCallbackQuery(ctx context.Context, update *tgbotapi.Update) 
 }
 
 func (b *Bot) handleChangeEmail(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
-	return b.updateUserState(ctx, update, model.UserStateChangingEmail)
+	return b.updateUserState(ctx, update, int32(registrator.UserState_USER_STATE_CHANGING_EMAIL))
 }
 
 func (b *Bot) handleChangeName(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
-	return b.updateUserState(ctx, update, model.UserStateChangingName)
+	return b.updateUserState(ctx, update, int32(registrator.UserState_USER_STATE_CHANGINE_NAME))
 }
 
 func (b *Bot) handleChangePhone(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
-	return b.updateUserState(ctx, update, model.UserStateChangingPhone)
+	return b.updateUserState(ctx, update, int32(registrator.UserState_USER_STATE_CHANGING_PHONE))
 }
 
 func (b *Bot) handleGetGamesList(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
@@ -552,7 +548,6 @@ func (b *Bot) handleGetListGamesWithPhotosPrevPage(ctx context.Context, update *
 
 func (b *Bot) handleGetVenue(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
 	clientID := update.CallbackQuery.From.ID
-	messageID := update.CallbackQuery.Message.MessageID
 
 	data := &GetVenueData{}
 
@@ -561,20 +556,12 @@ func (b *Bot) handleGetVenue(ctx context.Context, update *tgbotapi.Update, teleg
 		return err
 	}
 
-	placeResp, err := b.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
-		Id: data.PlaceID,
-	})
+	place, err := b.placesFacade.GetPlaceByID(ctx, data.PlaceID)
 	if err != nil {
 		return err
 	}
 
-	deleteMessageConfig := tgbotapi.NewDeleteMessage(clientID, messageID)
-	_, err = b.bot.Request(deleteMessageConfig)
-	if err != nil {
-		return err
-	}
-
-	venueConfig := tgbotapi.NewVenue(clientID, placeResp.GetPlace().GetName(), placeResp.GetPlace().GetAddress(), float64(placeResp.GetPlace().GetLatitude()), float64(placeResp.GetPlace().GetLongitude()))
+	venueConfig := tgbotapi.NewVenue(clientID, place.Name, place.Address, float64(place.Latitude), float64(place.Longitude))
 	_, err = b.bot.Request(venueConfig)
 	return err
 }
@@ -677,21 +664,17 @@ func (b *Bot) handlePlayersList(ctx context.Context, update *tgbotapi.Update, te
 	for i, player := range resp.GetPlayers() {
 		playerName := ""
 		if player.UserId > 0 {
-			var playerResp *registrator.GetUserByIDResponse
-			if playerResp, err = b.registratorServiceClient.GetUserByID(ctx, &registrator.GetUserByIDRequest{
-				Id: player.UserId,
-			}); err != nil {
+			var user model.User
+			if user, err = b.usersFacade.GetUserByID(ctx, player.UserId); err != nil {
 				return err
 			}
-			playerName = playerResp.GetUser().GetName()
+			playerName = user.Name
 		} else {
-			var playerResp *registrator.GetUserByIDResponse
-			if playerResp, err = b.registratorServiceClient.GetUserByID(ctx, &registrator.GetUserByIDRequest{
-				Id: player.RegisteredBy,
-			}); err != nil {
+			var user model.User
+			if user, err = b.usersFacade.GetUserByID(ctx, player.RegisteredBy); err != nil {
 				return err
 			}
-			playerName = fmt.Sprintf("%s %s", getTranslator(legionerByLexeme)(ctx), playerResp.GetUser().GetName())
+			playerName = fmt.Sprintf("%s %s", getTranslator(legionerByLexeme)(ctx), user.Name)
 		}
 
 		if player.GetDegree() == registrator.Degree_DEGREE_UNLIKELY {
@@ -1038,33 +1021,27 @@ func (b *Bot) handleUpdatePayment(ctx context.Context, update *tgbotapi.Update, 
 	return nil
 }
 
-func (b *Bot) updateUserState(ctx context.Context, update *tgbotapi.Update, state model.UserState) error {
+func (b *Bot) updateUserState(ctx context.Context, update *tgbotapi.Update, state int32) error {
 	clientID := update.CallbackQuery.From.ID
-	messageID := update.CallbackQuery.Message.MessageID
 
-	resp, err := b.registratorServiceClient.GetUserByTelegramID(ctx, &registrator.GetUserByTelegramIDRequest{
-		TelegramId: clientID,
-	})
+	user, err := b.usersFacade.GetUserByTelegramID(ctx, clientID)
 	if err != nil {
 		return err
 	}
 
-	_, err = b.registratorServiceClient.UpdateUserState(ctx, &registrator.UpdateUserStateRequest{
-		UserId: resp.GetUser().GetId(),
-		State:  registrator.UserState(state),
-	})
+	err = b.usersFacade.UpdateUserState(ctx, user.ID, state)
 	if err != nil {
 		return err
 	}
 
-	msg := tgbotapi.EditMessageTextConfig{}
-	switch state {
-	case model.UserStateChangingEmail:
-		msg = tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(enterYourEmailLexeme)(ctx))
-	case model.UserStateChangingName:
-		msg = tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(enterYourNameLexeme)(ctx))
-	case model.UserStateChangingPhone:
-		msg = tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(enterYourPhoneLexeme)(ctx))
+	msg := tgbotapi.MessageConfig{}
+	switch registrator.UserState(state) {
+	case registrator.UserState_USER_STATE_CHANGING_EMAIL:
+		msg = tgbotapi.NewMessage(clientID, getTranslator(enterYourEmailLexeme)(ctx))
+	case registrator.UserState_USER_STATE_CHANGINE_NAME:
+		msg = tgbotapi.NewMessage(clientID, getTranslator(enterYourNameLexeme)(ctx))
+	case registrator.UserState_USER_STATE_CHANGING_PHONE:
+		msg = tgbotapi.NewMessage(clientID, getTranslator(enterYourPhoneLexeme)(ctx))
 	}
 
 	_, err = b.bot.Send(msg)

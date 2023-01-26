@@ -8,6 +8,7 @@ import (
 
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/google/uuid"
@@ -87,13 +88,11 @@ func (b *Bot) HandleInlineQuery(ctx context.Context, update *tgbotapi.Update) er
 		for i, player := range playersResp.GetPlayers() {
 			playerName := ""
 			if player.GetUserId() > 0 {
-				var playerResp *registrator.GetUserByIDResponse
-				if playerResp, err = b.registratorServiceClient.GetUserByID(ctx, &registrator.GetUserByIDRequest{
-					Id: player.GetUserId(),
-				}); err != nil {
+				var user model.User
+				if user, err = b.usersFacade.GetUserByID(ctx, player.GetUserId()); err != nil {
 					return err
 				}
-				playerName = playerResp.GetUser().GetName()
+				playerName = user.Name
 			} else {
 				playerName = "Лег"
 			}
