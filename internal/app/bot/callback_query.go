@@ -271,18 +271,12 @@ func (b *Bot) handleGetGame(ctx context.Context, update *tgbotapi.Update, telegr
 
 	game, err := b.gamesFacade.GetGameByID(ctx, data.GameID)
 	if err != nil {
-		st := status.Convert(err)
-		if st.Code() == codes.NotFound {
-			for _, detail := range st.Details() {
-				switch t := detail.(type) {
-				case *errdetails.LocalizedMessage:
-					localizedMessage := t.GetMessage()
-					msg := tgbotapi.NewEditMessageText(clientID, messageID, localizedMessage)
-					_, err = b.bot.Send(msg)
-					return err
-				}
-			}
+		if errors.Is(err, model.ErrGameNotFound) {
+			msg := tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(gameNotFoundLexeme)(ctx))
+			_, err = b.bot.Send(msg)
+			return err
 		}
+
 		return err
 	}
 
@@ -641,31 +635,23 @@ func (b *Bot) handlePlayersList(ctx context.Context, update *tgbotapi.Update, te
 		return err
 	}
 
-	resp, err := b.registratorServiceClient.GetPlayersByGameID(ctx, &registrator.GetPlayersByGameIDRequest{
-		GameId: data.GameID,
-	})
+	players, err := b.gamesFacade.GetPlayersByGameID(ctx, data.GameID)
 	if err != nil {
-		st := status.Convert(err)
-		if st.Code() == codes.NotFound {
-			for _, detail := range st.Details() {
-				switch t := detail.(type) {
-				case *errdetails.LocalizedMessage:
-					localizedMessage := t.GetMessage()
-					msg := tgbotapi.NewEditMessageText(clientID, messageID, localizedMessage)
-					_, err = b.bot.Send(msg)
-					return err
-				}
-			}
+		if errors.Is(err, model.ErrGameNotFound) {
+			msg := tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(gameNotFoundLexeme)(ctx))
+			_, err = b.bot.Send(msg)
+			return err
 		}
+
 		return err
 	}
 
 	textBuilder := strings.Builder{}
-	for i, player := range resp.GetPlayers() {
+	for i, player := range players {
 		playerName := ""
-		if player.UserId > 0 {
+		if player.UserID > 0 {
 			var user model.User
-			if user, err = b.usersFacade.GetUserByID(ctx, player.UserId); err != nil {
+			if user, err = b.usersFacade.GetUserByID(ctx, player.UserID); err != nil {
 				return err
 			}
 			playerName = user.Name
@@ -677,7 +663,7 @@ func (b *Bot) handlePlayersList(ctx context.Context, update *tgbotapi.Update, te
 			playerName = fmt.Sprintf("%s %s", getTranslator(legionerByLexeme)(ctx), user.Name)
 		}
 
-		if player.GetDegree() == registrator.Degree_DEGREE_UNLIKELY {
+		if player.Degree == int32(registrator.Degree_DEGREE_UNLIKELY) {
 			textBuilder.WriteString(fmt.Sprintf("%d. %s (%s)\n", i+1, playerName, getTranslator(degreeMap[registrator.Degree_DEGREE_UNLIKELY])(ctx)))
 		} else {
 			textBuilder.WriteString(fmt.Sprintf("%d. %s\n", i+1, playerName))
@@ -706,22 +692,14 @@ func (b *Bot) handleRegisterGame(ctx context.Context, update *tgbotapi.Update, t
 		return err
 	}
 
-	_, err = b.registratorServiceClient.RegisterGame(ctx, &registrator.RegisterGameRequest{
-		GameId: data.GameID,
-	})
+	_, err = b.gamesFacade.RegisterGame(ctx, data.GameID)
 	if err != nil {
-		st := status.Convert(err)
-		if st.Code() == codes.NotFound {
-			for _, detail := range st.Details() {
-				switch t := detail.(type) {
-				case *errdetails.LocalizedMessage:
-					localizedMessage := t.GetMessage()
-					msg := tgbotapi.NewEditMessageText(clientID, messageID, localizedMessage)
-					_, err = b.bot.Send(msg)
-					return err
-				}
-			}
+		if errors.Is(err, model.ErrGameNotFound) {
+			msg := tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(gameNotFoundLexeme)(ctx))
+			_, err = b.bot.Send(msg)
+			return err
 		}
+
 		return err
 	}
 
@@ -767,34 +745,16 @@ func (b *Bot) handleRegisterPlayer(ctx context.Context, update *tgbotapi.Update,
 		return err
 	}
 
-	_, err = b.registratorServiceClient.RegisterPlayer(ctx, &registrator.RegisterPlayerRequest{
-		GameId:     data.GameID,
-		PlayerType: registrator.PlayerType(data.PlayerType),
-		Degree:     registrator.Degree(data.Degree),
-	})
+	_, err = b.gamesFacade.RegisterPlayer(ctx, data.GameID, data.PlayerType, data.Degree)
 	if err != nil {
-		st := status.Convert(err)
-
-		if st.Code() == codes.NotFound {
-			for _, detail := range st.Details() {
-				switch t := detail.(type) {
-				case *errdetails.LocalizedMessage:
-					localizedMessage := t.GetMessage()
-					msg := tgbotapi.NewEditMessageText(clientID, messageID, localizedMessage)
-					_, err = b.bot.Send(msg)
-					return err
-				}
-			}
-		} else if st.Code() == codes.AlreadyExists {
-			for _, detail := range st.Details() {
-				switch t := detail.(type) {
-				case *errdetails.LocalizedMessage:
-					localizedMessage := t.GetMessage()
-					msg := tgbotapi.NewEditMessageText(clientID, messageID, localizedMessage)
-					_, err = b.bot.Send(msg)
-					return err
-				}
-			}
+		if errors.Is(err, model.ErrGameNotFound) {
+			msg := tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(gameNotFoundLexeme)(ctx))
+			_, err = b.bot.Send(msg)
+			return err
+		} else if errors.Is(err, model.ErrNoFreeSlot) {
+			msg := tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(noFreeSlotLexeme)(ctx))
+			_, err = b.bot.Send(msg)
+			return err
 		}
 
 		return err
@@ -842,22 +802,12 @@ func (b *Bot) handleUnregisterGame(ctx context.Context, update *tgbotapi.Update,
 		return err
 	}
 
-	_, err = b.registratorServiceClient.UnregisterGame(ctx, &registrator.UnregisterGameRequest{
-		GameId: data.GameID,
-	})
+	_, err = b.gamesFacade.UnregisterGame(ctx, data.GameID)
 	if err != nil {
-		st := status.Convert(err)
-
-		if st.Code() == codes.NotFound {
-			for _, detail := range st.Details() {
-				switch t := detail.(type) {
-				case *errdetails.LocalizedMessage:
-					localizedMessage := t.GetMessage()
-					msg := tgbotapi.NewEditMessageText(clientID, messageID, localizedMessage)
-					_, err = b.bot.Send(msg)
-					return err
-				}
-			}
+		if errors.Is(err, model.ErrGameNotFound) {
+			msg := tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(gameNotFoundLexeme)(ctx))
+			_, err = b.bot.Send(msg)
+			return err
 		}
 
 		return err
@@ -905,23 +855,12 @@ func (b *Bot) handleUnregisterPlayer(ctx context.Context, update *tgbotapi.Updat
 		return err
 	}
 
-	_, err = b.registratorServiceClient.UnregisterPlayer(ctx, &registrator.UnregisterPlayerRequest{
-		GameId:     data.GameID,
-		PlayerType: registrator.PlayerType(data.PlayerType),
-	})
+	_, err = b.gamesFacade.UnregisterPlayer(ctx, data.GameID, data.PlayerType)
 	if err != nil {
-		st := status.Convert(err)
-
-		if st.Code() == codes.NotFound {
-			for _, detail := range st.Details() {
-				switch t := detail.(type) {
-				case *errdetails.LocalizedMessage:
-					localizedMessage := t.GetMessage()
-					msg := tgbotapi.NewEditMessageText(clientID, messageID, localizedMessage)
-					_, err = b.bot.Send(msg)
-					return err
-				}
-			}
+		if errors.Is(err, model.ErrGameNotFound) {
+			msg := tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(gameNotFoundLexeme)(ctx))
+			_, err = b.bot.Send(msg)
+			return err
 		}
 
 		return err
@@ -969,23 +908,14 @@ func (b *Bot) handleUpdatePayment(ctx context.Context, update *tgbotapi.Update, 
 		return err
 	}
 
-	_, err = b.registratorServiceClient.UpdatePayment(ctx, &registrator.UpdatePaymentRequest{
-		GameId:  data.GameID,
-		Payment: registrator.Payment(data.Payment),
-	})
+	err = b.gamesFacade.UpdatePayment(ctx, data.GameID, data.Payment)
 	if err != nil {
-		st := status.Convert(err)
-		if st.Code() == codes.NotFound {
-			for _, detail := range st.Details() {
-				switch t := detail.(type) {
-				case *errdetails.LocalizedMessage:
-					localizedMessage := t.GetMessage()
-					msg := tgbotapi.NewEditMessageText(clientID, messageID, localizedMessage)
-					_, err = b.bot.Send(msg)
-					return err
-				}
-			}
+		if errors.Is(err, model.ErrGameNotFound) {
+			msg := tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(gameNotFoundLexeme)(ctx))
+			_, err = b.bot.Send(msg)
+			return err
 		}
+
 		return err
 	}
 

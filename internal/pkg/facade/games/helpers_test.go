@@ -2,9 +2,14 @@ package games
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/games/mocks"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
+	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type fixture struct {
@@ -38,4 +43,22 @@ func tearUp(t *testing.T) *fixture {
 	})
 
 	return fx
+}
+
+func Test_handleError(t *testing.T) {
+	t.Run("error is nil", func(t *testing.T) {
+		err := handleError(nil)
+		assert.Nil(t, err)
+	})
+
+	t.Run("error is not found", func(t *testing.T) {
+		err := handleError(status.New(codes.NotFound, "").Err())
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, model.ErrGameNotFound)
+	})
+
+	t.Run("otherwise case", func(t *testing.T) {
+		err := handleError(errors.New("some error"))
+		assert.Error(t, err)
+	})
 }

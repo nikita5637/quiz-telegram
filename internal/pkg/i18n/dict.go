@@ -45,6 +45,7 @@ var dictionary = map[string]map[string]string{
 		"list_of_your_games":                      "Список твоих игр",
 		"mix_game_payment":                        "Кто-то платит, кто-то нет",
 		"name_changed":                            "Имя изменено",
+		"no_free_slot":                            "Нет свободных мест",
 		"permission_denied":                       "Доступ запрещён",
 		"phone_changed":                           "Номер телефона изменён",
 		"place":                                   "Место",

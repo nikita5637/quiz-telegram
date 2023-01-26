@@ -16,7 +16,7 @@ func (f *Facade) GetGameByID(ctx context.Context, id int32) (model.Game, error) 
 		GameId: id,
 	})
 	if err != nil {
-		return model.Game{}, fmt.Errorf("get game by ID error: %w", err)
+		return model.Game{}, fmt.Errorf("get game by ID error: %w", handleError(err))
 	}
 
 	league, err := f.leaguesFacade.GetLeagueByID(ctx, gameResp.GetGame().GetLeagueId())

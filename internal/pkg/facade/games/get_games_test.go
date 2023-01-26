@@ -7,6 +7,8 @@ import (
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -24,7 +26,20 @@ func TestFacade_GetGameByID(t *testing.T) {
 		assert.Error(t, err)
 	})
 
-	t.Run("error whil get league by ID", func(t *testing.T) {
+	t.Run("error game not found while get game by ID", func(t *testing.T) {
+		fx := tearUp(t)
+
+		fx.registratorServiceClient.EXPECT().GetGameByID(fx.ctx, &registrator.GetGameByIDRequest{
+			GameId: 1,
+		}).Return(nil, status.New(codes.NotFound, "").Err())
+
+		got, err := fx.facade.GetGameByID(fx.ctx, 1)
+		assert.Equal(t, model.Game{}, got)
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, model.ErrGameNotFound)
+	})
+
+	t.Run("error while get league by ID", func(t *testing.T) {
 		fx := tearUp(t)
 
 		fx.registratorServiceClient.EXPECT().GetGameByID(fx.ctx, &registrator.GetGameByIDRequest{

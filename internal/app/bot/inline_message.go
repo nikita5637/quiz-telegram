@@ -2,20 +2,23 @@ package bot
 
 import (
 	"context"
+	"errors"
 	"strconv"
 
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	telegram_utils "github.com/nikita5637/quiz-telegram/utils/telegram"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"google.golang.org/genproto/googleapis/rpc/errdetails"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 var (
+	noFreeSlotLexeme = i18n.Lexeme{
+		Key:      "no_free_slot",
+		FallBack: "There are not free slot",
+	}
 	youAreAlreadyRegisteredForTheGameLexeme = i18n.Lexeme{
 		Key:      "you_are_already_registered_for_the_game",
 		FallBack: "You are already registered for the game",
@@ -43,43 +46,23 @@ func (b *Bot) handleInlineMessage(ctx context.Context, update *tgbotapi.Update) 
 		return err
 	}
 
-	req := &registrator.RegisterPlayerRequest{
-		GameId:     int32(gameID),
-		PlayerType: registrator.PlayerType_PLAYER_TYPE_MAIN,
-		Degree:     registrator.Degree_DEGREE_LIKELY,
-	}
-
-	resp, err := b.registratorServiceClient.RegisterPlayer(ctx, req)
+	registerStatus, err := b.gamesFacade.RegisterPlayer(ctx, int32(gameID), int32(registrator.PlayerType_PLAYER_TYPE_MAIN), int32(registrator.Degree_DEGREE_LIKELY))
 	if err != nil {
-		st := status.Convert(err)
-
-		if st.Code() == codes.NotFound {
-			for _, detail := range st.Details() {
-				switch t := detail.(type) {
-				case *errdetails.LocalizedMessage:
-					localizedMessage := t.GetMessage()
-					cb := tgbotapi.NewCallback(update.CallbackQuery.ID, localizedMessage)
-					_, err = b.bot.Request(cb)
-					return err
-				}
-			}
-		} else if st.Code() == codes.AlreadyExists {
-			for _, detail := range st.Details() {
-				switch t := detail.(type) {
-				case *errdetails.LocalizedMessage:
-					localizedMessage := t.GetMessage()
-					cb := tgbotapi.NewCallback(update.CallbackQuery.ID, localizedMessage)
-					_, err = b.bot.Request(cb)
-					return err
-				}
-			}
+		if errors.Is(err, model.ErrGameNotFound) {
+			cb := tgbotapi.NewCallback(update.CallbackQuery.ID, getTranslator(gameNotFoundLexeme)(ctx))
+			_, err = b.bot.Request(cb)
+			return err
+		} else if errors.Is(err, model.ErrNoFreeSlot) {
+			cb := tgbotapi.NewCallback(update.CallbackQuery.ID, getTranslator(noFreeSlotLexeme)(ctx))
+			_, err = b.bot.Request(cb)
+			return err
 		}
 
 		return err
 	}
 
-	cb := tgbotapi.NewCallback(update.CallbackQuery.ID, resp.GetStatus().String())
-	switch resp.GetStatus() {
+	cb := tgbotapi.NewCallback(update.CallbackQuery.ID, "")
+	switch registrator.RegisterPlayerStatus(registerStatus) {
 	case registrator.RegisterPlayerStatus_REGISTER_PLAYER_STATUS_ALREADY_REGISTERED:
 		cb = tgbotapi.NewCallback(update.CallbackQuery.ID, getTranslator(youAreAlreadyRegisteredForTheGameLexeme)(ctx))
 	case registrator.RegisterPlayerStatus_REGISTER_PLAYER_STATUS_OK:

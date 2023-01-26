@@ -9,6 +9,7 @@ import (
 
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
+	"google.golang.org/grpc"
 )
 
 // LeaguesFacade ...
@@ -23,7 +24,16 @@ type PlacesFacade interface {
 
 // RegistratorServiceClient ...
 type RegistratorServiceClient interface {
-	registrator.RegistratorServiceClient
+	GetGameByID(ctx context.Context, in *registrator.GetGameByIDRequest, opts ...grpc.CallOption) (*registrator.GetGameByIDResponse, error)
+	GetGames(ctx context.Context, in *registrator.GetGamesRequest, opts ...grpc.CallOption) (*registrator.GetGamesResponse, error)
+	GetPlayersByGameID(ctx context.Context, in *registrator.GetPlayersByGameIDRequest, opts ...grpc.CallOption) (*registrator.GetPlayersByGameIDResponse, error)
+	GetRegisteredGames(ctx context.Context, in *registrator.GetRegisteredGamesRequest, opts ...grpc.CallOption) (*registrator.GetRegisteredGamesResponse, error)
+	GetUserGames(ctx context.Context, in *registrator.GetUserGamesRequest, opts ...grpc.CallOption) (*registrator.GetUserGamesResponse, error)
+	RegisterGame(ctx context.Context, in *registrator.RegisterGameRequest, opts ...grpc.CallOption) (*registrator.RegisterGameResponse, error)
+	RegisterPlayer(ctx context.Context, in *registrator.RegisterPlayerRequest, opts ...grpc.CallOption) (*registrator.RegisterPlayerResponse, error)
+	UnregisterGame(ctx context.Context, in *registrator.UnregisterGameRequest, opts ...grpc.CallOption) (*registrator.UnregisterGameResponse, error)
+	UnregisterPlayer(ctx context.Context, in *registrator.UnregisterPlayerRequest, opts ...grpc.CallOption) (*registrator.UnregisterPlayerResponse, error)
+	UpdatePayment(ctx context.Context, in *registrator.UpdatePaymentRequest, opts ...grpc.CallOption) (*registrator.UpdatePaymentResponse, error)
 }
 
 // Facade ...

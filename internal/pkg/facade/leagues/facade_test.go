@@ -1,5 +1,3 @@
-//go:generate mockery --case underscore --name RegistratorServiceClient --with-expecter
-
 package leagues
 
 import (

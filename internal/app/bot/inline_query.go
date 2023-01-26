@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -71,25 +71,24 @@ func (b *Bot) HandleInlineQuery(ctx context.Context, update *tgbotapi.Update) er
 		article.ThumbHeight = 100
 		article.ThumbWidth = 100
 
-		var playersResp *registrator.GetPlayersByGameIDResponse
-		playersResp, err = b.registratorServiceClient.GetPlayersByGameID(ctx, &registrator.GetPlayersByGameIDRequest{
-			GameId: game.ID,
-		})
+		var players []model.Player
+		players, err = b.gamesFacade.GetPlayersByGameID(ctx, game.ID)
 		if err != nil {
+			logger.Errorf(ctx, "get players by game ID error: %s", err.Error())
 			continue
 		}
 
 		textBuilder := strings.Builder{}
 
-		if len(playersResp.GetPlayers()) == 0 {
+		if len(players) == 0 {
 			textBuilder.WriteString("Нет игроков")
 		}
 
-		for i, player := range playersResp.GetPlayers() {
+		for i, player := range players {
 			playerName := ""
-			if player.GetUserId() > 0 {
+			if player.UserID > 0 {
 				var user model.User
-				if user, err = b.usersFacade.GetUserByID(ctx, player.GetUserId()); err != nil {
+				if user, err = b.usersFacade.GetUserByID(ctx, player.UserID); err != nil {
 					return err
 				}
 				playerName = user.Name
@@ -99,7 +98,7 @@ func (b *Bot) HandleInlineQuery(ctx context.Context, update *tgbotapi.Update) er
 
 			ss := strings.Split(playerName, " ")
 			name := ss[0]
-			if i < len(playersResp.GetPlayers())-1 {
+			if i < len(players)-1 {
 				textBuilder.WriteString(fmt.Sprintf("%s, ", name))
 			} else {
 				textBuilder.WriteString(name)

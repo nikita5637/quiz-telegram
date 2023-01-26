@@ -3,7 +3,6 @@
 //go:generate mockery --case underscore --name PlacesFacade --with-expecter
 //go:generate mockery --case underscore --name UsersFacade --with-expecter
 //go:generate mockery --case underscore --name CroupierServiceClient --with-expecter
-//go:generate mockery --case underscore --name RegistratorServiceClient --with-expecter
 //go:generate mockery --case underscore --name TelegramBot --with-expecter
 
 package bot
@@ -19,7 +18,6 @@ import (
 	telegrampb "github.com/nikita5637/quiz-telegram/pkg/pb/telegram"
 	uuid_utils "github.com/nikita5637/quiz-telegram/utils/uuid"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -30,8 +28,14 @@ import (
 type GamesFacade interface {
 	GetGameByID(ctx context.Context, id int32) (model.Game, error)
 	GetGames(ctx context.Context, active bool) ([]model.Game, error)
+	GetPlayersByGameID(ctx context.Context, gameID int32) ([]model.Player, error)
 	GetRegisteredGames(ctx context.Context, active bool) ([]model.Game, error)
 	GetUserGames(ctx context.Context, active bool, userID int32) ([]model.Game, error)
+	RegisterGame(ctx context.Context, gameID int32) (int32, error)
+	RegisterPlayer(ctx context.Context, gameID, playerType, degree int32) (int32, error)
+	UnregisterGame(ctx context.Context, gameID int32) (int32, error)
+	UnregisterPlayer(ctx context.Context, gameID, playerType int32) (int32, error)
+	UpdatePayment(ctx context.Context, gameID, payment int32) error
 }
 
 // GamePhotosFacade ...
@@ -61,22 +65,6 @@ type CroupierServiceClient interface {
 	registrator.CroupierServiceClient
 }
 
-// RegistratorServiceClient ...
-type RegistratorServiceClient interface {
-	// GetPlayersByGameID returns list of players by game ID
-	GetPlayersByGameID(ctx context.Context, in *registrator.GetPlayersByGameIDRequest, opts ...grpc.CallOption) (*registrator.GetPlayersByGameIDResponse, error)
-	// RegisterGame registers game
-	RegisterGame(ctx context.Context, in *registrator.RegisterGameRequest, opts ...grpc.CallOption) (*registrator.RegisterGameResponse, error)
-	// RegisterPlayer registers player for a game
-	RegisterPlayer(ctx context.Context, in *registrator.RegisterPlayerRequest, opts ...grpc.CallOption) (*registrator.RegisterPlayerResponse, error)
-	// UnregisterGame unregisters game
-	UnregisterGame(ctx context.Context, in *registrator.UnregisterGameRequest, opts ...grpc.CallOption) (*registrator.UnregisterGameResponse, error)
-	// UnregisterPlayer unregisters player
-	UnregisterPlayer(ctx context.Context, in *registrator.UnregisterPlayerRequest, opts ...grpc.CallOption) (*registrator.UnregisterPlayerResponse, error)
-	// UpdatePayment updates payment
-	UpdatePayment(ctx context.Context, in *registrator.UpdatePaymentRequest, opts ...grpc.CallOption) (*registrator.UpdatePaymentResponse, error)
-}
-
 // TelegramBot ...
 type TelegramBot interface { // nolint:revive
 	GetUpdatesChan(config tgbotapi.UpdateConfig) tgbotapi.UpdatesChannel
@@ -93,8 +81,7 @@ type Bot struct {
 	placesFacade     PlacesFacade
 	usersFacade      UsersFacade
 
-	croupierServiceClient    CroupierServiceClient
-	registratorServiceClient RegistratorServiceClient
+	croupierServiceClient CroupierServiceClient
 
 	telegrampb.UnimplementedMessageSenderServiceServer
 }
@@ -107,8 +94,7 @@ type Config struct {
 	PlacesFacade     PlacesFacade
 	UsersFacade      UsersFacade
 
-	CroupierServiceClient    registrator.CroupierServiceClient
-	RegistratorServiceClient registrator.RegistratorServiceClient
+	CroupierServiceClient registrator.CroupierServiceClient
 }
 
 // New ...
@@ -120,8 +106,7 @@ func New(cfg Config) (*Bot, error) {
 		placesFacade:     cfg.PlacesFacade,
 		usersFacade:      cfg.UsersFacade,
 
-		croupierServiceClient:    cfg.CroupierServiceClient,
-		registratorServiceClient: cfg.RegistratorServiceClient,
+		croupierServiceClient: cfg.CroupierServiceClient,
 	}
 	return bot, nil
 }

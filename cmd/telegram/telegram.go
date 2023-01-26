@@ -154,8 +154,7 @@ func main() {
 			PlacesFacade:     placesFacade,
 			UsersFacade:      usersFacade,
 
-			CroupierServiceClient:    croupierServiceClient,
-			RegistratorServiceClient: registratorServiceClient,
+			CroupierServiceClient: croupierServiceClient,
 		}
 
 		tgBot, err2 := telegram.New(telegramBotConfig)

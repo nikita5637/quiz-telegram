@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/games/mocks"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/users/mocks"
 )
 
 type fixture struct {
