@@ -78,6 +78,10 @@ var (
 		Key:      "list_of_registered_games_is_empty",
 		FallBack: "There are not registered games",
 	}
+	myGamesLexeme = i18n.Lexeme{
+		Key:      "my_games",
+		FallBack: "My games",
+	}
 	nameChangedLexeme = i18n.Lexeme{
 		Key:      "name_changed",
 		FallBack: "Name changed",
@@ -89,6 +93,10 @@ var (
 	phoneChangedLexeme = i18n.Lexeme{
 		Key:      "phone_changed",
 		FallBack: "Phone changed",
+	}
+	registeredGamesLexeme = i18n.Lexeme{
+		Key:      "registered_games",
+		FallBack: "Registered games",
 	}
 	settingsLexeme = i18n.Lexeme{
 		Key:      "settings",
@@ -167,7 +175,7 @@ func (b *Bot) HandleMessage(ctx context.Context, update *tgbotapi.Update) error 
 			_, err = b.bot.Send(helpMessage)
 			return err
 		}
-	case "/mygames":
+	case "/mygames", getTranslator(myGamesLexeme)(ctx):
 		handler = func(ctx context.Context) error {
 			var msg tgbotapi.Chattable
 			msg, err = b.getListOfMyGamesMessage(ctx, update)
@@ -197,7 +205,7 @@ func (b *Bot) HandleMessage(ctx context.Context, update *tgbotapi.Update) error 
 
 			return err
 		}
-	case "/registeredgames":
+	case "/registeredgames", getTranslator(registeredGamesLexeme)(ctx):
 		handler = func(ctx context.Context) error {
 			var msg tgbotapi.Chattable
 			msg, err = b.getListOfRegisteredGamesMessage(ctx, update)
@@ -212,7 +220,7 @@ func (b *Bot) HandleMessage(ctx context.Context, update *tgbotapi.Update) error 
 
 			return err
 		}
-	case "/settings":
+	case "/settings", getTranslator(settingsLexeme)(ctx):
 		handler = func(ctx context.Context) error {
 			var settingsMessage tgbotapi.Chattable
 			settingsMessage, err = b.getSettingsMessage(ctx, update)
@@ -306,6 +314,8 @@ func (b *Bot) handleDefaultMessage(ctx context.Context, update *tgbotapi.Update)
 		}
 
 		msg := tgbotapi.NewMessage(clientID, getTranslator(emailChangedLexeme)(ctx))
+		msg.ReplyMarkup = replyKeyboardMarkup(ctx)
+
 		_, err = b.bot.Send(msg)
 	case int32(registrator.UserState_USER_STATE_CHANGINE_NAME):
 		err = b.usersFacade.UpdateUserName(ctx, user.ID, update.Message.Text)
@@ -314,6 +324,8 @@ func (b *Bot) handleDefaultMessage(ctx context.Context, update *tgbotapi.Update)
 		}
 
 		msg := tgbotapi.NewMessage(clientID, getTranslator(nameChangedLexeme)(ctx))
+		msg.ReplyMarkup = replyKeyboardMarkup(ctx)
+
 		_, err = b.bot.Send(msg)
 	case int32(registrator.UserState_USER_STATE_CHANGING_PHONE):
 		err = b.usersFacade.UpdateUserPhone(ctx, user.ID, update.Message.Text)
@@ -322,6 +334,8 @@ func (b *Bot) handleDefaultMessage(ctx context.Context, update *tgbotapi.Update)
 		}
 
 		msg := tgbotapi.NewMessage(clientID, getTranslator(phoneChangedLexeme)(ctx))
+		msg.ReplyMarkup = replyKeyboardMarkup(ctx)
+
 		_, err = b.bot.Send(msg)
 	default:
 		if update.Message.PinnedMessage != nil {
@@ -508,6 +522,14 @@ func (b *Bot) getListOfRegisteredGamesMessage(ctx context.Context, update *tgbot
 
 		text := fmt.Sprintf(gameInfoFormatString, game.League.ShortName, game.Number, game.Place.ShortName, game.DateTime())
 
+		if game.My {
+			text = myGamePrefix + text
+		} else {
+			if game.NumberOfLegioners+game.NumberOfPlayers > 0 {
+				text = gameWithPlayersPrefix + text
+			}
+		}
+
 		btn := tgbotapi.InlineKeyboardButton{
 			Text:         text,
 			CallbackData: &callbackData,
@@ -577,6 +599,8 @@ func (b *Bot) getSettingsMessage(ctx context.Context, update *tgbotapi.Update) (
 
 func helpMessage(ctx context.Context, clientID int64) tgbotapi.MessageConfig {
 	msg := tgbotapi.NewMessage(clientID, getTranslator(helpMessageLexeme)(ctx))
+
+	msg.ReplyMarkup = replyKeyboardMarkup(ctx)
 
 	return msg
 }

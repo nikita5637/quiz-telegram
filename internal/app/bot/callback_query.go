@@ -674,7 +674,7 @@ func (b *Bot) handlePlayersList(ctx context.Context, update *tgbotapi.Update, te
 
 	text := textBuilder.String()
 	if text == "" {
-		text = fmt.Sprintf("%s :(", getTranslator(listOfPlayersIsEmptyLexeme)(ctx))
+		text = fmt.Sprintf("%s", getTranslator(listOfPlayersIsEmptyLexeme)(ctx))
 	}
 
 	msg := tgbotapi.NewMessage(clientID, text)
@@ -970,10 +970,13 @@ func (b *Bot) updateUserState(ctx context.Context, update *tgbotapi.Update, stat
 	switch registrator.UserState(state) {
 	case registrator.UserState_USER_STATE_CHANGING_EMAIL:
 		msg = tgbotapi.NewMessage(clientID, getTranslator(enterYourEmailLexeme)(ctx))
+		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
 	case registrator.UserState_USER_STATE_CHANGINE_NAME:
 		msg = tgbotapi.NewMessage(clientID, getTranslator(enterYourNameLexeme)(ctx))
+		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
 	case registrator.UserState_USER_STATE_CHANGING_PHONE:
 		msg = tgbotapi.NewMessage(clientID, getTranslator(enterYourPhoneLexeme)(ctx))
+		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
 	}
 
 	_, err = b.bot.Send(msg)
@@ -987,9 +990,9 @@ func (b *Bot) updateUserState(ctx context.Context, update *tgbotapi.Update, stat
 
 func detailInfo(ctx context.Context, game model.Game) string {
 	info := strings.Builder{}
-	registerStatus := fmt.Sprintf("%s %s :(", unregisteredGameIcon, getTranslator(unregisteredGameLexeme)(ctx))
+	registerStatus := fmt.Sprintf("%s %s", unregisteredGameIcon, getTranslator(unregisteredGameLexeme)(ctx))
 	if game.Registered {
-		registerStatus = fmt.Sprintf("%s %s :)", registeredGameIcon, getTranslator(registeredGameLexeme)(ctx))
+		registerStatus = fmt.Sprintf("%s %s", registeredGameIcon, getTranslator(registeredGameLexeme)(ctx))
 	}
 
 	info.WriteString(registerStatus + "\n")
@@ -997,9 +1000,9 @@ func detailInfo(ctx context.Context, game model.Game) string {
 	if game.Payment != model.PaymentTypeInvalid {
 		paymentStatus := "❓ Оплата: микс"
 		if game.Payment == model.PaymentTypeCash {
-			paymentStatus = "💵 Оплата: денюжкой :("
+			paymentStatus = "💵 Оплата: денюжкой"
 		} else if game.Payment == model.PaymentTypeCertificate {
-			paymentStatus = "🆓 Оплата: сертификатом :)"
+			paymentStatus = "🆓 Оплата: сертификатом"
 		}
 
 		info.WriteString(paymentStatus + "\n")
