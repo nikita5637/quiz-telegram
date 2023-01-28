@@ -20,7 +20,7 @@ const (
 	gameInfoFormatString       = "%s %s %s %s\n"
 	gamePhotosInfoFormatString = "📸" + "%s" + gameInfoFormatString
 	gameWithPlayersPrefix      = "❗️ "
-	nextPageStringText         = ">"
+	nextPageStringText         = "▶️"
 	myGamePrefix               = "ℹ️ "
 	settingFormatString        = "%s [%s]"
 )

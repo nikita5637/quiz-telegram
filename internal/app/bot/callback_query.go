@@ -22,8 +22,12 @@ import (
 )
 
 const (
-	prevPageStringText   = "<"
+	cashIcon             = "💵"
+	freeIcon             = "🆓"
+	prevPageStringText   = "◀️"
 	registeredGameIcon   = "✅"
+	sharpIcon            = "#️⃣"
+	questionMarkIcon     = "❓"
 	unregisteredGameIcon = "❌"
 )
 
@@ -43,6 +47,18 @@ var (
 		},
 	}
 
+	cardLexeme = i18n.Lexeme{
+		Key:      "card",
+		FallBack: "Card",
+	}
+	cashLexeme = i18n.Lexeme{
+		Key:      "cash",
+		FallBack: "Cash",
+	}
+	certificateLexeme = i18n.Lexeme{
+		Key:      "certificate",
+		FallBack: "Certificate",
+	}
 	enterYourEmailLexeme = i18n.Lexeme{
 		Key:      "enter_your_email",
 		FallBack: "OK. Enter your email.",
@@ -67,9 +83,25 @@ var (
 		Key:      "list_of_players_is_empty",
 		FallBack: "There are not players",
 	}
+	mixLexeme = i18n.Lexeme{
+		Key:      "mix",
+		FallBack: "Mix",
+	}
+	numberLexeme = i18n.Lexeme{
+		Key:      "number",
+		FallBack: "Number",
+	}
+	paymentLexeme = i18n.Lexeme{
+		Key:      "payment",
+		FallBack: "Payment",
+	}
 	registeredGameLexeme = i18n.Lexeme{
 		Key:      "registered_game",
 		FallBack: "We are registered for the game",
+	}
+	titleLexeme = i18n.Lexeme{
+		Key:      "title",
+		FallBack: "Title",
 	}
 	unregisteredGameLexeme = i18n.Lexeme{
 		Key:      "unregistered_game",
@@ -997,18 +1029,39 @@ func detailInfo(ctx context.Context, game model.Game) string {
 
 	info.WriteString(registerStatus + "\n")
 
+	paymentType := ""
+	if strings.Index(game.PaymentType, "cash") != -1 {
+		paymentType += strings.ToLower(getTranslator(cashLexeme)(ctx))
+	}
+	if strings.Index(game.PaymentType, "card") != -1 {
+		if paymentType != "" {
+			paymentType += ", "
+		}
+		paymentType += strings.ToLower(getTranslator(cardLexeme)(ctx))
+	}
+
+	if paymentType == "" {
+		paymentType = "?"
+	}
+
 	if game.Payment != model.PaymentTypeInvalid {
-		paymentStatus := "❓ Оплата: микс"
+		paymentStatus := fmt.Sprintf("%s %s: %s (%s)", questionMarkIcon, getTranslator(paymentLexeme)(ctx), strings.ToLower(getTranslator(mixLexeme)(ctx)), paymentType)
 		if game.Payment == model.PaymentTypeCash {
-			paymentStatus = "💵 Оплата: денюжкой"
+			paymentStatus = fmt.Sprintf("%s %s: %s", cashIcon, getTranslator(paymentLexeme)(ctx), paymentType)
 		} else if game.Payment == model.PaymentTypeCertificate {
-			paymentStatus = "🆓 Оплата: сертификатом"
+			paymentStatus = fmt.Sprintf("%s %s: %s", freeIcon, getTranslator(paymentLexeme)(ctx), strings.ToLower(getTranslator(certificateLexeme)(ctx)))
 		}
 
 		info.WriteString(paymentStatus + "\n")
+	} else {
+		info.WriteString(fmt.Sprintf("%s %s: %s\n", cashIcon, getTranslator(paymentLexeme)(ctx), paymentType))
 	}
 
-	info.WriteString("#️⃣ Номер пакета: " + game.Number + "\n")
+	if game.Name != "" {
+		info.WriteString(fmt.Sprintf("%s %s: %s %s\n", sharpIcon, getTranslator(titleLexeme)(ctx), game.Name, game.Number))
+	} else {
+		info.WriteString(fmt.Sprintf("%s %s: %s\n", sharpIcon, getTranslator(numberLexeme)(ctx), game.Number))
+	}
 
 	if game.Price > 0 {
 		price := strconv.Itoa(int(game.Price))
