@@ -30,10 +30,6 @@ const (
 )
 
 var (
-	backToTheGamesListLexeme = i18n.Lexeme{
-		Key:      "back_to_the_games_list",
-		FallBack: "Back to the games list",
-	}
 	cashGamePaymentLexeme = i18n.Lexeme{
 		Key:      "cash_game_payment",
 		FallBack: "We play for money",
@@ -91,24 +87,6 @@ func (b *Bot) checkAuth(ctx context.Context, clientID int64) error {
 	}
 
 	return nil
-}
-
-func (b *Bot) gamesListButton(ctx context.Context) (tgbotapi.InlineKeyboardButton, error) {
-	payload := &GetGamesListData{
-		Active: true,
-	}
-
-	callbackData, err := getCallbackData(ctx, CommandGetGamesList, payload)
-	if err != nil {
-		return tgbotapi.InlineKeyboardButton{}, err
-	}
-
-	btn := tgbotapi.InlineKeyboardButton{
-		Text:         fmt.Sprintf("%s %s", prevPageIcon, getTranslator(backToTheGamesListLexeme)(ctx)),
-		CallbackData: &callbackData,
-	}
-
-	return btn, nil
 }
 
 func (b *Bot) getGameMenu(ctx context.Context, game model.Game, page uint32) (tgbotapi.InlineKeyboardMarkup, error) {
@@ -223,12 +201,6 @@ func (b *Bot) getGameMenuFirstPage(ctx context.Context, game model.Game) (tgbota
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnUnregisterGame))
 	}
 
-	var btnGamesList tgbotapi.InlineKeyboardButton
-	btnGamesList, err = b.gamesListButton(ctx)
-	if err != nil {
-		return tgbotapi.InlineKeyboardMarkup{}, err
-	}
-
 	getGameData := &GetGameData{
 		GameID:    game.ID,
 		PageIndex: 1,
@@ -245,7 +217,7 @@ func (b *Bot) getGameMenuFirstPage(ctx context.Context, game model.Game) (tgbota
 		CallbackData: &callbackData,
 	}
 
-	rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnGamesList, btnNextMenuPage))
+	rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnNextMenuPage))
 
 	return tgbotapi.NewInlineKeyboardMarkup(rows...), nil
 }
