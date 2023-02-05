@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	telegram_utils "github.com/nikita5637/quiz-telegram/utils/telegram"
@@ -21,8 +22,12 @@ import (
 )
 
 const (
-	prevPageStringText   = "<"
+	cashIcon             = "💵"
+	freeIcon             = "🆓"
+	prevPageStringText   = "◀️"
 	registeredGameIcon   = "✅"
+	sharpIcon            = "#️⃣"
+	questionMarkIcon     = "❓"
 	unregisteredGameIcon = "❌"
 )
 
@@ -42,6 +47,18 @@ var (
 		},
 	}
 
+	cardLexeme = i18n.Lexeme{
+		Key:      "card",
+		FallBack: "Card",
+	}
+	cashLexeme = i18n.Lexeme{
+		Key:      "cash",
+		FallBack: "Cash",
+	}
+	certificateLexeme = i18n.Lexeme{
+		Key:      "certificate",
+		FallBack: "Certificate",
+	}
 	enterYourEmailLexeme = i18n.Lexeme{
 		Key:      "enter_your_email",
 		FallBack: "OK. Enter your email.",
@@ -66,9 +83,25 @@ var (
 		Key:      "list_of_players_is_empty",
 		FallBack: "There are not players",
 	}
+	mixLexeme = i18n.Lexeme{
+		Key:      "mix",
+		FallBack: "Mix",
+	}
+	numberLexeme = i18n.Lexeme{
+		Key:      "number",
+		FallBack: "Number",
+	}
+	paymentLexeme = i18n.Lexeme{
+		Key:      "payment",
+		FallBack: "Payment",
+	}
 	registeredGameLexeme = i18n.Lexeme{
 		Key:      "registered_game",
 		FallBack: "We are registered for the game",
+	}
+	titleLexeme = i18n.Lexeme{
+		Key:      "title",
+		FallBack: "Title",
 	}
 	unregisteredGameLexeme = i18n.Lexeme{
 		Key:      "unregistered_game",
@@ -219,7 +252,8 @@ func (b *Bot) handleGetGamesList(ctx context.Context, update *tgbotapi.Update, t
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
 	for _, game := range games {
 		payload := &GetGameData{
-			GameID: game.ID,
+			GameID:    game.ID,
+			PageIndex: 0,
 		}
 
 		var callbackData string
@@ -290,7 +324,7 @@ func (b *Bot) handleGetGame(ctx context.Context, update *tgbotapi.Update, telegr
 	}
 
 	var menu tgbotapi.InlineKeyboardMarkup
-	menu, err = b.getGameMenu(ctx, game)
+	menu, err = b.getGameMenu(ctx, game, data.PageIndex)
 	if err != nil {
 		return err
 	}
@@ -672,10 +706,10 @@ func (b *Bot) handlePlayersList(ctx context.Context, update *tgbotapi.Update, te
 
 	text := textBuilder.String()
 	if text == "" {
-		text = fmt.Sprintf("%s :(", getTranslator(listOfPlayersIsEmptyLexeme)(ctx))
+		text = fmt.Sprintf("%s", getTranslator(listOfPlayersIsEmptyLexeme)(ctx))
 	}
 
-	msg := tgbotapi.NewEditMessageText(clientID, messageID, text)
+	msg := tgbotapi.NewMessage(clientID, text)
 	_, err = b.bot.Send(msg)
 
 	return err
@@ -718,7 +752,7 @@ func (b *Bot) handleRegisterGame(ctx context.Context, update *tgbotapi.Update, t
 	}
 
 	var menu tgbotapi.InlineKeyboardMarkup
-	menu, err = b.getGameMenu(ctx, game)
+	menu, err = b.getGameMenu(ctx, game, 0)
 	if err != nil {
 		return err
 	}
@@ -775,7 +809,7 @@ func (b *Bot) handleRegisterPlayer(ctx context.Context, update *tgbotapi.Update,
 	}
 
 	var menu tgbotapi.InlineKeyboardMarkup
-	menu, err = b.getGameMenu(ctx, game)
+	menu, err = b.getGameMenu(ctx, game, 0)
 	if err != nil {
 		return err
 	}
@@ -828,7 +862,7 @@ func (b *Bot) handleUnregisterGame(ctx context.Context, update *tgbotapi.Update,
 	}
 
 	var menu tgbotapi.InlineKeyboardMarkup
-	menu, err = b.getGameMenu(ctx, game)
+	menu, err = b.getGameMenu(ctx, game, 0)
 	if err != nil {
 		return err
 	}
@@ -881,7 +915,7 @@ func (b *Bot) handleUnregisterPlayer(ctx context.Context, update *tgbotapi.Updat
 	}
 
 	var menu tgbotapi.InlineKeyboardMarkup
-	menu, err = b.getGameMenu(ctx, game)
+	menu, err = b.getGameMenu(ctx, game, 0)
 	if err != nil {
 		return err
 	}
@@ -934,7 +968,7 @@ func (b *Bot) handleUpdatePayment(ctx context.Context, update *tgbotapi.Update, 
 	}
 
 	var menu tgbotapi.InlineKeyboardMarkup
-	menu, err = b.getGameMenu(ctx, game)
+	menu, err = b.getGameMenu(ctx, game, 1)
 	if err != nil {
 		return err
 	}
@@ -968,10 +1002,13 @@ func (b *Bot) updateUserState(ctx context.Context, update *tgbotapi.Update, stat
 	switch registrator.UserState(state) {
 	case registrator.UserState_USER_STATE_CHANGING_EMAIL:
 		msg = tgbotapi.NewMessage(clientID, getTranslator(enterYourEmailLexeme)(ctx))
+		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
 	case registrator.UserState_USER_STATE_CHANGINE_NAME:
 		msg = tgbotapi.NewMessage(clientID, getTranslator(enterYourNameLexeme)(ctx))
+		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
 	case registrator.UserState_USER_STATE_CHANGING_PHONE:
 		msg = tgbotapi.NewMessage(clientID, getTranslator(enterYourPhoneLexeme)(ctx))
+		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
 	}
 
 	_, err = b.bot.Send(msg)
@@ -985,25 +1022,52 @@ func (b *Bot) updateUserState(ctx context.Context, update *tgbotapi.Update, stat
 
 func detailInfo(ctx context.Context, game model.Game) string {
 	info := strings.Builder{}
-	registerStatus := fmt.Sprintf("%s %s :(", unregisteredGameIcon, getTranslator(unregisteredGameLexeme)(ctx))
+	registerStatus := fmt.Sprintf("%s %s", unregisteredGameIcon, getTranslator(unregisteredGameLexeme)(ctx))
 	if game.Registered {
-		registerStatus = fmt.Sprintf("%s %s :)", registeredGameIcon, getTranslator(registeredGameLexeme)(ctx))
+		registerStatus = fmt.Sprintf("%s %s", registeredGameIcon, getTranslator(registeredGameLexeme)(ctx))
 	}
 
 	info.WriteString(registerStatus + "\n")
 
+	paymentType := ""
+	if strings.Index(game.PaymentType, "cash") != -1 {
+		paymentType += strings.ToLower(getTranslator(cashLexeme)(ctx))
+	}
+	if strings.Index(game.PaymentType, "card") != -1 {
+		if paymentType != "" {
+			paymentType += ", "
+		}
+		paymentType += strings.ToLower(getTranslator(cardLexeme)(ctx))
+	}
+
+	if paymentType == "" {
+		paymentType = "?"
+	}
+
 	if game.Payment != model.PaymentTypeInvalid {
-		paymentStatus := "❓ Оплата: микс"
+		paymentStatus := fmt.Sprintf("%s %s: %s (%s)", questionMarkIcon, getTranslator(paymentLexeme)(ctx), strings.ToLower(getTranslator(mixLexeme)(ctx)), paymentType)
 		if game.Payment == model.PaymentTypeCash {
-			paymentStatus = "💵 Оплата: денюжкой :("
+			paymentStatus = fmt.Sprintf("%s %s: %s", cashIcon, getTranslator(paymentLexeme)(ctx), paymentType)
 		} else if game.Payment == model.PaymentTypeCertificate {
-			paymentStatus = "🆓 Оплата: сертификатом :)"
+			paymentStatus = fmt.Sprintf("%s %s: %s", freeIcon, getTranslator(paymentLexeme)(ctx), strings.ToLower(getTranslator(certificateLexeme)(ctx)))
 		}
 
 		info.WriteString(paymentStatus + "\n")
+	} else {
+		info.WriteString(fmt.Sprintf("%s %s: %s\n", cashIcon, getTranslator(paymentLexeme)(ctx), paymentType))
 	}
 
-	info.WriteString("#️⃣ Номер пакета: " + game.Number + "\n")
+	if game.Name != "" {
+		info.WriteString(fmt.Sprintf("%s %s: %s %s\n", sharpIcon, getTranslator(titleLexeme)(ctx), game.Name, game.Number))
+	} else {
+		info.WriteString(fmt.Sprintf("%s %s: %s\n", sharpIcon, getTranslator(numberLexeme)(ctx), game.Number))
+	}
+
+	if game.Price > 0 {
+		price := strconv.Itoa(int(game.Price))
+		info.WriteString("💲 Стоимость игры: " + price + "₽\n")
+	}
+
 	info.WriteString("📍 Адрес: " + game.Place.Address + "\n")
 	info.WriteString("📅 Дата и время: " + game.DateTime().String() + "\n")
 	info.WriteString(fmt.Sprintf("👥 Количество игроков: %d/%d/%d", game.NumberOfPlayers, game.NumberOfLegioners, game.MaxPlayers))
