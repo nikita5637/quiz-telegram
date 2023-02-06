@@ -33,7 +33,7 @@ func TestFacade_GetUserByID(t *testing.T) {
 				Email: "email",
 				Name:  "name",
 				Phone: "phone",
-				State: registrator.UserState_USER_STATE_CHANGINE_NAME,
+				State: registrator.UserState_USER_STATE_CHANGING_NAME,
 			},
 		}, nil)
 
@@ -43,7 +43,7 @@ func TestFacade_GetUserByID(t *testing.T) {
 			Email: "email",
 			Name:  "name",
 			Phone: "phone",
-			State: int32(registrator.UserState_USER_STATE_CHANGINE_NAME),
+			State: int32(registrator.UserState_USER_STATE_CHANGING_NAME),
 		}, got)
 		assert.NoError(t, err)
 	})
@@ -73,7 +73,7 @@ func TestFacade_GetUserByTelegramID(t *testing.T) {
 				Email: "email",
 				Name:  "name",
 				Phone: "phone",
-				State: registrator.UserState_USER_STATE_CHANGINE_NAME,
+				State: registrator.UserState_USER_STATE_CHANGING_NAME,
 			},
 		}, nil)
 
@@ -83,7 +83,7 @@ func TestFacade_GetUserByTelegramID(t *testing.T) {
 			Email: "email",
 			Name:  "name",
 			Phone: "phone",
-			State: int32(registrator.UserState_USER_STATE_CHANGINE_NAME),
+			State: int32(registrator.UserState_USER_STATE_CHANGING_NAME),
 		}, got)
 		assert.NoError(t, err)
 	})

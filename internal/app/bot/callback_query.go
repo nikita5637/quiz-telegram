@@ -241,7 +241,7 @@ func (b *Bot) handleChangeEmail(ctx context.Context, update *tgbotapi.Update, te
 }
 
 func (b *Bot) handleChangeName(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
-	return b.updateUserState(ctx, update, int32(registrator.UserState_USER_STATE_CHANGINE_NAME))
+	return b.updateUserState(ctx, update, int32(registrator.UserState_USER_STATE_CHANGING_NAME))
 }
 
 func (b *Bot) handleChangePhone(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
@@ -1010,7 +1010,7 @@ func (b *Bot) updateUserState(ctx context.Context, update *tgbotapi.Update, stat
 	case registrator.UserState_USER_STATE_CHANGING_EMAIL:
 		msg = tgbotapi.NewMessage(clientID, getTranslator(enterYourEmailLexeme)(ctx))
 		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
-	case registrator.UserState_USER_STATE_CHANGINE_NAME:
+	case registrator.UserState_USER_STATE_CHANGING_NAME:
 		msg = tgbotapi.NewMessage(clientID, getTranslator(enterYourNameLexeme)(ctx))
 		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
 	case registrator.UserState_USER_STATE_CHANGING_PHONE:

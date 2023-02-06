@@ -315,7 +315,7 @@ func (b *Bot) handleDefaultMessage(ctx context.Context, update *tgbotapi.Update)
 		msg.ReplyMarkup = replyKeyboardMarkup(ctx)
 
 		_, err = b.bot.Send(msg)
-	case int32(registrator.UserState_USER_STATE_CHANGINE_NAME):
+	case int32(registrator.UserState_USER_STATE_CHANGING_NAME):
 		err = b.usersFacade.UpdateUserName(ctx, user.ID, update.Message.Text)
 		if err != nil {
 			return err

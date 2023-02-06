@@ -92,10 +92,10 @@ func TestFacade_UpdateUserState(t *testing.T) {
 
 		fx.registratorServiceClient.EXPECT().UpdateUserState(fx.ctx, &registrator.UpdateUserStateRequest{
 			UserId: 1,
-			State:  registrator.UserState_USER_STATE_CHANGINE_NAME,
+			State:  registrator.UserState_USER_STATE_CHANGING_NAME,
 		}).Return(nil, errors.New("some error"))
 
-		err := fx.facade.UpdateUserState(fx.ctx, 1, int32(registrator.UserState_USER_STATE_CHANGINE_NAME))
+		err := fx.facade.UpdateUserState(fx.ctx, 1, int32(registrator.UserState_USER_STATE_CHANGING_NAME))
 		assert.Error(t, err)
 	})
 
@@ -104,10 +104,10 @@ func TestFacade_UpdateUserState(t *testing.T) {
 
 		fx.registratorServiceClient.EXPECT().UpdateUserState(fx.ctx, &registrator.UpdateUserStateRequest{
 			UserId: 1,
-			State:  registrator.UserState_USER_STATE_CHANGINE_NAME,
+			State:  registrator.UserState_USER_STATE_CHANGING_NAME,
 		}).Return(nil, nil)
 
-		err := fx.facade.UpdateUserState(fx.ctx, 1, int32(registrator.UserState_USER_STATE_CHANGINE_NAME))
+		err := fx.facade.UpdateUserState(fx.ctx, 1, int32(registrator.UserState_USER_STATE_CHANGING_NAME))
 		assert.NoError(t, err)
 	})
 }
