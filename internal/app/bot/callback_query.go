@@ -14,21 +14,12 @@ import (
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	"github.com/nikita5637/quiz-telegram/internal/config"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/icons"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-)
-
-const (
-	cashIcon             = "💵"
-	freeIcon             = "🆓"
-	prevPageStringText   = "◀️"
-	registeredGameIcon   = "✅"
-	sharpIcon            = "#️⃣"
-	questionMarkIcon     = "❓"
-	unregisteredGameIcon = "❌"
 )
 
 var (
@@ -47,6 +38,10 @@ var (
 		},
 	}
 
+	addressLexeme = i18n.Lexeme{
+		Key:      "address",
+		FallBack: "Address",
+	}
 	cardLexeme = i18n.Lexeme{
 		Key:      "card",
 		FallBack: "Card",
@@ -59,6 +54,10 @@ var (
 		Key:      "certificate",
 		FallBack: "Certificate",
 	}
+	dateTimeLexeme = i18n.Lexeme{
+		Key:      "datetime",
+		FallBack: "Datetime",
+	}
 	enterYourEmailLexeme = i18n.Lexeme{
 		Key:      "enter_your_email",
 		FallBack: "OK. Enter your email.",
@@ -70,6 +69,10 @@ var (
 	enterYourPhoneLexeme = i18n.Lexeme{
 		Key:      "enter_your_phone",
 		FallBack: "OK. Enter your phone(format +79XXXXXXXXX).",
+	}
+	gameCostLexeme = i18n.Lexeme{
+		Key:      "game_cost",
+		FallBack: "Game cost",
 	}
 	gameNotFoundLexeme = i18n.Lexeme{
 		Key:      "game_not_found",
@@ -90,6 +93,10 @@ var (
 	numberLexeme = i18n.Lexeme{
 		Key:      "number",
 		FallBack: "Number",
+	}
+	numberOfPlayersLexeme = i18n.Lexeme{
+		Key:      "number_of_players",
+		FallBack: "Number of players",
 	}
 	paymentLexeme = i18n.Lexeme{
 		Key:      "payment",
@@ -265,10 +272,10 @@ func (b *Bot) handleGetGamesList(ctx context.Context, update *tgbotapi.Update, t
 		text := fmt.Sprintf(gameInfoFormatString, game.League.ShortName, game.Number, game.Place.ShortName, game.DateTime())
 
 		if game.My {
-			text = myGamePrefix + text
+			text = fmt.Sprintf("%s %s", icons.MyGame, text)
 		} else {
 			if game.NumberOfLegioners+game.NumberOfPlayers > 0 {
-				text = gameWithPlayersPrefix + text
+				text = fmt.Sprintf("%s %s", icons.GameWithPlayers, text)
 			}
 		}
 
@@ -439,7 +446,7 @@ func (b *Bot) handleGetListGamesWithPhotosNextPage(ctx context.Context, update *
 		}
 
 		btnPrev := tgbotapi.InlineKeyboardButton{
-			Text:         prevPageStringText,
+			Text:         icons.PrevPage,
 			CallbackData: &callbackData,
 		}
 		navigateButtonsRow = append(navigateButtonsRow, btnPrev)
@@ -463,7 +470,7 @@ func (b *Bot) handleGetListGamesWithPhotosNextPage(ctx context.Context, update *
 		}
 
 		btnNext := tgbotapi.InlineKeyboardButton{
-			Text:         nextPageStringText,
+			Text:         icons.NextPage,
 			CallbackData: &callbackData,
 		}
 		navigateButtonsRow = append(navigateButtonsRow, btnNext)
@@ -536,7 +543,7 @@ func (b *Bot) handleGetListGamesWithPhotosPrevPage(ctx context.Context, update *
 		}
 
 		btnPrev := tgbotapi.InlineKeyboardButton{
-			Text:         prevPageStringText,
+			Text:         icons.PrevPage,
 			CallbackData: &callbackData,
 		}
 		navigateButtonsRow = append(navigateButtonsRow, btnPrev)
@@ -560,7 +567,7 @@ func (b *Bot) handleGetListGamesWithPhotosPrevPage(ctx context.Context, update *
 		}
 
 		btnNext := tgbotapi.InlineKeyboardButton{
-			Text:         nextPageStringText,
+			Text:         icons.NextPage,
 			CallbackData: &callbackData,
 		}
 		navigateButtonsRow = append(navigateButtonsRow, btnNext)
@@ -1022,9 +1029,9 @@ func (b *Bot) updateUserState(ctx context.Context, update *tgbotapi.Update, stat
 
 func detailInfo(ctx context.Context, game model.Game) string {
 	info := strings.Builder{}
-	registerStatus := fmt.Sprintf("%s %s", unregisteredGameIcon, getTranslator(unregisteredGameLexeme)(ctx))
+	registerStatus := fmt.Sprintf("%s %s", icons.UnregisteredGame, getTranslator(unregisteredGameLexeme)(ctx))
 	if game.Registered {
-		registerStatus = fmt.Sprintf("%s %s", registeredGameIcon, getTranslator(registeredGameLexeme)(ctx))
+		registerStatus = fmt.Sprintf("%s %s", icons.RegisteredGame, getTranslator(registeredGameLexeme)(ctx))
 	}
 
 	info.WriteString(registerStatus + "\n")
@@ -1045,32 +1052,32 @@ func detailInfo(ctx context.Context, game model.Game) string {
 	}
 
 	if game.Payment != model.PaymentTypeInvalid {
-		paymentStatus := fmt.Sprintf("%s %s: %s (%s)", questionMarkIcon, getTranslator(paymentLexeme)(ctx), strings.ToLower(getTranslator(mixLexeme)(ctx)), paymentType)
+		paymentStatus := fmt.Sprintf("%s %s: %s (%s)", icons.MixGamePayment, getTranslator(paymentLexeme)(ctx), strings.ToLower(getTranslator(mixLexeme)(ctx)), paymentType)
 		if game.Payment == model.PaymentTypeCash {
-			paymentStatus = fmt.Sprintf("%s %s: %s", cashIcon, getTranslator(paymentLexeme)(ctx), paymentType)
+			paymentStatus = fmt.Sprintf("%s %s: %s", icons.CashGamePayment, getTranslator(paymentLexeme)(ctx), paymentType)
 		} else if game.Payment == model.PaymentTypeCertificate {
-			paymentStatus = fmt.Sprintf("%s %s: %s", freeIcon, getTranslator(paymentLexeme)(ctx), strings.ToLower(getTranslator(certificateLexeme)(ctx)))
+			paymentStatus = fmt.Sprintf("%s %s: %s", icons.FreeGamePayment, getTranslator(paymentLexeme)(ctx), strings.ToLower(getTranslator(certificateLexeme)(ctx)))
 		}
 
 		info.WriteString(paymentStatus + "\n")
 	} else {
-		info.WriteString(fmt.Sprintf("%s %s: %s\n", cashIcon, getTranslator(paymentLexeme)(ctx), paymentType))
+		info.WriteString(fmt.Sprintf("%s %s: %s\n", icons.CashGamePayment, getTranslator(paymentLexeme)(ctx), paymentType))
 	}
 
 	if game.Name != "" {
-		info.WriteString(fmt.Sprintf("%s %s: %s %s\n", sharpIcon, getTranslator(titleLexeme)(ctx), game.Name, game.Number))
+		info.WriteString(fmt.Sprintf("%s %s: %s %s\n", icons.Sharp, getTranslator(titleLexeme)(ctx), game.Name, game.Number))
 	} else {
-		info.WriteString(fmt.Sprintf("%s %s: %s\n", sharpIcon, getTranslator(numberLexeme)(ctx), game.Number))
+		info.WriteString(fmt.Sprintf("%s %s: %s\n", icons.Sharp, getTranslator(numberLexeme)(ctx), game.Number))
 	}
 
 	if game.Price > 0 {
 		price := strconv.Itoa(int(game.Price))
-		info.WriteString("💲 Стоимость игры: " + price + "₽\n")
+		info.WriteString(fmt.Sprintf("%s %s: %s₽\n", icons.USD, getTranslator(gameCostLexeme)(ctx), price))
 	}
 
-	info.WriteString("📍 Адрес: " + game.Place.Address + "\n")
-	info.WriteString("📅 Дата и время: " + game.DateTime().String() + "\n")
-	info.WriteString(fmt.Sprintf("👥 Количество игроков: %d/%d/%d", game.NumberOfPlayers, game.NumberOfLegioners, game.MaxPlayers))
+	info.WriteString(fmt.Sprintf("%s %s: %s\n", icons.Place, getTranslator(addressLexeme)(ctx), game.Place.Address))
+	info.WriteString(fmt.Sprintf("%s %s: %s\n", icons.Calendar, getTranslator(dateTimeLexeme)(ctx), game.DateTime().String()))
+	info.WriteString(fmt.Sprintf("%s %s: %d/%d/%d", icons.NumberOfPlayers, getTranslator(numberOfPlayersLexeme)(ctx), game.NumberOfPlayers, game.NumberOfLegioners, game.MaxPlayers))
 
 	return info.String()
 }

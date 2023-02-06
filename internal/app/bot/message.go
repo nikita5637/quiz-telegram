@@ -13,15 +13,13 @@ import (
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	"github.com/nikita5637/quiz-telegram/internal/config"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/icons"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
 )
 
 const (
 	gameInfoFormatString       = "%s %s %s %s\n"
-	gamePhotosInfoFormatString = "📸" + "%s" + gameInfoFormatString
-	gameWithPlayersPrefix      = "❗️ "
-	nextPageStringText         = "▶️"
-	myGamePrefix               = "ℹ️ "
+	gamePhotosInfoFormatString = icons.Photo + "%s" + gameInfoFormatString
 	settingFormatString        = "%s [%s]"
 )
 
@@ -396,7 +394,7 @@ func (b *Bot) getGamesWithPhotosMessage(ctx context.Context, update *tgbotapi.Up
 		}
 
 		btnNext := tgbotapi.InlineKeyboardButton{
-			Text:         nextPageStringText,
+			Text:         icons.NextPage,
 			CallbackData: &callbackData,
 		}
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnNext))
@@ -434,10 +432,10 @@ func (b *Bot) getListOfGamesMessage(ctx context.Context, update *tgbotapi.Update
 		text := fmt.Sprintf(gameInfoFormatString, game.League.ShortName, game.Number, game.Place.ShortName, game.Date)
 
 		if game.My {
-			text = myGamePrefix + text
+			text = fmt.Sprintf("%s %s", icons.MyGame, text)
 		} else {
 			if game.NumberOfLegioners+game.NumberOfPlayers > 0 {
-				text = gameWithPlayersPrefix + text
+				text = fmt.Sprintf("%s %s", icons.GameWithPlayers, text)
 			}
 		}
 
@@ -523,10 +521,10 @@ func (b *Bot) getListOfRegisteredGamesMessage(ctx context.Context, update *tgbot
 		text := fmt.Sprintf(gameInfoFormatString, game.League.ShortName, game.Number, game.Place.ShortName, game.DateTime())
 
 		if game.My {
-			text = myGamePrefix + text
+			text = fmt.Sprintf("%s %s", icons.MyGame, text)
 		} else {
 			if game.NumberOfLegioners+game.NumberOfPlayers > 0 {
-				text = gameWithPlayersPrefix + text
+				text = fmt.Sprintf("%s %s", icons.GameWithPlayers, text)
 			}
 		}
 

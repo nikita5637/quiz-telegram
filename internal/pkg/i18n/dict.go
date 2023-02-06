@@ -17,6 +17,7 @@ func Translate(ctx context.Context, key string, defaultString string) string {
 
 var dictionary = map[string]map[string]string{
 	"ru": {
+		"address":                            "Адрес",
 		"card":                               "Карта",
 		"cash":                               "Наличные",
 		"cash_game_payment":                  "Играем за деньги",
@@ -25,11 +26,13 @@ var dictionary = map[string]map[string]string{
 		"change_name":                        "Изменить имя",
 		"change_phone":                       "Изменить номер телефона",
 		"choose_a_game":                      "Выбери игру",
+		"datetime":                           "Дата и время",
 		"email_changed":                      "Email изменён",
 		"enter_your_email":                   "Окей. Введи свой email.",
 		"enter_your_name":                    "Окей. Введи своё имя.",
 		"enter_your_phone":                   "Окей. Введи свой номер телефона в формате +79XXXXXXXXXX.",
 		"free_game_payment":                  "Играем по сертификату",
+		"game_cost":                          "Стоимость игры",
 		"game_not_found":                     "Игра не найдена",
 		"game_photos":                        "Фотографии с игр",
 		"help_message":                       "Список доступных команд:\n/games - список всех игр\n/mygames - список игр, на которые ты идёшь\n/photos - фотографии с игр\n/registeredgames - список игр, на которые мы зарегистрированы\n/settings - настройки\n/help - помощь\n\nℹ️ - ты идёшь на эту игру\n❗️ - ты не идёшь на эту игру, но идут другие\n\nФормат игроков \"игроки/легионеры/всего может быть игроков\"",
@@ -51,6 +54,7 @@ var dictionary = map[string]map[string]string{
 		"name_changed":                       "Имя изменено",
 		"no_free_slot":                       "Нет свободных мест",
 		"number":                             "Номер",
+		"number_of_players":                  "Количество игроков",
 		"payment":                            "Оплата",
 		"permission_denied":                  "Доступ запрещён",
 		"phone_changed":                      "Номер телефона изменён",

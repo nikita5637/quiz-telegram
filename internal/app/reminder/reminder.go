@@ -9,16 +9,11 @@ import (
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	reminder "github.com/nikita5637/quiz-registrator-api/pkg/reminder"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/icons"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"google.golang.org/grpc"
-)
-
-const (
-	mapIcon  = "🗺"
-	noteIcon = "📝"
-	timeIcon = "🕑"
 )
 
 var (
@@ -145,9 +140,9 @@ func (r *Reminder) Start(ctx context.Context) error {
 					continue
 				}
 
-				text := fmt.Sprintf("%s %s\n", noteIcon, getTranslator(remindThatThereIsAGameTodayLexeme)(ctx))
-				text += fmt.Sprintf("%s %s: %s\n", timeIcon, getTranslator(timeLexeme)(ctx), model.DateTime(gameResp.GetGame().GetDate().AsTime()).Time())
-				text += fmt.Sprintf("%s %s: %s\n", mapIcon, getTranslator(placeLexeme)(ctx), placeResp.GetPlace().GetAddress())
+				text := fmt.Sprintf("%s %s\n", icons.Note, getTranslator(remindThatThereIsAGameTodayLexeme)(ctx))
+				text += fmt.Sprintf("%s %s: %s\n", icons.Time, getTranslator(timeLexeme)(ctx), model.DateTime(gameResp.GetGame().GetDate().AsTime()).Time())
+				text += fmt.Sprintf("%s %s: %s\n", icons.Place, getTranslator(placeLexeme)(ctx), placeResp.GetPlace().GetAddress())
 
 				for _, playerID := range gameRemind.PlayerIDs {
 					resp, err := r.registratorServiceClient.GetUserByID(ctx, &registrator.GetUserByIDRequest{

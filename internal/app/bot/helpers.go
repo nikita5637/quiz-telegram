@@ -9,24 +9,9 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/icons"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
-)
-
-const (
-	cashGamePaymentIcon     = "💵"
-	freeGamePaymentIcon     = "🆓"
-	legionerLikelyIcon      = "💁‍"
-	legionerUnlikelyIcon    = "💁‍"
-	legionerWillNotComeIcon = "🙅‍"
-	listOfPlayersIcon       = "📑"
-	lotteryIcon             = "🍀"
-	mixGamePaymentIcon      = "❓"
-	playerLikelyIcon        = "🙋‍"
-	playerUnlikelyIcon      = "🤷‍"
-	playerWillNotComeIcon   = "🙅‍"
-	prevPageIcon            = "◀️"
-	routeIcon               = "🗺"
 )
 
 var (
@@ -213,7 +198,7 @@ func (b *Bot) getGameMenuFirstPage(ctx context.Context, game model.Game) (tgbota
 	}
 
 	btnNextMenuPage := tgbotapi.InlineKeyboardButton{
-		Text:         nextPageStringText,
+		Text:         icons.NextPage,
 		CallbackData: &callbackData,
 	}
 
@@ -266,7 +251,7 @@ func (b *Bot) getGameMenuSecondPage(ctx context.Context, game model.Game) (tgbot
 	}
 
 	btnPrevMenuPage := tgbotapi.InlineKeyboardButton{
-		Text:         prevPageStringText,
+		Text:         icons.PrevPage,
 		CallbackData: &callbackData,
 	}
 
@@ -286,7 +271,7 @@ func (b *Bot) lotteryButton(ctx context.Context, gameID int32) (tgbotapi.InlineK
 	}
 
 	btn := tgbotapi.InlineKeyboardButton{
-		Text:         fmt.Sprintf("%s %s", lotteryIcon, getTranslator(registerForLotteryLexeme)(ctx)),
+		Text:         fmt.Sprintf("%s %s", icons.Lottery, getTranslator(registerForLotteryLexeme)(ctx)),
 		CallbackData: &callbackData,
 	}
 
@@ -299,13 +284,13 @@ func (b *Bot) nextPaymentButton(ctx context.Context, gameID int32, currentPaymen
 	switch currentPayment {
 	case model.PaymentTypeCash:
 		nextPayment = model.PaymentTypeCertificate
-		text = fmt.Sprintf("%s %s", freeGamePaymentIcon, getTranslator(freeGamePaymentLexeme)(ctx))
+		text = fmt.Sprintf("%s %s", icons.FreeGamePayment, getTranslator(freeGamePaymentLexeme)(ctx))
 	case model.PaymentTypeCertificate:
 		nextPayment = model.PaymentTypeMixed
-		text = fmt.Sprintf("%s %s", mixGamePaymentIcon, getTranslator(mixGamePaymentLexeme)(ctx))
+		text = fmt.Sprintf("%s %s", icons.MixGamePayment, getTranslator(mixGamePaymentLexeme)(ctx))
 	case model.PaymentTypeMixed:
 		nextPayment = model.PaymentTypeCash
-		text = fmt.Sprintf("%s %s", cashGamePaymentIcon, getTranslator(cashGamePaymentLexeme)(ctx))
+		text = fmt.Sprintf("%s %s", icons.CashGamePayment, getTranslator(cashGamePaymentLexeme)(ctx))
 	}
 
 	payload := &UpdatePaymentData{
@@ -337,7 +322,7 @@ func (b *Bot) playersListButton(ctx context.Context, gameID int32) (tgbotapi.Inl
 	}
 
 	btn := tgbotapi.InlineKeyboardButton{
-		Text:         fmt.Sprintf("%s %s", listOfPlayersIcon, getTranslator(listOfPlayersLexeme)(ctx)),
+		Text:         fmt.Sprintf("%s %s", icons.ListOfPlayers, getTranslator(listOfPlayersLexeme)(ctx)),
 		CallbackData: &callbackData,
 	}
 
@@ -355,7 +340,7 @@ func (b *Bot) registerGameButton(ctx context.Context, gameID int32) (tgbotapi.In
 	}
 
 	btn := tgbotapi.InlineKeyboardButton{
-		Text:         fmt.Sprintf("%s %s", registeredGameIcon, getTranslator(registeredGameLexeme)(ctx)),
+		Text:         fmt.Sprintf("%s %s", icons.RegisteredGame, getTranslator(registeredGameLexeme)(ctx)),
 		CallbackData: &callbackData,
 	}
 
@@ -376,16 +361,16 @@ func (b *Bot) registerPlayerButton(ctx context.Context, gameID int32, playerType
 
 	text := ""
 	if playerType == registrator.PlayerType_PLAYER_TYPE_MAIN && degree == registrator.Degree_DEGREE_LIKELY {
-		text = fmt.Sprintf("%s %s", playerLikelyIcon, getTranslator(playerIsLikelyToComeLexeme)(ctx))
+		text = fmt.Sprintf("%s %s", icons.PlayerLikely, getTranslator(playerIsLikelyToComeLexeme)(ctx))
 	}
 	if playerType == registrator.PlayerType_PLAYER_TYPE_MAIN && degree == registrator.Degree_DEGREE_UNLIKELY {
-		text = fmt.Sprintf("%s %s", playerUnlikelyIcon, getTranslator(playerIsUnlikelyToComeLexeme)(ctx))
+		text = fmt.Sprintf("%s %s", icons.PlayerUnlikely, getTranslator(playerIsUnlikelyToComeLexeme)(ctx))
 	}
 	if playerType == registrator.PlayerType_PLAYER_TYPE_LEGIONER && degree == registrator.Degree_DEGREE_LIKELY {
-		text = fmt.Sprintf("%s %s", legionerLikelyIcon, getTranslator(legionerIsLikelyToComeLexeme)(ctx))
+		text = fmt.Sprintf("%s %s", icons.LegionerLikely, getTranslator(legionerIsLikelyToComeLexeme)(ctx))
 	}
 	if playerType == registrator.PlayerType_PLAYER_TYPE_LEGIONER && degree == registrator.Degree_DEGREE_UNLIKELY {
-		text = fmt.Sprintf("%s %s", legionerUnlikelyIcon, getTranslator(legionerIsUnlikelyToComeLexeme)(ctx))
+		text = fmt.Sprintf("%s %s", icons.LegionerUnlikely, getTranslator(legionerIsUnlikelyToComeLexeme)(ctx))
 	}
 	btn := tgbotapi.InlineKeyboardButton{
 		Text:         text,
@@ -406,7 +391,7 @@ func (b *Bot) unregisterGameButton(ctx context.Context, gameID int32) (tgbotapi.
 	}
 
 	btn := tgbotapi.InlineKeyboardButton{
-		Text:         fmt.Sprintf("%s %s", unregisteredGameIcon, getTranslator(unregisteredGameLexeme)(ctx)),
+		Text:         fmt.Sprintf("%s %s", icons.UnregisteredGame, getTranslator(unregisteredGameLexeme)(ctx)),
 		CallbackData: &callbackData,
 	}
 
@@ -426,10 +411,10 @@ func (b *Bot) unregisterPlayerButton(ctx context.Context, gameID int32, playerTy
 
 	text := ""
 	if playerType == registrator.PlayerType_PLAYER_TYPE_MAIN {
-		text = fmt.Sprintf("%s %s", playerWillNotComeIcon, getTranslator(playerWillNotComeLexeme)(ctx))
+		text = fmt.Sprintf("%s %s", icons.PlayerWillNotCome, getTranslator(playerWillNotComeLexeme)(ctx))
 	}
 	if playerType == registrator.PlayerType_PLAYER_TYPE_LEGIONER {
-		text = fmt.Sprintf("%s %s", legionerWillNotComeIcon, getTranslator(legionerWillNotComeLexeme)(ctx))
+		text = fmt.Sprintf("%s %s", icons.LegionerWillNotCome, getTranslator(legionerWillNotComeLexeme)(ctx))
 	}
 	btn := tgbotapi.InlineKeyboardButton{
 		Text:         text,
@@ -449,7 +434,7 @@ func (b *Bot) venueButton(ctx context.Context, placeID int32) (tgbotapi.InlineKe
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
 
-	text := fmt.Sprintf("%s %s", routeIcon, getTranslator(routeToBarLexeme)(ctx))
+	text := fmt.Sprintf("%s %s", icons.Route, getTranslator(routeToBarLexeme)(ctx))
 
 	return tgbotapi.InlineKeyboardButton{
 		Text:         text,
