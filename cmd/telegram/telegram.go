@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -195,12 +196,23 @@ func main() {
 		}
 		defer rabbitMQChannel.Close()
 
+		gameReminderQueueName := config.GetValue("RabbitMQGameReminderQueueName").String()
+		if gameReminderQueueName == "" {
+			return errors.New("empty rabbit MQ game reminder queue name")
+		}
+
+		lotteryReminderQueueName := config.GetValue("RabbitMQLotteryReminderQueueName").String()
+		if lotteryReminderQueueName == "" {
+			return errors.New("empty rabbit MQ lottery reminder queue name")
+		}
+
 		reminderConfig := reminder.Config{
-			Bot:                   bot,
-			GameReminderQueueName: config.GetValue("RabbitMQGameReminderQueueName").String(),
-			RabbitMQChannel:       rabbitMQChannel,
-			RegistratorAPIAddress: registratorAPIAddress,
-			RegistratorAPIPort:    registratorAPIPort,
+			Bot:                      bot,
+			GameReminderQueueName:    gameReminderQueueName,
+			LotteryReminderQueueName: lotteryReminderQueueName,
+			RabbitMQChannel:          rabbitMQChannel,
+			RegistratorAPIAddress:    registratorAPIAddress,
+			RegistratorAPIPort:       registratorAPIPort,
 		}
 		reminder := reminder.New(reminderConfig)
 

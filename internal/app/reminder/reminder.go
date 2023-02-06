@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 
+	callbackdata_utils "github.com/nikita5637/quiz-telegram/internal/pkg/utils/callbackdata"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	reminder "github.com/nikita5637/quiz-registrator-api/pkg/reminder"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/commands"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/icons"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
@@ -21,9 +24,17 @@ var (
 		Key:      "place",
 		FallBack: "Place",
 	}
+	registerForLotteryLexeme = i18n.Lexeme{
+		Key:      "register_for_lottery",
+		FallBack: "Register for lottery",
+	}
 	remindThatThereIsAGameTodayLexeme = i18n.Lexeme{
 		Key:      "remind_that_there_is_a_game_today",
 		FallBack: "Remind that there is a game today",
+	}
+	remindThatThereIsALotteryLexeme = i18n.Lexeme{
+		Key:      "remind_that_there_is_a_lottery",
+		FallBack: "Remind that there is a lottery",
 	}
 	timeLexeme = i18n.Lexeme{
 		Key:      "time",
@@ -48,6 +59,7 @@ type TelegramBot interface { // nolint:revive
 type Reminder struct {
 	bot                      TelegramBot // *tgbotapi.BotAPI
 	gameReminderQueueName    string
+	lotteryReminderQueueName string
 	rabbitMQChanel           *amqp.Channel
 	registratorAPIAddress    string
 	registratorAPIPort       uint16
@@ -56,21 +68,23 @@ type Reminder struct {
 
 // Config ...
 type Config struct {
-	Bot                   TelegramBot // *tgbotapi.BotAPI
-	GameReminderQueueName string
-	RabbitMQChannel       *amqp.Channel
-	RegistratorAPIAddress string
-	RegistratorAPIPort    uint16
+	Bot                      TelegramBot // *tgbotapi.BotAPI
+	GameReminderQueueName    string
+	LotteryReminderQueueName string
+	RabbitMQChannel          *amqp.Channel
+	RegistratorAPIAddress    string
+	RegistratorAPIPort       uint16
 }
 
 // New ...
 func New(cfg Config) *Reminder {
 	return &Reminder{
-		bot:                   cfg.Bot,
-		gameReminderQueueName: cfg.GameReminderQueueName,
-		rabbitMQChanel:        cfg.RabbitMQChannel,
-		registratorAPIAddress: cfg.RegistratorAPIAddress,
-		registratorAPIPort:    cfg.RegistratorAPIPort,
+		bot:                      cfg.Bot,
+		gameReminderQueueName:    cfg.GameReminderQueueName,
+		lotteryReminderQueueName: cfg.LotteryReminderQueueName,
+		rabbitMQChanel:           cfg.RabbitMQChannel,
+		registratorAPIAddress:    cfg.RegistratorAPIAddress,
+		registratorAPIPort:       cfg.RegistratorAPIPort,
 	}
 }
 
@@ -112,10 +126,35 @@ func (r *Reminder) Start(ctx context.Context) error {
 		return err
 	}
 
+	lotteryReminderQueue, err := r.rabbitMQChanel.QueueDeclare(
+		r.lotteryReminderQueueName,
+		false,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	lotteryReminderMessages, err := r.rabbitMQChanel.Consume(
+		lotteryReminderQueue.Name,
+		"",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
 	go func(ctx context.Context) {
 		go func(ctx context.Context) {
 			for d := range gameReminderMessages {
-				logger.Debugf(ctx, "accepted new game remind message: %s", d.Body)
+				logger.InfoKV(ctx, "accepted new game reminder message", "message", d.Body)
 
 				gameRemind := &reminder.Game{}
 				err := json.Unmarshal(d.Body, gameRemind)
@@ -156,7 +195,7 @@ func (r *Reminder) Start(ctx context.Context) error {
 					textMessage := tgbotapi.NewMessage(resp.GetUser().GetTelegramId(), text)
 					_, err = r.bot.Send(textMessage)
 					if err != nil {
-						logger.Errorf(ctx, "send game remind text message error: %s", err.Error())
+						logger.Errorf(ctx, "send game reminder text message error: %s", err.Error())
 						continue
 					}
 
@@ -168,7 +207,63 @@ func (r *Reminder) Start(ctx context.Context) error {
 					)
 					_, err = r.bot.Request(venueMessage)
 					if err != nil {
-						logger.Errorf(ctx, "send game remind venue message error: %s", err.Error())
+						logger.Errorf(ctx, "send game reminder venue message error: %s", err.Error())
+						continue
+					}
+				}
+			}
+		}(ctx)
+
+		go func(ctx context.Context) {
+			for d := range lotteryReminderMessages {
+				logger.InfoKV(ctx, "accepted new lottery reminder message", "message", d.Body)
+
+				lotteryRemind := &reminder.Lottery{}
+				err := json.Unmarshal(d.Body, lotteryRemind)
+				if err != nil {
+					logger.Errorf(ctx, "get lottery remind error: %s", err.Error())
+					continue
+				}
+
+				for _, playerID := range lotteryRemind.PlayerIDs {
+					resp, err := r.registratorServiceClient.GetUserByID(ctx, &registrator.GetUserByIDRequest{
+						Id: playerID,
+					})
+					if err != nil {
+						logger.Errorf(ctx, "get user by ID error: %s", err.Error())
+						continue
+					}
+
+					text := fmt.Sprintf("%s %s\n", icons.Note, i18n.GetTranslator(remindThatThereIsALotteryLexeme)(ctx))
+					textMessage := tgbotapi.NewMessage(resp.GetUser().GetTelegramId(), text)
+
+					payload := &commands.LotteryData{
+						GameID: lotteryRemind.GameID,
+					}
+
+					callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandLottery, payload)
+					if err != nil {
+						logger.Errorf(ctx, "get callback data error: %s", err.Error())
+						continue
+					}
+
+					btnLottery := tgbotapi.InlineKeyboardButton{
+						Text:         fmt.Sprintf("%s %s", icons.Lottery, i18n.GetTranslator(registerForLotteryLexeme)(ctx)),
+						CallbackData: &callbackData,
+					}
+
+					replyMarkup := &tgbotapi.InlineKeyboardMarkup{
+						InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{
+							{
+								btnLottery,
+							},
+						},
+					}
+					textMessage.ReplyMarkup = replyMarkup
+
+					_, err = r.bot.Send(textMessage)
+					if err != nil {
+						logger.Errorf(ctx, "send lottery reminder message error: %s", err.Error())
 						continue
 					}
 				}

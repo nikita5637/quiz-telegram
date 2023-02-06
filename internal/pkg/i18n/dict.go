@@ -68,6 +68,7 @@ var dictionary = map[string]map[string]string{
 		"registered_games":                   "Зарегистрированные игры",
 		"registration_for_a_game":            "Регистрация на игры",
 		"remind_that_there_is_a_game_today":  "Напоминаю, что сегодня играем",
+		"remind_that_there_is_a_lottery":     "Напоминаю о регистрации в лотерее",
 		"route_to_bar":                       "Маршрут до бара",
 		"settings":                           "Настройки",
 		"something_went_wrong":               "Что-то пошло не так",
