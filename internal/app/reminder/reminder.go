@@ -210,6 +210,8 @@ func (r *Reminder) Start(ctx context.Context) error {
 						logger.Errorf(ctx, "send game reminder venue message error: %s", err.Error())
 						continue
 					}
+
+					logger.InfoKV(ctx, "sent game reminder messages to user", "user", resp.GetUser())
 				}
 			}
 		}(ctx)
@@ -235,7 +237,7 @@ func (r *Reminder) Start(ctx context.Context) error {
 					}
 
 					text := fmt.Sprintf("%s %s\n", icons.Note, i18n.GetTranslator(remindThatThereIsALotteryLexeme)(ctx))
-					textMessage := tgbotapi.NewMessage(resp.GetUser().GetTelegramId(), text)
+					msg := tgbotapi.NewMessage(resp.GetUser().GetTelegramId(), text)
 
 					payload := &commands.LotteryData{
 						GameID: lotteryRemind.GameID,
@@ -259,13 +261,15 @@ func (r *Reminder) Start(ctx context.Context) error {
 							},
 						},
 					}
-					textMessage.ReplyMarkup = replyMarkup
+					msg.ReplyMarkup = replyMarkup
 
-					_, err = r.bot.Send(textMessage)
+					_, err = r.bot.Send(msg)
 					if err != nil {
 						logger.Errorf(ctx, "send lottery reminder message error: %s", err.Error())
 						continue
 					}
+
+					logger.InfoKV(ctx, "sent lottery reminder message to user", "user", resp.GetUser())
 				}
 			}
 		}(ctx)
