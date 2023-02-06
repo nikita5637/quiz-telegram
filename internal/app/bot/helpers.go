@@ -2,16 +2,15 @@ package bot
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
+
+	callbackdata_utils "github.com/nikita5637/quiz-telegram/internal/pkg/utils/callbackdata"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/commands"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/icons"
-	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 )
 
@@ -193,7 +192,7 @@ func (b *Bot) getGameMenuFirstPage(ctx context.Context, game model.Game) (tgbota
 	}
 
 	var callbackData string
-	callbackData, err = getCallbackData(ctx, commands.CommandGetGame, getGameData)
+	callbackData, err = callbackdata_utils.GetCallbackData(ctx, commands.CommandGetGame, getGameData)
 	if err != nil {
 		return tgbotapi.InlineKeyboardMarkup{}, err
 	}
@@ -246,7 +245,7 @@ func (b *Bot) getGameMenuSecondPage(ctx context.Context, game model.Game) (tgbot
 	}
 
 	var callbackData string
-	callbackData, err = getCallbackData(ctx, commands.CommandGetGame, getGameData)
+	callbackData, err = callbackdata_utils.GetCallbackData(ctx, commands.CommandGetGame, getGameData)
 	if err != nil {
 		return tgbotapi.InlineKeyboardMarkup{}, err
 	}
@@ -266,7 +265,7 @@ func (b *Bot) lotteryButton(ctx context.Context, gameID int32) (tgbotapi.InlineK
 		GameID: gameID,
 	}
 
-	callbackData, err := getCallbackData(ctx, commands.CommandLottery, payload)
+	callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandLottery, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
@@ -299,7 +298,7 @@ func (b *Bot) nextPaymentButton(ctx context.Context, gameID int32, currentPaymen
 		Payment: int32(nextPayment),
 	}
 
-	callbackData, err := getCallbackData(ctx, commands.CommandUpdatePayment, payload)
+	callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandUpdatePayment, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
@@ -317,7 +316,7 @@ func (b *Bot) playersListButton(ctx context.Context, gameID int32) (tgbotapi.Inl
 		GameID: gameID,
 	}
 
-	callbackData, err := getCallbackData(ctx, commands.CommandPlayersListByGame, payload)
+	callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandPlayersListByGame, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
@@ -335,7 +334,7 @@ func (b *Bot) registerGameButton(ctx context.Context, gameID int32) (tgbotapi.In
 		GameID: gameID,
 	}
 
-	callbackData, err := getCallbackData(ctx, commands.CommandRegisterGame, payload)
+	callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandRegisterGame, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
@@ -355,7 +354,7 @@ func (b *Bot) registerPlayerButton(ctx context.Context, gameID int32, playerType
 		Degree:     int32(degree),
 	}
 
-	callbackData, err := getCallbackData(ctx, commands.CommandRegisterPlayer, payload)
+	callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandRegisterPlayer, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
@@ -386,7 +385,7 @@ func (b *Bot) unregisterGameButton(ctx context.Context, gameID int32) (tgbotapi.
 		GameID: gameID,
 	}
 
-	callbackData, err := getCallbackData(ctx, commands.CommandUnregisterGame, payload)
+	callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandUnregisterGame, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
@@ -405,7 +404,7 @@ func (b *Bot) unregisterPlayerButton(ctx context.Context, gameID int32, playerTy
 		PlayerType: int32(playerType),
 	}
 
-	callbackData, err := getCallbackData(ctx, commands.CommandUnregisterPlayer, payload)
+	callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandUnregisterPlayer, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
@@ -430,7 +429,7 @@ func (b *Bot) venueButton(ctx context.Context, placeID int32) (tgbotapi.InlineKe
 		PlaceID: placeID,
 	}
 
-	callbackData, err := getCallbackData(ctx, commands.CommandGetVenue, payload)
+	callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandGetVenue, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
@@ -441,30 +440,6 @@ func (b *Bot) venueButton(ctx context.Context, placeID int32) (tgbotapi.InlineKe
 		Text:         text,
 		CallbackData: &callbackData,
 	}, nil
-}
-
-func getCallbackData(ctx context.Context, command commands.Command, payload interface{}) (string, error) {
-	body, err := json.Marshal(payload)
-	if err != nil {
-		return "", err
-	}
-
-	req := commands.TelegramRequest{
-		Command: command,
-		Body:    body,
-	}
-
-	callbackData, err := json.Marshal(req)
-	if err != nil {
-		return "", err
-	}
-
-	if len(callbackData) > 64 {
-		logger.ErrorKV(ctx, "callback data too long", "data", callbackData)
-		return "", errors.New("callback data too long")
-	}
-
-	return string(callbackData), nil
 }
 
 func replyKeyboardMarkup(ctx context.Context) tgbotapi.ReplyKeyboardMarkup {

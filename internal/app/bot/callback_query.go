@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	callbackdata_utils "github.com/nikita5637/quiz-telegram/internal/pkg/utils/callbackdata"
 	telegram_utils "github.com/nikita5637/quiz-telegram/utils/telegram"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -265,7 +266,7 @@ func (b *Bot) handleGetGamesList(ctx context.Context, update *tgbotapi.Update, t
 		}
 
 		var callbackData string
-		callbackData, err = getCallbackData(ctx, commands.CommandGetGame, payload)
+		callbackData, err = callbackdata_utils.GetCallbackData(ctx, commands.CommandGetGame, payload)
 		if err != nil {
 			return err
 		}
@@ -413,7 +414,7 @@ func (b *Bot) handleGetListGamesWithPhotosNextPage(ctx context.Context, update *
 		}
 
 		var callbackData string
-		callbackData, err = getCallbackData(ctx, commands.CommandGetGamePhotos, payload)
+		callbackData, err = callbackdata_utils.GetCallbackData(ctx, commands.CommandGetGamePhotos, payload)
 		if err != nil {
 			return err
 		}
@@ -441,7 +442,7 @@ func (b *Bot) handleGetListGamesWithPhotosNextPage(ctx context.Context, update *
 		}
 
 		var callbackData string
-		callbackData, err = getCallbackData(ctx, commands.CommandGetListGamesWithPhotosPrevPage, payload)
+		callbackData, err = callbackdata_utils.GetCallbackData(ctx, commands.CommandGetListGamesWithPhotosPrevPage, payload)
 		if err != nil {
 			return err
 		}
@@ -465,7 +466,7 @@ func (b *Bot) handleGetListGamesWithPhotosNextPage(ctx context.Context, update *
 		}
 
 		var callbackData string
-		callbackData, err = getCallbackData(ctx, commands.CommandGetListGamesWithPhotosNextPage, payload)
+		callbackData, err = callbackdata_utils.GetCallbackData(ctx, commands.CommandGetListGamesWithPhotosNextPage, payload)
 		if err != nil {
 			return err
 		}
@@ -510,7 +511,7 @@ func (b *Bot) handleGetListGamesWithPhotosPrevPage(ctx context.Context, update *
 		}
 
 		var callbackData string
-		callbackData, err = getCallbackData(ctx, commands.CommandGetGamePhotos, payload)
+		callbackData, err = callbackdata_utils.GetCallbackData(ctx, commands.CommandGetGamePhotos, payload)
 		if err != nil {
 			return err
 		}
@@ -538,7 +539,7 @@ func (b *Bot) handleGetListGamesWithPhotosPrevPage(ctx context.Context, update *
 		}
 
 		var callbackData string
-		callbackData, err = getCallbackData(ctx, commands.CommandGetListGamesWithPhotosPrevPage, payload)
+		callbackData, err = callbackdata_utils.GetCallbackData(ctx, commands.CommandGetListGamesWithPhotosPrevPage, payload)
 		if err != nil {
 			return err
 		}
@@ -562,7 +563,7 @@ func (b *Bot) handleGetListGamesWithPhotosPrevPage(ctx context.Context, update *
 		}
 
 		var callbackData string
-		callbackData, err = getCallbackData(ctx, commands.CommandGetListGamesWithPhotosNextPage, payload)
+		callbackData, err = callbackdata_utils.GetCallbackData(ctx, commands.CommandGetListGamesWithPhotosNextPage, payload)
 		if err != nil {
 			return err
 		}
