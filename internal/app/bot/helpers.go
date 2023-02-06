@@ -8,6 +8,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/commands"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/icons"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
@@ -186,13 +187,13 @@ func (b *Bot) getGameMenuFirstPage(ctx context.Context, game model.Game) (tgbota
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnUnregisterGame))
 	}
 
-	getGameData := &GetGameData{
+	getGameData := &commands.GetGameData{
 		GameID:    game.ID,
 		PageIndex: 1,
 	}
 
 	var callbackData string
-	callbackData, err = getCallbackData(ctx, CommandGetGame, getGameData)
+	callbackData, err = getCallbackData(ctx, commands.CommandGetGame, getGameData)
 	if err != nil {
 		return tgbotapi.InlineKeyboardMarkup{}, err
 	}
@@ -239,13 +240,13 @@ func (b *Bot) getGameMenuSecondPage(ctx context.Context, game model.Game) (tgbot
 		rows = append(rows, barButtonsRow)
 	}
 
-	getGameData := &GetGameData{
+	getGameData := &commands.GetGameData{
 		GameID:    game.ID,
 		PageIndex: 0,
 	}
 
 	var callbackData string
-	callbackData, err = getCallbackData(ctx, CommandGetGame, getGameData)
+	callbackData, err = getCallbackData(ctx, commands.CommandGetGame, getGameData)
 	if err != nil {
 		return tgbotapi.InlineKeyboardMarkup{}, err
 	}
@@ -261,11 +262,11 @@ func (b *Bot) getGameMenuSecondPage(ctx context.Context, game model.Game) (tgbot
 }
 
 func (b *Bot) lotteryButton(ctx context.Context, gameID int32) (tgbotapi.InlineKeyboardButton, error) {
-	payload := &LotteryData{
+	payload := &commands.LotteryData{
 		GameID: gameID,
 	}
 
-	callbackData, err := getCallbackData(ctx, CommandLottery, payload)
+	callbackData, err := getCallbackData(ctx, commands.CommandLottery, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
@@ -293,12 +294,12 @@ func (b *Bot) nextPaymentButton(ctx context.Context, gameID int32, currentPaymen
 		text = fmt.Sprintf("%s %s", icons.CashGamePayment, getTranslator(cashGamePaymentLexeme)(ctx))
 	}
 
-	payload := &UpdatePaymentData{
+	payload := &commands.UpdatePaymentData{
 		GameID:  gameID,
 		Payment: int32(nextPayment),
 	}
 
-	callbackData, err := getCallbackData(ctx, CommandUpdatePayment, payload)
+	callbackData, err := getCallbackData(ctx, commands.CommandUpdatePayment, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
@@ -312,11 +313,11 @@ func (b *Bot) nextPaymentButton(ctx context.Context, gameID int32, currentPaymen
 }
 
 func (b *Bot) playersListButton(ctx context.Context, gameID int32) (tgbotapi.InlineKeyboardButton, error) {
-	payload := &PlayersListByGameData{
+	payload := &commands.PlayersListByGameData{
 		GameID: gameID,
 	}
 
-	callbackData, err := getCallbackData(ctx, CommandPlayersListByGame, payload)
+	callbackData, err := getCallbackData(ctx, commands.CommandPlayersListByGame, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
@@ -330,11 +331,11 @@ func (b *Bot) playersListButton(ctx context.Context, gameID int32) (tgbotapi.Inl
 }
 
 func (b *Bot) registerGameButton(ctx context.Context, gameID int32) (tgbotapi.InlineKeyboardButton, error) {
-	payload := &RegisterGameData{
+	payload := &commands.RegisterGameData{
 		GameID: gameID,
 	}
 
-	callbackData, err := getCallbackData(ctx, CommandRegisterGame, payload)
+	callbackData, err := getCallbackData(ctx, commands.CommandRegisterGame, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
@@ -348,13 +349,13 @@ func (b *Bot) registerGameButton(ctx context.Context, gameID int32) (tgbotapi.In
 }
 
 func (b *Bot) registerPlayerButton(ctx context.Context, gameID int32, playerType registrator.PlayerType, degree registrator.Degree) (tgbotapi.InlineKeyboardButton, error) {
-	payload := &RegisterPlayerData{
+	payload := &commands.RegisterPlayerData{
 		GameID:     gameID,
 		PlayerType: int32(playerType),
 		Degree:     int32(degree),
 	}
 
-	callbackData, err := getCallbackData(ctx, CommandRegisterPlayer, payload)
+	callbackData, err := getCallbackData(ctx, commands.CommandRegisterPlayer, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
@@ -381,11 +382,11 @@ func (b *Bot) registerPlayerButton(ctx context.Context, gameID int32, playerType
 }
 
 func (b *Bot) unregisterGameButton(ctx context.Context, gameID int32) (tgbotapi.InlineKeyboardButton, error) {
-	payload := &UnregisterGameData{
+	payload := &commands.UnregisterGameData{
 		GameID: gameID,
 	}
 
-	callbackData, err := getCallbackData(ctx, CommandUnregisterGame, payload)
+	callbackData, err := getCallbackData(ctx, commands.CommandUnregisterGame, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
@@ -399,12 +400,12 @@ func (b *Bot) unregisterGameButton(ctx context.Context, gameID int32) (tgbotapi.
 }
 
 func (b *Bot) unregisterPlayerButton(ctx context.Context, gameID int32, playerType registrator.PlayerType) (tgbotapi.InlineKeyboardButton, error) {
-	payload := &UnregisterPlayerData{
+	payload := &commands.UnregisterPlayerData{
 		GameID:     gameID,
 		PlayerType: int32(playerType),
 	}
 
-	callbackData, err := getCallbackData(ctx, CommandUnregisterPlayer, payload)
+	callbackData, err := getCallbackData(ctx, commands.CommandUnregisterPlayer, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
@@ -425,11 +426,11 @@ func (b *Bot) unregisterPlayerButton(ctx context.Context, gameID int32, playerTy
 }
 
 func (b *Bot) venueButton(ctx context.Context, placeID int32) (tgbotapi.InlineKeyboardButton, error) {
-	payload := GetVenueData{
+	payload := commands.GetVenueData{
 		PlaceID: placeID,
 	}
 
-	callbackData, err := getCallbackData(ctx, CommandGetVenue, payload)
+	callbackData, err := getCallbackData(ctx, commands.CommandGetVenue, payload)
 	if err != nil {
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
@@ -448,13 +449,13 @@ func getTranslator(lexeme i18n.Lexeme) func(ctx context.Context) string {
 	}
 }
 
-func getCallbackData(ctx context.Context, command Command, payload interface{}) (string, error) {
+func getCallbackData(ctx context.Context, command commands.Command, payload interface{}) (string, error) {
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return "", err
 	}
 
-	req := TelegramRequest{
+	req := commands.TelegramRequest{
 		Command: command,
 		Body:    body,
 	}

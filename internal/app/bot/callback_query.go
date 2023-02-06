@@ -13,6 +13,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	"github.com/nikita5637/quiz-telegram/internal/config"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/commands"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/icons"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
@@ -152,7 +153,7 @@ func (b *Bot) HandleCallbackQuery(ctx context.Context, update *tgbotapi.Update) 
 		return err
 	}
 
-	telegramRequest := TelegramRequest{}
+	telegramRequest := commands.TelegramRequest{}
 
 	err = json.Unmarshal([]byte(update.CallbackData()), &telegramRequest)
 	if err != nil {
@@ -162,67 +163,67 @@ func (b *Bot) HandleCallbackQuery(ctx context.Context, update *tgbotapi.Update) 
 	type handlerFunc func(ctx context.Context) error
 	var handler handlerFunc
 	switch telegramRequest.Command {
-	case CommandChangeEmail:
+	case commands.CommandChangeEmail:
 		handler = func(ctx context.Context) error {
 			return b.handleChangeEmail(ctx, update, telegramRequest)
 		}
-	case CommandChangeName:
+	case commands.CommandChangeName:
 		handler = func(ctx context.Context) error {
 			return b.handleChangeName(ctx, update, telegramRequest)
 		}
-	case CommandChangePhone:
+	case commands.CommandChangePhone:
 		handler = func(ctx context.Context) error {
 			return b.handleChangePhone(ctx, update, telegramRequest)
 		}
-	case CommandGetGamesList:
+	case commands.CommandGetGamesList:
 		handler = func(ctx context.Context) error {
 			return b.handleGetGamesList(ctx, update, telegramRequest)
 		}
-	case CommandGetGame:
+	case commands.CommandGetGame:
 		handler = func(ctx context.Context) error {
 			return b.handleGetGame(ctx, update, telegramRequest)
 		}
-	case CommandGetGamePhotos:
+	case commands.CommandGetGamePhotos:
 		handler = func(ctx context.Context) error {
 			return b.handleGetGamePhotos(ctx, update, telegramRequest)
 		}
-	case CommandGetListGamesWithPhotosNextPage:
+	case commands.CommandGetListGamesWithPhotosNextPage:
 		handler = func(ctx context.Context) error {
 			return b.handleGetListGamesWithPhotosNextPage(ctx, update, telegramRequest)
 		}
-	case CommandGetListGamesWithPhotosPrevPage:
+	case commands.CommandGetListGamesWithPhotosPrevPage:
 		handler = func(ctx context.Context) error {
 			return b.handleGetListGamesWithPhotosPrevPage(ctx, update, telegramRequest)
 		}
-	case CommandGetVenue:
+	case commands.CommandGetVenue:
 		handler = func(ctx context.Context) error {
 			return b.handleGetVenue(ctx, update, telegramRequest)
 		}
-	case CommandLottery:
+	case commands.CommandLottery:
 		handler = func(ctx context.Context) error {
 			return b.handleLottery(ctx, update, telegramRequest)
 		}
-	case CommandPlayersListByGame:
+	case commands.CommandPlayersListByGame:
 		handler = func(ctx context.Context) error {
 			return b.handlePlayersList(ctx, update, telegramRequest)
 		}
-	case CommandRegisterGame:
+	case commands.CommandRegisterGame:
 		handler = func(ctx context.Context) error {
 			return b.handleRegisterGame(ctx, update, telegramRequest)
 		}
-	case CommandRegisterPlayer:
+	case commands.CommandRegisterPlayer:
 		handler = func(ctx context.Context) error {
 			return b.handleRegisterPlayer(ctx, update, telegramRequest)
 		}
-	case CommandUnregisterGame:
+	case commands.CommandUnregisterGame:
 		handler = func(ctx context.Context) error {
 			return b.handleUnregisterGame(ctx, update, telegramRequest)
 		}
-	case CommandUnregisterPlayer:
+	case commands.CommandUnregisterPlayer:
 		handler = func(ctx context.Context) error {
 			return b.handleUnregisterPlayer(ctx, update, telegramRequest)
 		}
-	case CommandUpdatePayment:
+	case commands.CommandUpdatePayment:
 		handler = func(ctx context.Context) error {
 			return b.handleUpdatePayment(ctx, update, telegramRequest)
 		}
@@ -236,19 +237,19 @@ func (b *Bot) HandleCallbackQuery(ctx context.Context, update *tgbotapi.Update) 
 	return nil
 }
 
-func (b *Bot) handleChangeEmail(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
+func (b *Bot) handleChangeEmail(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
 	return b.updateUserState(ctx, update, int32(registrator.UserState_USER_STATE_CHANGING_EMAIL))
 }
 
-func (b *Bot) handleChangeName(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
+func (b *Bot) handleChangeName(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
 	return b.updateUserState(ctx, update, int32(registrator.UserState_USER_STATE_CHANGING_NAME))
 }
 
-func (b *Bot) handleChangePhone(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
+func (b *Bot) handleChangePhone(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
 	return b.updateUserState(ctx, update, int32(registrator.UserState_USER_STATE_CHANGING_PHONE))
 }
 
-func (b *Bot) handleGetGamesList(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
+func (b *Bot) handleGetGamesList(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
 	clientID := update.CallbackQuery.From.ID
 
 	games, err := b.gamesFacade.GetGames(ctx, true)
@@ -258,13 +259,13 @@ func (b *Bot) handleGetGamesList(ctx context.Context, update *tgbotapi.Update, t
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
 	for _, game := range games {
-		payload := &GetGameData{
+		payload := &commands.GetGameData{
 			GameID:    game.ID,
 			PageIndex: 0,
 		}
 
 		var callbackData string
-		callbackData, err = getCallbackData(ctx, CommandGetGame, payload)
+		callbackData, err = getCallbackData(ctx, commands.CommandGetGame, payload)
 		if err != nil {
 			return err
 		}
@@ -299,11 +300,11 @@ func (b *Bot) handleGetGamesList(ctx context.Context, update *tgbotapi.Update, t
 	return nil
 }
 
-func (b *Bot) handleGetGame(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
+func (b *Bot) handleGetGame(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
 	clientID := update.CallbackQuery.From.ID
 	messageID := update.CallbackQuery.Message.MessageID
 
-	data := &GetGameData{}
+	data := &commands.GetGameData{}
 
 	err := json.Unmarshal(telegramRequest.Body, data)
 	if err != nil {
@@ -348,11 +349,11 @@ func (b *Bot) handleGetGame(ctx context.Context, update *tgbotapi.Update, telegr
 	return nil
 }
 
-func (b *Bot) handleGetGamePhotos(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
+func (b *Bot) handleGetGamePhotos(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
 	clientID := update.CallbackQuery.From.ID
 	messageID := update.CallbackQuery.Message.MessageID
 
-	data := &GetGamePhotosData{}
+	data := &commands.GetGamePhotosData{}
 
 	err := json.Unmarshal(telegramRequest.Body, data)
 	if err != nil {
@@ -387,13 +388,13 @@ func (b *Bot) handleGetGamePhotos(ctx context.Context, update *tgbotapi.Update, 
 	return nil
 }
 
-func (b *Bot) handleGetListGamesWithPhotosNextPage(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
+func (b *Bot) handleGetListGamesWithPhotosNextPage(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
 	clientID := update.CallbackQuery.From.ID
 	messageID := update.CallbackQuery.Message.MessageID
 
 	gamesWithPhotosListLimit := uint32(config.GetValue("GamesWithPhotosListLimit").Uint64())
 
-	data := &GetGamesWithPhotosData{}
+	data := &commands.GetGamesWithPhotosData{}
 
 	err := json.Unmarshal(telegramRequest.Body, data)
 	if err != nil {
@@ -407,12 +408,12 @@ func (b *Bot) handleGetListGamesWithPhotosNextPage(ctx context.Context, update *
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
 	for _, game := range games {
-		payload := &GetGamePhotosData{
+		payload := &commands.GetGamePhotosData{
 			GameID: game.ID,
 		}
 
 		var callbackData string
-		callbackData, err = getCallbackData(ctx, CommandGetGamePhotos, payload)
+		callbackData, err = getCallbackData(ctx, commands.CommandGetGamePhotos, payload)
 		if err != nil {
 			return err
 		}
@@ -434,13 +435,13 @@ func (b *Bot) handleGetListGamesWithPhotosNextPage(ctx context.Context, update *
 			offset = data.Offset - gamesWithPhotosListLimit
 		}
 
-		payload := &GetGamesWithPhotosData{
+		payload := &commands.GetGamesWithPhotosData{
 			Limit:  gamesWithPhotosListLimit,
 			Offset: offset,
 		}
 
 		var callbackData string
-		callbackData, err = getCallbackData(ctx, CommandGetListGamesWithPhotosPrevPage, payload)
+		callbackData, err = getCallbackData(ctx, commands.CommandGetListGamesWithPhotosPrevPage, payload)
 		if err != nil {
 			return err
 		}
@@ -458,13 +459,13 @@ func (b *Bot) handleGetListGamesWithPhotosNextPage(ctx context.Context, update *
 	}
 
 	if leftNext > 0 {
-		payload := &GetGamesWithPhotosData{
+		payload := &commands.GetGamesWithPhotosData{
 			Limit:  gamesWithPhotosListLimit,
 			Offset: data.Offset + data.Limit,
 		}
 
 		var callbackData string
-		callbackData, err = getCallbackData(ctx, CommandGetListGamesWithPhotosNextPage, payload)
+		callbackData, err = getCallbackData(ctx, commands.CommandGetListGamesWithPhotosNextPage, payload)
 		if err != nil {
 			return err
 		}
@@ -484,13 +485,13 @@ func (b *Bot) handleGetListGamesWithPhotosNextPage(ctx context.Context, update *
 	return err
 }
 
-func (b *Bot) handleGetListGamesWithPhotosPrevPage(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
+func (b *Bot) handleGetListGamesWithPhotosPrevPage(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
 	clientID := update.CallbackQuery.From.ID
 	messageID := update.CallbackQuery.Message.MessageID
 
 	gamesWithPhotosListLimit := uint32(config.GetValue("GamesWithPhotosListLimit").Uint64())
 
-	data := &GetGamesWithPhotosData{}
+	data := &commands.GetGamesWithPhotosData{}
 
 	err := json.Unmarshal(telegramRequest.Body, data)
 	if err != nil {
@@ -504,12 +505,12 @@ func (b *Bot) handleGetListGamesWithPhotosPrevPage(ctx context.Context, update *
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
 	for _, game := range games {
-		payload := &GetGamePhotosData{
+		payload := &commands.GetGamePhotosData{
 			GameID: game.ID,
 		}
 
 		var callbackData string
-		callbackData, err = getCallbackData(ctx, CommandGetGamePhotos, payload)
+		callbackData, err = getCallbackData(ctx, commands.CommandGetGamePhotos, payload)
 		if err != nil {
 			return err
 		}
@@ -531,13 +532,13 @@ func (b *Bot) handleGetListGamesWithPhotosPrevPage(ctx context.Context, update *
 			offset = data.Offset - gamesWithPhotosListLimit
 		}
 
-		payload := &GetGamesWithPhotosData{
+		payload := &commands.GetGamesWithPhotosData{
 			Limit:  gamesWithPhotosListLimit,
 			Offset: offset,
 		}
 
 		var callbackData string
-		callbackData, err = getCallbackData(ctx, CommandGetListGamesWithPhotosPrevPage, payload)
+		callbackData, err = getCallbackData(ctx, commands.CommandGetListGamesWithPhotosPrevPage, payload)
 		if err != nil {
 			return err
 		}
@@ -555,13 +556,13 @@ func (b *Bot) handleGetListGamesWithPhotosPrevPage(ctx context.Context, update *
 	}
 
 	if leftNext > 0 {
-		payload := &GetGamesWithPhotosData{
+		payload := &commands.GetGamesWithPhotosData{
 			Limit:  gamesWithPhotosListLimit,
 			Offset: data.Offset + data.Limit,
 		}
 
 		var callbackData string
-		callbackData, err = getCallbackData(ctx, CommandGetListGamesWithPhotosNextPage, payload)
+		callbackData, err = getCallbackData(ctx, commands.CommandGetListGamesWithPhotosNextPage, payload)
 		if err != nil {
 			return err
 		}
@@ -581,10 +582,10 @@ func (b *Bot) handleGetListGamesWithPhotosPrevPage(ctx context.Context, update *
 	return err
 }
 
-func (b *Bot) handleGetVenue(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
+func (b *Bot) handleGetVenue(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
 	clientID := update.CallbackQuery.From.ID
 
-	data := &GetVenueData{}
+	data := &commands.GetVenueData{}
 
 	err := json.Unmarshal(telegramRequest.Body, data)
 	if err != nil {
@@ -601,11 +602,11 @@ func (b *Bot) handleGetVenue(ctx context.Context, update *tgbotapi.Update, teleg
 	return err
 }
 
-func (b *Bot) handleLottery(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
+func (b *Bot) handleLottery(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
 	clientID := update.CallbackQuery.From.ID
 	messageID := update.CallbackQuery.Message.MessageID
 
-	data := &LotteryData{}
+	data := &commands.LotteryData{}
 
 	err := json.Unmarshal(telegramRequest.Body, data)
 	if err != nil {
@@ -665,11 +666,11 @@ func (b *Bot) handleLottery(ctx context.Context, update *tgbotapi.Update, telegr
 	return nil
 }
 
-func (b *Bot) handlePlayersList(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
+func (b *Bot) handlePlayersList(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
 	clientID := update.CallbackQuery.From.ID
 	messageID := update.CallbackQuery.Message.MessageID
 
-	data := &PlayersListByGameData{}
+	data := &commands.PlayersListByGameData{}
 
 	err := json.Unmarshal(telegramRequest.Body, data)
 	if err != nil {
@@ -722,11 +723,11 @@ func (b *Bot) handlePlayersList(ctx context.Context, update *tgbotapi.Update, te
 	return err
 }
 
-func (b *Bot) handleRegisterGame(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
+func (b *Bot) handleRegisterGame(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
 	clientID := update.CallbackQuery.From.ID
 	messageID := update.CallbackQuery.Message.MessageID
 
-	data := &RegisterGameData{}
+	data := &commands.RegisterGameData{}
 
 	err := json.Unmarshal(telegramRequest.Body, data)
 	if err != nil {
@@ -776,11 +777,11 @@ func (b *Bot) handleRegisterGame(ctx context.Context, update *tgbotapi.Update, t
 	return nil
 }
 
-func (b *Bot) handleRegisterPlayer(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
+func (b *Bot) handleRegisterPlayer(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
 	clientID := update.CallbackQuery.From.ID
 	messageID := update.CallbackQuery.Message.MessageID
 
-	data := &RegisterPlayerData{}
+	data := &commands.RegisterPlayerData{}
 	err := json.Unmarshal(telegramRequest.Body, data)
 	if err != nil {
 		return err
@@ -833,11 +834,11 @@ func (b *Bot) handleRegisterPlayer(ctx context.Context, update *tgbotapi.Update,
 	return nil
 }
 
-func (b *Bot) handleUnregisterGame(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
+func (b *Bot) handleUnregisterGame(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
 	clientID := update.CallbackQuery.From.ID
 	messageID := update.CallbackQuery.Message.MessageID
 
-	data := &UnregisterGameData{}
+	data := &commands.UnregisterGameData{}
 	err := json.Unmarshal(telegramRequest.Body, data)
 	if err != nil {
 		return err
@@ -886,11 +887,11 @@ func (b *Bot) handleUnregisterGame(ctx context.Context, update *tgbotapi.Update,
 	return nil
 }
 
-func (b *Bot) handleUnregisterPlayer(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
+func (b *Bot) handleUnregisterPlayer(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
 	clientID := update.CallbackQuery.From.ID
 	messageID := update.CallbackQuery.Message.MessageID
 
-	data := &UnregisterPlayerData{}
+	data := &commands.UnregisterPlayerData{}
 	err := json.Unmarshal(telegramRequest.Body, data)
 	if err != nil {
 		return err
@@ -939,11 +940,11 @@ func (b *Bot) handleUnregisterPlayer(ctx context.Context, update *tgbotapi.Updat
 	return nil
 }
 
-func (b *Bot) handleUpdatePayment(ctx context.Context, update *tgbotapi.Update, telegramRequest TelegramRequest) error {
+func (b *Bot) handleUpdatePayment(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
 	clientID := update.CallbackQuery.From.ID
 	messageID := update.CallbackQuery.Message.MessageID
 
-	data := &UpdatePaymentData{}
+	data := &commands.UpdatePaymentData{}
 	err := json.Unmarshal(telegramRequest.Body, data)
 	if err != nil {
 		return err

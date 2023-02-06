@@ -12,6 +12,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	"github.com/nikita5637/quiz-telegram/internal/config"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/commands"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/icons"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
@@ -359,11 +360,11 @@ func (b *Bot) getGamesWithPhotosMessage(ctx context.Context, update *tgbotapi.Up
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
 	for _, game := range games {
-		payload := &GetGamePhotosData{
+		payload := &commands.GetGamePhotosData{
 			GameID: game.ID,
 		}
 
-		callbackData, err := getCallbackData(ctx, CommandGetGamePhotos, payload)
+		callbackData, err := getCallbackData(ctx, commands.CommandGetGamePhotos, payload)
 		if err != nil {
 			return nil, err
 		}
@@ -383,12 +384,12 @@ func (b *Bot) getGamesWithPhotosMessage(ctx context.Context, update *tgbotapi.Up
 	}
 
 	if leftNext > 0 {
-		payload := &GetGamesWithPhotosData{
+		payload := &commands.GetGamesWithPhotosData{
 			Limit:  gamesWithPhotosListLimit,
 			Offset: gamesWithPhotosListLimit,
 		}
 
-		callbackData, err := getCallbackData(ctx, CommandGetListGamesWithPhotosNextPage, payload)
+		callbackData, err := getCallbackData(ctx, commands.CommandGetListGamesWithPhotosNextPage, payload)
 		if err != nil {
 			return nil, err
 		}
@@ -420,11 +421,11 @@ func (b *Bot) getListOfGamesMessage(ctx context.Context, update *tgbotapi.Update
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
 	for _, game := range games {
-		payload := &GetGameData{
+		payload := &commands.GetGameData{
 			GameID: game.ID,
 		}
 
-		callbackData, err := getCallbackData(ctx, CommandGetGame, payload)
+		callbackData, err := getCallbackData(ctx, commands.CommandGetGame, payload)
 		if err != nil {
 			return nil, err
 		}
@@ -471,11 +472,11 @@ func (b *Bot) getListOfMyGamesMessage(ctx context.Context, update *tgbotapi.Upda
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
 	for _, game := range games {
-		payload := &GetGameData{
+		payload := &commands.GetGameData{
 			GameID: game.ID,
 		}
 
-		callbackData, err := getCallbackData(ctx, CommandGetGame, payload)
+		callbackData, err := getCallbackData(ctx, commands.CommandGetGame, payload)
 		if err != nil {
 			return nil, err
 		}
@@ -509,11 +510,11 @@ func (b *Bot) getListOfRegisteredGamesMessage(ctx context.Context, update *tgbot
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
 	for _, game := range games {
-		payload := &GetGameData{
+		payload := &commands.GetGameData{
 			GameID: game.ID,
 		}
 
-		callbackData, err := getCallbackData(ctx, CommandGetGame, payload)
+		callbackData, err := getCallbackData(ctx, commands.CommandGetGame, payload)
 		if err != nil {
 			return nil, err
 		}
@@ -551,7 +552,7 @@ func (b *Bot) getSettingsMessage(ctx context.Context, update *tgbotapi.Update) (
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0, 3)
 	{
-		callbackData, err := getCallbackData(ctx, CommandChangeEmail, "")
+		callbackData, err := getCallbackData(ctx, commands.CommandChangeEmail, "")
 		if err != nil {
 			return nil, err
 		}
@@ -564,7 +565,7 @@ func (b *Bot) getSettingsMessage(ctx context.Context, update *tgbotapi.Update) (
 	}
 
 	{
-		callbackData, err := getCallbackData(ctx, CommandChangeName, "")
+		callbackData, err := getCallbackData(ctx, commands.CommandChangeName, "")
 		if err != nil {
 			return nil, err
 		}
@@ -577,7 +578,7 @@ func (b *Bot) getSettingsMessage(ctx context.Context, update *tgbotapi.Update) (
 	}
 
 	{
-		callbackData, err := getCallbackData(ctx, CommandChangePhone, "")
+		callbackData, err := getCallbackData(ctx, commands.CommandChangePhone, "")
 		if err != nil {
 			return nil, err
 		}
