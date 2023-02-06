@@ -49,11 +49,11 @@ func (b *Bot) handleInlineMessage(ctx context.Context, update *tgbotapi.Update) 
 	registerStatus, err := b.gamesFacade.RegisterPlayer(ctx, int32(gameID), int32(registrator.PlayerType_PLAYER_TYPE_MAIN), int32(registrator.Degree_DEGREE_LIKELY))
 	if err != nil {
 		if errors.Is(err, model.ErrGameNotFound) {
-			cb := tgbotapi.NewCallback(update.CallbackQuery.ID, getTranslator(gameNotFoundLexeme)(ctx))
+			cb := tgbotapi.NewCallback(update.CallbackQuery.ID, i18n.GetTranslator(gameNotFoundLexeme)(ctx))
 			_, err = b.bot.Request(cb)
 			return err
 		} else if errors.Is(err, model.ErrNoFreeSlot) {
-			cb := tgbotapi.NewCallback(update.CallbackQuery.ID, getTranslator(noFreeSlotLexeme)(ctx))
+			cb := tgbotapi.NewCallback(update.CallbackQuery.ID, i18n.GetTranslator(noFreeSlotLexeme)(ctx))
 			_, err = b.bot.Request(cb)
 			return err
 		}
@@ -64,9 +64,9 @@ func (b *Bot) handleInlineMessage(ctx context.Context, update *tgbotapi.Update) 
 	cb := tgbotapi.NewCallback(update.CallbackQuery.ID, "")
 	switch registrator.RegisterPlayerStatus(registerStatus) {
 	case registrator.RegisterPlayerStatus_REGISTER_PLAYER_STATUS_ALREADY_REGISTERED:
-		cb = tgbotapi.NewCallback(update.CallbackQuery.ID, getTranslator(youAreAlreadyRegisteredForTheGameLexeme)(ctx))
+		cb = tgbotapi.NewCallback(update.CallbackQuery.ID, i18n.GetTranslator(youAreAlreadyRegisteredForTheGameLexeme)(ctx))
 	case registrator.RegisterPlayerStatus_REGISTER_PLAYER_STATUS_OK:
-		cb = tgbotapi.NewCallback(update.CallbackQuery.ID, getTranslator(youAreRegisteredForTheGameLexeme)(ctx))
+		cb = tgbotapi.NewCallback(update.CallbackQuery.ID, i18n.GetTranslator(youAreRegisteredForTheGameLexeme)(ctx))
 	}
 
 	_, err = b.bot.Request(cb)

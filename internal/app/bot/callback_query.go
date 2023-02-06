@@ -287,7 +287,7 @@ func (b *Bot) handleGetGamesList(ctx context.Context, update *tgbotapi.Update, t
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn))
 	}
 
-	msg := tgbotapi.NewEditMessageText(clientID, update.CallbackQuery.Message.MessageID, getTranslator(chooseGameLexeme)(ctx))
+	msg := tgbotapi.NewEditMessageText(clientID, update.CallbackQuery.Message.MessageID, i18n.GetTranslator(chooseGameLexeme)(ctx))
 	inlineKeyboarMarkup := tgbotapi.NewInlineKeyboardMarkup(rows...)
 	msg.ReplyMarkup = &inlineKeyboarMarkup
 
@@ -314,7 +314,7 @@ func (b *Bot) handleGetGame(ctx context.Context, update *tgbotapi.Update, telegr
 	game, err := b.gamesFacade.GetGameByID(ctx, data.GameID)
 	if err != nil {
 		if errors.Is(err, model.ErrGameNotFound) {
-			msg := tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(gameNotFoundLexeme)(ctx))
+			msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(gameNotFoundLexeme)(ctx))
 			_, err = b.bot.Send(msg)
 			return err
 		}
@@ -363,7 +363,7 @@ func (b *Bot) handleGetGamePhotos(ctx context.Context, update *tgbotapi.Update, 
 	urls, err := b.gamePhotosFacade.GetPhotosByGameID(ctx, data.GameID)
 	if err != nil {
 		if errors.Is(err, model.ErrGameNotFound) {
-			msg := tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(gameNotFoundLexeme)(ctx))
+			msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(gameNotFoundLexeme)(ctx))
 			_, err = b.bot.Send(msg)
 			return err
 		}
@@ -619,7 +619,7 @@ func (b *Bot) handleLottery(ctx context.Context, update *tgbotapi.Update, telegr
 	if err != nil {
 		st := status.Convert(err)
 
-		msg := tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(somethingWentWrongLexeme)(ctx))
+		msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(somethingWentWrongLexeme)(ctx))
 		for _, detail := range st.Details() {
 			switch t := detail.(type) {
 			case *errdetails.LocalizedMessage:
@@ -632,14 +632,14 @@ func (b *Bot) handleLottery(ctx context.Context, update *tgbotapi.Update, telegr
 		return err
 	}
 
-	msg := tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(youHaveSuccessfullyRegisteredInLotteryLexeme)(ctx))
+	msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(youHaveSuccessfullyRegisteredInLotteryLexeme)(ctx))
 	_, err = b.bot.Send(msg)
 	if err != nil {
 		return err
 	}
 
 	if resp.GetNumber() > 0 {
-		msg := tgbotapi.NewMessage(clientID, fmt.Sprintf("%s: %d", getTranslator(yourLotteryNumberIsLexeme)(ctx), resp.GetNumber()))
+		msg := tgbotapi.NewMessage(clientID, fmt.Sprintf("%s: %d", i18n.GetTranslator(yourLotteryNumberIsLexeme)(ctx), resp.GetNumber()))
 		newMsg, err := b.bot.Send(msg)
 		if err != nil {
 			return err
@@ -680,7 +680,7 @@ func (b *Bot) handlePlayersList(ctx context.Context, update *tgbotapi.Update, te
 	players, err := b.gamesFacade.GetPlayersByGameID(ctx, data.GameID)
 	if err != nil {
 		if errors.Is(err, model.ErrGameNotFound) {
-			msg := tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(gameNotFoundLexeme)(ctx))
+			msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(gameNotFoundLexeme)(ctx))
 			_, err = b.bot.Send(msg)
 			return err
 		}
@@ -702,11 +702,11 @@ func (b *Bot) handlePlayersList(ctx context.Context, update *tgbotapi.Update, te
 			if user, err = b.usersFacade.GetUserByID(ctx, player.RegisteredBy); err != nil {
 				return err
 			}
-			playerName = fmt.Sprintf("%s %s", getTranslator(legionerByLexeme)(ctx), user.Name)
+			playerName = fmt.Sprintf("%s %s", i18n.GetTranslator(legionerByLexeme)(ctx), user.Name)
 		}
 
 		if player.Degree == int32(registrator.Degree_DEGREE_UNLIKELY) {
-			textBuilder.WriteString(fmt.Sprintf("%d. %s (%s)\n", i+1, playerName, getTranslator(degreeMap[registrator.Degree_DEGREE_UNLIKELY])(ctx)))
+			textBuilder.WriteString(fmt.Sprintf("%d. %s (%s)\n", i+1, playerName, i18n.GetTranslator(degreeMap[registrator.Degree_DEGREE_UNLIKELY])(ctx)))
 		} else {
 			textBuilder.WriteString(fmt.Sprintf("%d. %s\n", i+1, playerName))
 		}
@@ -714,7 +714,7 @@ func (b *Bot) handlePlayersList(ctx context.Context, update *tgbotapi.Update, te
 
 	text := textBuilder.String()
 	if text == "" {
-		text = fmt.Sprintf("%s", getTranslator(listOfPlayersIsEmptyLexeme)(ctx))
+		text = fmt.Sprintf("%s", i18n.GetTranslator(listOfPlayersIsEmptyLexeme)(ctx))
 	}
 
 	msg := tgbotapi.NewMessage(clientID, text)
@@ -737,7 +737,7 @@ func (b *Bot) handleRegisterGame(ctx context.Context, update *tgbotapi.Update, t
 	_, err = b.gamesFacade.RegisterGame(ctx, data.GameID)
 	if err != nil {
 		if errors.Is(err, model.ErrGameNotFound) {
-			msg := tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(gameNotFoundLexeme)(ctx))
+			msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(gameNotFoundLexeme)(ctx))
 			_, err = b.bot.Send(msg)
 			return err
 		}
@@ -790,11 +790,11 @@ func (b *Bot) handleRegisterPlayer(ctx context.Context, update *tgbotapi.Update,
 	_, err = b.gamesFacade.RegisterPlayer(ctx, data.GameID, data.PlayerType, data.Degree)
 	if err != nil {
 		if errors.Is(err, model.ErrGameNotFound) {
-			msg := tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(gameNotFoundLexeme)(ctx))
+			msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(gameNotFoundLexeme)(ctx))
 			_, err = b.bot.Send(msg)
 			return err
 		} else if errors.Is(err, model.ErrNoFreeSlot) {
-			msg := tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(noFreeSlotLexeme)(ctx))
+			msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(noFreeSlotLexeme)(ctx))
 			_, err = b.bot.Send(msg)
 			return err
 		}
@@ -847,7 +847,7 @@ func (b *Bot) handleUnregisterGame(ctx context.Context, update *tgbotapi.Update,
 	_, err = b.gamesFacade.UnregisterGame(ctx, data.GameID)
 	if err != nil {
 		if errors.Is(err, model.ErrGameNotFound) {
-			msg := tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(gameNotFoundLexeme)(ctx))
+			msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(gameNotFoundLexeme)(ctx))
 			_, err = b.bot.Send(msg)
 			return err
 		}
@@ -900,7 +900,7 @@ func (b *Bot) handleUnregisterPlayer(ctx context.Context, update *tgbotapi.Updat
 	_, err = b.gamesFacade.UnregisterPlayer(ctx, data.GameID, data.PlayerType)
 	if err != nil {
 		if errors.Is(err, model.ErrGameNotFound) {
-			msg := tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(gameNotFoundLexeme)(ctx))
+			msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(gameNotFoundLexeme)(ctx))
 			_, err = b.bot.Send(msg)
 			return err
 		}
@@ -953,7 +953,7 @@ func (b *Bot) handleUpdatePayment(ctx context.Context, update *tgbotapi.Update, 
 	err = b.gamesFacade.UpdatePayment(ctx, data.GameID, data.Payment)
 	if err != nil {
 		if errors.Is(err, model.ErrGameNotFound) {
-			msg := tgbotapi.NewEditMessageText(clientID, messageID, getTranslator(gameNotFoundLexeme)(ctx))
+			msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(gameNotFoundLexeme)(ctx))
 			_, err = b.bot.Send(msg)
 			return err
 		}
@@ -1009,13 +1009,13 @@ func (b *Bot) updateUserState(ctx context.Context, update *tgbotapi.Update, stat
 	msg := tgbotapi.MessageConfig{}
 	switch registrator.UserState(state) {
 	case registrator.UserState_USER_STATE_CHANGING_EMAIL:
-		msg = tgbotapi.NewMessage(clientID, getTranslator(enterYourEmailLexeme)(ctx))
+		msg = tgbotapi.NewMessage(clientID, i18n.GetTranslator(enterYourEmailLexeme)(ctx))
 		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
 	case registrator.UserState_USER_STATE_CHANGING_NAME:
-		msg = tgbotapi.NewMessage(clientID, getTranslator(enterYourNameLexeme)(ctx))
+		msg = tgbotapi.NewMessage(clientID, i18n.GetTranslator(enterYourNameLexeme)(ctx))
 		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
 	case registrator.UserState_USER_STATE_CHANGING_PHONE:
-		msg = tgbotapi.NewMessage(clientID, getTranslator(enterYourPhoneLexeme)(ctx))
+		msg = tgbotapi.NewMessage(clientID, i18n.GetTranslator(enterYourPhoneLexeme)(ctx))
 		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
 	}
 
@@ -1030,22 +1030,22 @@ func (b *Bot) updateUserState(ctx context.Context, update *tgbotapi.Update, stat
 
 func detailInfo(ctx context.Context, game model.Game) string {
 	info := strings.Builder{}
-	registerStatus := fmt.Sprintf("%s %s", icons.UnregisteredGame, getTranslator(unregisteredGameLexeme)(ctx))
+	registerStatus := fmt.Sprintf("%s %s", icons.UnregisteredGame, i18n.GetTranslator(unregisteredGameLexeme)(ctx))
 	if game.Registered {
-		registerStatus = fmt.Sprintf("%s %s", icons.RegisteredGame, getTranslator(registeredGameLexeme)(ctx))
+		registerStatus = fmt.Sprintf("%s %s", icons.RegisteredGame, i18n.GetTranslator(registeredGameLexeme)(ctx))
 	}
 
 	info.WriteString(registerStatus + "\n")
 
 	paymentType := ""
 	if strings.Index(game.PaymentType, "cash") != -1 {
-		paymentType += strings.ToLower(getTranslator(cashLexeme)(ctx))
+		paymentType += strings.ToLower(i18n.GetTranslator(cashLexeme)(ctx))
 	}
 	if strings.Index(game.PaymentType, "card") != -1 {
 		if paymentType != "" {
 			paymentType += ", "
 		}
-		paymentType += strings.ToLower(getTranslator(cardLexeme)(ctx))
+		paymentType += strings.ToLower(i18n.GetTranslator(cardLexeme)(ctx))
 	}
 
 	if paymentType == "" {
@@ -1053,32 +1053,32 @@ func detailInfo(ctx context.Context, game model.Game) string {
 	}
 
 	if game.Payment != model.PaymentTypeInvalid {
-		paymentStatus := fmt.Sprintf("%s %s: %s (%s)", icons.MixGamePayment, getTranslator(paymentLexeme)(ctx), strings.ToLower(getTranslator(mixLexeme)(ctx)), paymentType)
+		paymentStatus := fmt.Sprintf("%s %s: %s (%s)", icons.MixGamePayment, i18n.GetTranslator(paymentLexeme)(ctx), strings.ToLower(i18n.GetTranslator(mixLexeme)(ctx)), paymentType)
 		if game.Payment == model.PaymentTypeCash {
-			paymentStatus = fmt.Sprintf("%s %s: %s", icons.CashGamePayment, getTranslator(paymentLexeme)(ctx), paymentType)
+			paymentStatus = fmt.Sprintf("%s %s: %s", icons.CashGamePayment, i18n.GetTranslator(paymentLexeme)(ctx), paymentType)
 		} else if game.Payment == model.PaymentTypeCertificate {
-			paymentStatus = fmt.Sprintf("%s %s: %s", icons.FreeGamePayment, getTranslator(paymentLexeme)(ctx), strings.ToLower(getTranslator(certificateLexeme)(ctx)))
+			paymentStatus = fmt.Sprintf("%s %s: %s", icons.FreeGamePayment, i18n.GetTranslator(paymentLexeme)(ctx), strings.ToLower(i18n.GetTranslator(certificateLexeme)(ctx)))
 		}
 
 		info.WriteString(paymentStatus + "\n")
 	} else {
-		info.WriteString(fmt.Sprintf("%s %s: %s\n", icons.CashGamePayment, getTranslator(paymentLexeme)(ctx), paymentType))
+		info.WriteString(fmt.Sprintf("%s %s: %s\n", icons.CashGamePayment, i18n.GetTranslator(paymentLexeme)(ctx), paymentType))
 	}
 
 	if game.Name != "" {
-		info.WriteString(fmt.Sprintf("%s %s: %s %s\n", icons.Sharp, getTranslator(titleLexeme)(ctx), game.Name, game.Number))
+		info.WriteString(fmt.Sprintf("%s %s: %s %s\n", icons.Sharp, i18n.GetTranslator(titleLexeme)(ctx), game.Name, game.Number))
 	} else {
-		info.WriteString(fmt.Sprintf("%s %s: %s\n", icons.Sharp, getTranslator(numberLexeme)(ctx), game.Number))
+		info.WriteString(fmt.Sprintf("%s %s: %s\n", icons.Sharp, i18n.GetTranslator(numberLexeme)(ctx), game.Number))
 	}
 
 	if game.Price > 0 {
 		price := strconv.Itoa(int(game.Price))
-		info.WriteString(fmt.Sprintf("%s %s: %s₽\n", icons.USD, getTranslator(gameCostLexeme)(ctx), price))
+		info.WriteString(fmt.Sprintf("%s %s: %s₽\n", icons.USD, i18n.GetTranslator(gameCostLexeme)(ctx), price))
 	}
 
-	info.WriteString(fmt.Sprintf("%s %s: %s\n", icons.Place, getTranslator(addressLexeme)(ctx), game.Place.Address))
-	info.WriteString(fmt.Sprintf("%s %s: %s\n", icons.Calendar, getTranslator(dateTimeLexeme)(ctx), game.DateTime().String()))
-	info.WriteString(fmt.Sprintf("%s %s: %d/%d/%d", icons.NumberOfPlayers, getTranslator(numberOfPlayersLexeme)(ctx), game.NumberOfPlayers, game.NumberOfLegioners, game.MaxPlayers))
+	info.WriteString(fmt.Sprintf("%s %s: %s\n", icons.Place, i18n.GetTranslator(addressLexeme)(ctx), game.Place.Address))
+	info.WriteString(fmt.Sprintf("%s %s: %s\n", icons.Calendar, i18n.GetTranslator(dateTimeLexeme)(ctx), game.DateTime().String()))
+	info.WriteString(fmt.Sprintf("%s %s: %d/%d/%d", icons.NumberOfPlayers, i18n.GetTranslator(numberOfPlayersLexeme)(ctx), game.NumberOfPlayers, game.NumberOfLegioners, game.MaxPlayers))
 
 	return info.String()
 }

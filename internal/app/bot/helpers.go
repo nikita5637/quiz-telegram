@@ -272,7 +272,7 @@ func (b *Bot) lotteryButton(ctx context.Context, gameID int32) (tgbotapi.InlineK
 	}
 
 	btn := tgbotapi.InlineKeyboardButton{
-		Text:         fmt.Sprintf("%s %s", icons.Lottery, getTranslator(registerForLotteryLexeme)(ctx)),
+		Text:         fmt.Sprintf("%s %s", icons.Lottery, i18n.GetTranslator(registerForLotteryLexeme)(ctx)),
 		CallbackData: &callbackData,
 	}
 
@@ -285,13 +285,13 @@ func (b *Bot) nextPaymentButton(ctx context.Context, gameID int32, currentPaymen
 	switch currentPayment {
 	case model.PaymentTypeCash:
 		nextPayment = model.PaymentTypeCertificate
-		text = fmt.Sprintf("%s %s", icons.FreeGamePayment, getTranslator(freeGamePaymentLexeme)(ctx))
+		text = fmt.Sprintf("%s %s", icons.FreeGamePayment, i18n.GetTranslator(freeGamePaymentLexeme)(ctx))
 	case model.PaymentTypeCertificate:
 		nextPayment = model.PaymentTypeMixed
-		text = fmt.Sprintf("%s %s", icons.MixGamePayment, getTranslator(mixGamePaymentLexeme)(ctx))
+		text = fmt.Sprintf("%s %s", icons.MixGamePayment, i18n.GetTranslator(mixGamePaymentLexeme)(ctx))
 	case model.PaymentTypeMixed:
 		nextPayment = model.PaymentTypeCash
-		text = fmt.Sprintf("%s %s", icons.CashGamePayment, getTranslator(cashGamePaymentLexeme)(ctx))
+		text = fmt.Sprintf("%s %s", icons.CashGamePayment, i18n.GetTranslator(cashGamePaymentLexeme)(ctx))
 	}
 
 	payload := &commands.UpdatePaymentData{
@@ -323,7 +323,7 @@ func (b *Bot) playersListButton(ctx context.Context, gameID int32) (tgbotapi.Inl
 	}
 
 	btn := tgbotapi.InlineKeyboardButton{
-		Text:         fmt.Sprintf("%s %s", icons.ListOfPlayers, getTranslator(listOfPlayersLexeme)(ctx)),
+		Text:         fmt.Sprintf("%s %s", icons.ListOfPlayers, i18n.GetTranslator(listOfPlayersLexeme)(ctx)),
 		CallbackData: &callbackData,
 	}
 
@@ -341,7 +341,7 @@ func (b *Bot) registerGameButton(ctx context.Context, gameID int32) (tgbotapi.In
 	}
 
 	btn := tgbotapi.InlineKeyboardButton{
-		Text:         fmt.Sprintf("%s %s", icons.RegisteredGame, getTranslator(registeredGameLexeme)(ctx)),
+		Text:         fmt.Sprintf("%s %s", icons.RegisteredGame, i18n.GetTranslator(registeredGameLexeme)(ctx)),
 		CallbackData: &callbackData,
 	}
 
@@ -362,16 +362,16 @@ func (b *Bot) registerPlayerButton(ctx context.Context, gameID int32, playerType
 
 	text := ""
 	if playerType == registrator.PlayerType_PLAYER_TYPE_MAIN && degree == registrator.Degree_DEGREE_LIKELY {
-		text = fmt.Sprintf("%s %s", icons.PlayerLikely, getTranslator(playerIsLikelyToComeLexeme)(ctx))
+		text = fmt.Sprintf("%s %s", icons.PlayerLikely, i18n.GetTranslator(playerIsLikelyToComeLexeme)(ctx))
 	}
 	if playerType == registrator.PlayerType_PLAYER_TYPE_MAIN && degree == registrator.Degree_DEGREE_UNLIKELY {
-		text = fmt.Sprintf("%s %s", icons.PlayerUnlikely, getTranslator(playerIsUnlikelyToComeLexeme)(ctx))
+		text = fmt.Sprintf("%s %s", icons.PlayerUnlikely, i18n.GetTranslator(playerIsUnlikelyToComeLexeme)(ctx))
 	}
 	if playerType == registrator.PlayerType_PLAYER_TYPE_LEGIONER && degree == registrator.Degree_DEGREE_LIKELY {
-		text = fmt.Sprintf("%s %s", icons.LegionerLikely, getTranslator(legionerIsLikelyToComeLexeme)(ctx))
+		text = fmt.Sprintf("%s %s", icons.LegionerLikely, i18n.GetTranslator(legionerIsLikelyToComeLexeme)(ctx))
 	}
 	if playerType == registrator.PlayerType_PLAYER_TYPE_LEGIONER && degree == registrator.Degree_DEGREE_UNLIKELY {
-		text = fmt.Sprintf("%s %s", icons.LegionerUnlikely, getTranslator(legionerIsUnlikelyToComeLexeme)(ctx))
+		text = fmt.Sprintf("%s %s", icons.LegionerUnlikely, i18n.GetTranslator(legionerIsUnlikelyToComeLexeme)(ctx))
 	}
 	btn := tgbotapi.InlineKeyboardButton{
 		Text:         text,
@@ -392,7 +392,7 @@ func (b *Bot) unregisterGameButton(ctx context.Context, gameID int32) (tgbotapi.
 	}
 
 	btn := tgbotapi.InlineKeyboardButton{
-		Text:         fmt.Sprintf("%s %s", icons.UnregisteredGame, getTranslator(unregisteredGameLexeme)(ctx)),
+		Text:         fmt.Sprintf("%s %s", icons.UnregisteredGame, i18n.GetTranslator(unregisteredGameLexeme)(ctx)),
 		CallbackData: &callbackData,
 	}
 
@@ -412,10 +412,10 @@ func (b *Bot) unregisterPlayerButton(ctx context.Context, gameID int32, playerTy
 
 	text := ""
 	if playerType == registrator.PlayerType_PLAYER_TYPE_MAIN {
-		text = fmt.Sprintf("%s %s", icons.PlayerWillNotCome, getTranslator(playerWillNotComeLexeme)(ctx))
+		text = fmt.Sprintf("%s %s", icons.PlayerWillNotCome, i18n.GetTranslator(playerWillNotComeLexeme)(ctx))
 	}
 	if playerType == registrator.PlayerType_PLAYER_TYPE_LEGIONER {
-		text = fmt.Sprintf("%s %s", icons.LegionerWillNotCome, getTranslator(legionerWillNotComeLexeme)(ctx))
+		text = fmt.Sprintf("%s %s", icons.LegionerWillNotCome, i18n.GetTranslator(legionerWillNotComeLexeme)(ctx))
 	}
 	btn := tgbotapi.InlineKeyboardButton{
 		Text:         text,
@@ -435,18 +435,12 @@ func (b *Bot) venueButton(ctx context.Context, placeID int32) (tgbotapi.InlineKe
 		return tgbotapi.InlineKeyboardButton{}, err
 	}
 
-	text := fmt.Sprintf("%s %s", icons.Route, getTranslator(routeToBarLexeme)(ctx))
+	text := fmt.Sprintf("%s %s", icons.Route, i18n.GetTranslator(routeToBarLexeme)(ctx))
 
 	return tgbotapi.InlineKeyboardButton{
 		Text:         text,
 		CallbackData: &callbackData,
 	}, nil
-}
-
-func getTranslator(lexeme i18n.Lexeme) func(ctx context.Context) string {
-	return func(ctx context.Context) string {
-		return i18n.Translate(ctx, lexeme.Key, lexeme.FallBack)
-	}
 }
 
 func getCallbackData(ctx context.Context, command commands.Command, payload interface{}) (string, error) {
@@ -476,11 +470,11 @@ func getCallbackData(ctx context.Context, command commands.Command, payload inte
 func replyKeyboardMarkup(ctx context.Context) tgbotapi.ReplyKeyboardMarkup {
 	kb := tgbotapi.NewReplyKeyboard(
 		[]tgbotapi.KeyboardButton{
-			tgbotapi.NewKeyboardButton(getTranslator(myGamesLexeme)(ctx)),
-			tgbotapi.NewKeyboardButton(getTranslator(registeredGamesLexeme)(ctx)),
+			tgbotapi.NewKeyboardButton(i18n.GetTranslator(myGamesLexeme)(ctx)),
+			tgbotapi.NewKeyboardButton(i18n.GetTranslator(registeredGamesLexeme)(ctx)),
 		},
 		[]tgbotapi.KeyboardButton{
-			tgbotapi.NewKeyboardButton(getTranslator(settingsLexeme)(ctx)),
+			tgbotapi.NewKeyboardButton(i18n.GetTranslator(settingsLexeme)(ctx)),
 		},
 	)
 	kb.ResizeKeyboard = true

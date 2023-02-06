@@ -174,7 +174,7 @@ func (b *Bot) HandleMessage(ctx context.Context, update *tgbotapi.Update) error 
 			_, err = b.bot.Send(helpMessage)
 			return err
 		}
-	case "/mygames", getTranslator(myGamesLexeme)(ctx):
+	case "/mygames", i18n.GetTranslator(myGamesLexeme)(ctx):
 		handler = func(ctx context.Context) error {
 			var msg tgbotapi.Chattable
 			msg, err = b.getListOfMyGamesMessage(ctx, update)
@@ -204,7 +204,7 @@ func (b *Bot) HandleMessage(ctx context.Context, update *tgbotapi.Update) error 
 
 			return err
 		}
-	case "/registeredgames", getTranslator(registeredGamesLexeme)(ctx):
+	case "/registeredgames", i18n.GetTranslator(registeredGamesLexeme)(ctx):
 		handler = func(ctx context.Context) error {
 			var msg tgbotapi.Chattable
 			msg, err = b.getListOfRegisteredGamesMessage(ctx, update)
@@ -219,7 +219,7 @@ func (b *Bot) HandleMessage(ctx context.Context, update *tgbotapi.Update) error 
 
 			return err
 		}
-	case "/settings", getTranslator(settingsLexeme)(ctx):
+	case "/settings", i18n.GetTranslator(settingsLexeme)(ctx):
 		handler = func(ctx context.Context) error {
 			var settingsMessage tgbotapi.Chattable
 			settingsMessage, err = b.getSettingsMessage(ctx, update)
@@ -241,7 +241,7 @@ func (b *Bot) HandleMessage(ctx context.Context, update *tgbotapi.Update) error 
 	}
 
 	if err := handler(ctx); err != nil {
-		responseMessage := tgbotapi.NewMessage(clientID, getTranslator(somethingWentWrongLexeme)(ctx))
+		responseMessage := tgbotapi.NewMessage(clientID, i18n.GetTranslator(somethingWentWrongLexeme)(ctx))
 		if st, ok := status.FromError(err); ok {
 			if st.Code() == codes.PermissionDenied {
 				for _, detail := range st.Details() {
@@ -249,7 +249,7 @@ func (b *Bot) HandleMessage(ctx context.Context, update *tgbotapi.Update) error 
 					case *errdetails.ErrorInfo:
 						reason := t.GetReason()
 						if reason == "banned" {
-							responseMessage = tgbotapi.NewMessage(clientID, getTranslator(permissionDeniedLexeme)(ctx))
+							responseMessage = tgbotapi.NewMessage(clientID, i18n.GetTranslator(permissionDeniedLexeme)(ctx))
 						}
 					}
 				}
@@ -312,7 +312,7 @@ func (b *Bot) handleDefaultMessage(ctx context.Context, update *tgbotapi.Update)
 			return err
 		}
 
-		msg := tgbotapi.NewMessage(clientID, getTranslator(emailChangedLexeme)(ctx))
+		msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(emailChangedLexeme)(ctx))
 		msg.ReplyMarkup = replyKeyboardMarkup(ctx)
 
 		_, err = b.bot.Send(msg)
@@ -322,7 +322,7 @@ func (b *Bot) handleDefaultMessage(ctx context.Context, update *tgbotapi.Update)
 			return err
 		}
 
-		msg := tgbotapi.NewMessage(clientID, getTranslator(nameChangedLexeme)(ctx))
+		msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(nameChangedLexeme)(ctx))
 		msg.ReplyMarkup = replyKeyboardMarkup(ctx)
 
 		_, err = b.bot.Send(msg)
@@ -332,7 +332,7 @@ func (b *Bot) handleDefaultMessage(ctx context.Context, update *tgbotapi.Update)
 			return err
 		}
 
-		msg := tgbotapi.NewMessage(clientID, getTranslator(phoneChangedLexeme)(ctx))
+		msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(phoneChangedLexeme)(ctx))
 		msg.ReplyMarkup = replyKeyboardMarkup(ctx)
 
 		_, err = b.bot.Send(msg)
@@ -355,7 +355,7 @@ func (b *Bot) getGamesWithPhotosMessage(ctx context.Context, update *tgbotapi.Up
 	}
 
 	if total == 0 {
-		return tgbotapi.NewMessage(clientID, getTranslator(listOfGamesWithPhotosIsEmptyLexeme)(ctx)), nil
+		return tgbotapi.NewMessage(clientID, i18n.GetTranslator(listOfGamesWithPhotosIsEmptyLexeme)(ctx)), nil
 	}
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
@@ -401,7 +401,7 @@ func (b *Bot) getGamesWithPhotosMessage(ctx context.Context, update *tgbotapi.Up
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnNext))
 	}
 
-	msg := tgbotapi.NewMessage(clientID, getTranslator(gamePhotosLexeme)(ctx))
+	msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(gamePhotosLexeme)(ctx))
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(rows...)
 
 	return msg, nil
@@ -416,7 +416,7 @@ func (b *Bot) getListOfGamesMessage(ctx context.Context, update *tgbotapi.Update
 	}
 
 	if len(games) == 0 {
-		return tgbotapi.NewMessage(clientID, getTranslator(listOfGamesIsEmptyLexeme)(ctx)), nil
+		return tgbotapi.NewMessage(clientID, i18n.GetTranslator(listOfGamesIsEmptyLexeme)(ctx)), nil
 	}
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
@@ -447,7 +447,7 @@ func (b *Bot) getListOfGamesMessage(ctx context.Context, update *tgbotapi.Update
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn))
 	}
 
-	msg := tgbotapi.NewMessage(clientID, getTranslator(chooseGameLexeme)(ctx))
+	msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(chooseGameLexeme)(ctx))
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(rows...)
 
 	return msg, nil
@@ -467,7 +467,7 @@ func (b *Bot) getListOfMyGamesMessage(ctx context.Context, update *tgbotapi.Upda
 	}
 
 	if len(games) == 0 {
-		return tgbotapi.NewMessage(clientID, getTranslator(listOfMyGamesIsEmptyLexeme)(ctx)), nil
+		return tgbotapi.NewMessage(clientID, i18n.GetTranslator(listOfMyGamesIsEmptyLexeme)(ctx)), nil
 	}
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
@@ -490,7 +490,7 @@ func (b *Bot) getListOfMyGamesMessage(ctx context.Context, update *tgbotapi.Upda
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn))
 	}
 
-	msg := tgbotapi.NewMessage(clientID, getTranslator(listOfMyGamesLexeme)(ctx))
+	msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(listOfMyGamesLexeme)(ctx))
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(rows...)
 
 	return msg, nil
@@ -505,7 +505,7 @@ func (b *Bot) getListOfRegisteredGamesMessage(ctx context.Context, update *tgbot
 	}
 
 	if len(games) == 0 {
-		return tgbotapi.NewMessage(clientID, getTranslator(listOfRegisteredGamesIsEmptyLexeme)(ctx)), nil
+		return tgbotapi.NewMessage(clientID, i18n.GetTranslator(listOfRegisteredGamesIsEmptyLexeme)(ctx)), nil
 	}
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
@@ -536,7 +536,7 @@ func (b *Bot) getListOfRegisteredGamesMessage(ctx context.Context, update *tgbot
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn))
 	}
 
-	msg := tgbotapi.NewMessage(clientID, getTranslator(listOfRegisteredGamesLexeme)(ctx))
+	msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(listOfRegisteredGamesLexeme)(ctx))
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(rows...)
 
 	return msg, nil
@@ -558,7 +558,7 @@ func (b *Bot) getSettingsMessage(ctx context.Context, update *tgbotapi.Update) (
 		}
 
 		btnEmail := tgbotapi.InlineKeyboardButton{
-			Text:         fmt.Sprintf(settingFormatString, getTranslator(changeEmailLexeme)(ctx), user.Email),
+			Text:         fmt.Sprintf(settingFormatString, i18n.GetTranslator(changeEmailLexeme)(ctx), user.Email),
 			CallbackData: &callbackData,
 		}
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnEmail))
@@ -571,7 +571,7 @@ func (b *Bot) getSettingsMessage(ctx context.Context, update *tgbotapi.Update) (
 		}
 
 		btnName := tgbotapi.InlineKeyboardButton{
-			Text:         fmt.Sprintf(settingFormatString, getTranslator(changeNameLexeme)(ctx), user.Name),
+			Text:         fmt.Sprintf(settingFormatString, i18n.GetTranslator(changeNameLexeme)(ctx), user.Name),
 			CallbackData: &callbackData,
 		}
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnName))
@@ -584,20 +584,20 @@ func (b *Bot) getSettingsMessage(ctx context.Context, update *tgbotapi.Update) (
 		}
 
 		btnPhone := tgbotapi.InlineKeyboardButton{
-			Text:         fmt.Sprintf(settingFormatString, getTranslator(changePhoneLexeme)(ctx), user.Phone),
+			Text:         fmt.Sprintf(settingFormatString, i18n.GetTranslator(changePhoneLexeme)(ctx), user.Phone),
 			CallbackData: &callbackData,
 		}
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnPhone))
 	}
 
-	msg := tgbotapi.NewMessage(clientID, getTranslator(settingsLexeme)(ctx))
+	msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(settingsLexeme)(ctx))
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(rows...)
 
 	return msg, nil
 }
 
 func helpMessage(ctx context.Context, clientID int64) tgbotapi.MessageConfig {
-	msg := tgbotapi.NewMessage(clientID, getTranslator(helpMessageLexeme)(ctx))
+	msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(helpMessageLexeme)(ctx))
 
 	msg.ReplyMarkup = replyKeyboardMarkup(ctx)
 
@@ -605,7 +605,7 @@ func helpMessage(ctx context.Context, clientID int64) tgbotapi.MessageConfig {
 }
 
 func welcomeMessage(ctx context.Context, clientID int64, name string) tgbotapi.MessageConfig {
-	msg := tgbotapi.NewMessage(clientID, fmt.Sprintf(getTranslator(welcomeMessageLexeme)(ctx), name))
+	msg := tgbotapi.NewMessage(clientID, fmt.Sprintf(i18n.GetTranslator(welcomeMessageLexeme)(ctx), name))
 
 	return msg
 }

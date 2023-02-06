@@ -4,8 +4,7 @@ import "context"
 
 const defaultLang = "ru"
 
-// Translate ...
-func Translate(ctx context.Context, key string, defaultString string) string {
+func translate(ctx context.Context, key string, defaultString string) string {
 	lang := GetLangFromContext(ctx)
 
 	v, ok := dictionary[lang][key]

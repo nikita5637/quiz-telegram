@@ -42,8 +42,8 @@ func (b *Bot) HandleInlineQuery(ctx context.Context, update *tgbotapi.Update) er
 	}
 
 	if update.InlineQuery.Query == "tip" {
-		article := tgbotapi.NewInlineQueryResultArticle(uuid.NewString(), "Send tip-message", getTranslator(registrationForAGameLexeme)(ctx))
-		btn := tgbotapi.NewInlineKeyboardButtonURL(getTranslator(zoyaLexeme)(ctx), "https://t.me/quiz_regbot")
+		article := tgbotapi.NewInlineQueryResultArticle(uuid.NewString(), "Send tip-message", i18n.GetTranslator(registrationForAGameLexeme)(ctx))
+		btn := tgbotapi.NewInlineKeyboardButtonURL(i18n.GetTranslator(zoyaLexeme)(ctx), "https://t.me/quiz_regbot")
 		replyMarkup := tgbotapi.NewInlineKeyboardMarkup([]tgbotapi.InlineKeyboardButton{
 			btn,
 		})

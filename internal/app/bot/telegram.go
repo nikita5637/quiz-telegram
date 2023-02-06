@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	telegrampb "github.com/nikita5637/quiz-telegram/pkg/pb/telegram"
@@ -138,10 +139,10 @@ func (b *Bot) Start(ctx context.Context) error {
 					if err := b.HandleCallbackQuery(ctx, &update); err != nil {
 						logger.Errorf(ctx, "callback query handle error: %s", err)
 						clientID := update.CallbackQuery.From.ID
-						responseMessage := tgbotapi.NewMessage(clientID, getTranslator(somethingWentWrongLexeme)(ctx))
+						responseMessage := tgbotapi.NewMessage(clientID, i18n.GetTranslator(somethingWentWrongLexeme)(ctx))
 						if s, ok := status.FromError(err); ok {
 							if s.Code() == codes.PermissionDenied {
-								responseMessage = tgbotapi.NewMessage(clientID, getTranslator(permissionDeniedLexeme)(ctx))
+								responseMessage = tgbotapi.NewMessage(clientID, i18n.GetTranslator(permissionDeniedLexeme)(ctx))
 							}
 							if s.Code() == codes.NotFound {
 								for _, detail := range s.Details() {

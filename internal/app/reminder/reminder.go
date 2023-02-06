@@ -140,9 +140,9 @@ func (r *Reminder) Start(ctx context.Context) error {
 					continue
 				}
 
-				text := fmt.Sprintf("%s %s\n", icons.Note, getTranslator(remindThatThereIsAGameTodayLexeme)(ctx))
-				text += fmt.Sprintf("%s %s: %s\n", icons.Time, getTranslator(timeLexeme)(ctx), model.DateTime(gameResp.GetGame().GetDate().AsTime()).Time())
-				text += fmt.Sprintf("%s %s: %s\n", icons.Place, getTranslator(placeLexeme)(ctx), placeResp.GetPlace().GetAddress())
+				text := fmt.Sprintf("%s %s\n", icons.Note, i18n.GetTranslator(remindThatThereIsAGameTodayLexeme)(ctx))
+				text += fmt.Sprintf("%s %s: %s\n", icons.Time, i18n.GetTranslator(timeLexeme)(ctx), model.DateTime(gameResp.GetGame().GetDate().AsTime()).Time())
+				text += fmt.Sprintf("%s %s: %s\n", icons.Place, i18n.GetTranslator(placeLexeme)(ctx), placeResp.GetPlace().GetAddress())
 
 				for _, playerID := range gameRemind.PlayerIDs {
 					resp, err := r.registratorServiceClient.GetUserByID(ctx, &registrator.GetUserByIDRequest{
