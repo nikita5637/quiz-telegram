@@ -154,7 +154,7 @@ func (r *Reminder) Start(ctx context.Context) error {
 	go func(ctx context.Context) {
 		go func(ctx context.Context) {
 			for d := range gameReminderMessages {
-				logger.InfoKV(ctx, "accepted new game reminder message", "message", d.Body)
+				logger.InfoKV(ctx, "accepted new game reminder message", "body", d.Body)
 
 				gameRemind := &reminder.Game{}
 				err := json.Unmarshal(d.Body, gameRemind)
@@ -218,7 +218,7 @@ func (r *Reminder) Start(ctx context.Context) error {
 
 		go func(ctx context.Context) {
 			for d := range lotteryReminderMessages {
-				logger.InfoKV(ctx, "accepted new lottery reminder message", "message", d.Body)
+				logger.InfoKV(ctx, "accepted new lottery reminder message", "body", d.Body)
 
 				lotteryRemind := &reminder.Lottery{}
 				err := json.Unmarshal(d.Body, lotteryRemind)
