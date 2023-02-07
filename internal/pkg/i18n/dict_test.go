@@ -8,7 +8,7 @@ import (
 
 func Test_DictLength(t *testing.T) {
 	assert.Len(t, dictionary, 1)
-	assert.Len(t, dictionary["ru"], 65)
+	assert.Len(t, dictionary["ru"], 69)
 }
 
 func Test_DictPhrases(t *testing.T) {

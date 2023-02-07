@@ -84,6 +84,14 @@ var (
 		Key:      "legioner_by",
 		FallBack: "Legioner by",
 	}
+	legionerIsSignedUpForTheGameLexeme = i18n.Lexeme{
+		Key:      "legioner_is_signed_up_for_the_game",
+		FallBack: "Legioner is signed up for the game",
+	}
+	legionerIsUnsignedUpForTheGameLexeme = i18n.Lexeme{
+		Key:      "legioner_is_unsigned_up_for_the_game",
+		FallBack: "Legioner is unsigned up for the game",
+	}
 	listOfPlayersIsEmptyLexeme = i18n.Lexeme{
 		Key:      "list_of_players_is_empty",
 		FallBack: "There are not players",
@@ -115,6 +123,14 @@ var (
 	unregisteredGameLexeme = i18n.Lexeme{
 		Key:      "unregistered_game",
 		FallBack: "We are unregistered for the game",
+	}
+	youAreSignedUpForTheGameLexeme = i18n.Lexeme{
+		Key:      "you_are_signed_up_for_the_game",
+		FallBack: "You are signed up for the game",
+	}
+	youAreUnsignedUpForTheGameLexeme = i18n.Lexeme{
+		Key:      "you_are_unsigned_up_for_the_game",
+		FallBack: "You are unsigned up for the game",
 	}
 	youHaveSuccessfullyRegisteredInLotteryLexeme = i18n.Lexeme{
 		Key:      "you_have_successfully_registered_in_the_lottery",
@@ -347,6 +363,13 @@ func (b *Bot) handleGetGame(ctx context.Context, update *tgbotapi.Update, telegr
 		return err
 	}
 
+	cb := tgbotapi.NewCallback(update.CallbackQuery.ID, "")
+	_, err = b.bot.Request(cb)
+	if err != nil {
+		logger.Errorf(ctx, "sending callback error: %s", err)
+		return err
+	}
+
 	return nil
 }
 
@@ -380,10 +403,17 @@ func (b *Bot) handleGetGamePhotos(ctx context.Context, update *tgbotapi.Update, 
 
 	for _, url := range urls {
 		msg := tgbotapi.NewMessage(clientID, url)
-		_, err := b.bot.Send(msg)
+		_, err = b.bot.Send(msg)
 		if err != nil {
 			return err
 		}
+	}
+
+	cb := tgbotapi.NewCallback(update.CallbackQuery.ID, "")
+	_, err = b.bot.Request(cb)
+	if err != nil {
+		logger.Errorf(ctx, "sending callback error: %s", err)
+		return err
 	}
 
 	return nil
@@ -483,7 +513,19 @@ func (b *Bot) handleGetListGamesWithPhotosNextPage(ctx context.Context, update *
 
 	msg := tgbotapi.NewEditMessageReplyMarkup(clientID, messageID, inlineKeyboardMarkup)
 	_, err = b.bot.Send(msg)
-	return err
+	if err != nil {
+		logger.Errorf(ctx, "sending message error: %s", err)
+		return err
+	}
+
+	cb := tgbotapi.NewCallback(update.CallbackQuery.ID, "")
+	_, err = b.bot.Request(cb)
+	if err != nil {
+		logger.Errorf(ctx, "sending callback error: %s", err)
+		return err
+	}
+
+	return nil
 }
 
 func (b *Bot) handleGetListGamesWithPhotosPrevPage(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
@@ -580,7 +622,19 @@ func (b *Bot) handleGetListGamesWithPhotosPrevPage(ctx context.Context, update *
 
 	msg := tgbotapi.NewEditMessageReplyMarkup(clientID, messageID, inlineKeyboardMarkup)
 	_, err = b.bot.Send(msg)
-	return err
+	if err != nil {
+		logger.Errorf(ctx, "sending message error: %s", err)
+		return err
+	}
+
+	cb := tgbotapi.NewCallback(update.CallbackQuery.ID, "")
+	_, err = b.bot.Request(cb)
+	if err != nil {
+		logger.Errorf(ctx, "sending callback error: %s", err)
+		return err
+	}
+
+	return nil
 }
 
 func (b *Bot) handleGetVenue(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
@@ -600,7 +654,19 @@ func (b *Bot) handleGetVenue(ctx context.Context, update *tgbotapi.Update, teleg
 
 	venueConfig := tgbotapi.NewVenue(clientID, place.Name, place.Address, float64(place.Latitude), float64(place.Longitude))
 	_, err = b.bot.Request(venueConfig)
-	return err
+	if err != nil {
+		logger.Errorf(ctx, "sending venue error: %s", err)
+		return err
+	}
+
+	cb := tgbotapi.NewCallback(update.CallbackQuery.ID, "")
+	_, err = b.bot.Request(cb)
+	if err != nil {
+		logger.Errorf(ctx, "sending callback error: %s", err)
+		return err
+	}
+
+	return nil
 }
 
 func (b *Bot) handleLottery(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
@@ -640,8 +706,9 @@ func (b *Bot) handleLottery(ctx context.Context, update *tgbotapi.Update, telegr
 	}
 
 	if resp.GetNumber() > 0 {
+		var newMsg tgbotapi.Message
 		msg := tgbotapi.NewMessage(clientID, fmt.Sprintf("%s: %d", i18n.GetTranslator(yourLotteryNumberIsLexeme)(ctx), resp.GetNumber()))
-		newMsg, err := b.bot.Send(msg)
+		newMsg, err = b.bot.Send(msg)
 		if err != nil {
 			return err
 		}
@@ -662,6 +729,13 @@ func (b *Bot) handleLottery(ctx context.Context, update *tgbotapi.Update, telegr
 		if err != nil {
 			return err
 		}
+	}
+
+	cb := tgbotapi.NewCallback(update.CallbackQuery.ID, "")
+	_, err = b.bot.Request(cb)
+	if err != nil {
+		logger.Errorf(ctx, "sending callback error: %s", err)
+		return err
 	}
 
 	return nil
@@ -720,8 +794,19 @@ func (b *Bot) handlePlayersList(ctx context.Context, update *tgbotapi.Update, te
 
 	msg := tgbotapi.NewMessage(clientID, text)
 	_, err = b.bot.Send(msg)
+	if err != nil {
+		logger.Errorf(ctx, "sending message error: %s", err)
+		return err
+	}
 
-	return err
+	cb := tgbotapi.NewCallback(update.CallbackQuery.ID, "")
+	_, err = b.bot.Request(cb)
+	if err != nil {
+		logger.Errorf(ctx, "sending callback error: %s", err)
+		return err
+	}
+
+	return nil
 }
 
 func (b *Bot) handleRegisterGame(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
@@ -775,12 +860,20 @@ func (b *Bot) handleRegisterGame(ctx context.Context, update *tgbotapi.Update, t
 		return err
 	}
 
+	cb := tgbotapi.NewCallback(update.CallbackQuery.ID, i18n.GetTranslator(registeredGameLexeme)(ctx))
+	_, err = b.bot.Request(cb)
+	if err != nil {
+		logger.Errorf(ctx, "sending callback error: %s", err)
+		return err
+	}
+
 	return nil
 }
 
 func (b *Bot) handleRegisterPlayer(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
 	clientID := update.CallbackQuery.From.ID
 	messageID := update.CallbackQuery.Message.MessageID
+	callbackID := update.CallbackQuery.ID
 
 	data := &commands.RegisterPlayerData{}
 	err := json.Unmarshal(telegramRequest.Body, data)
@@ -800,6 +893,20 @@ func (b *Bot) handleRegisterPlayer(ctx context.Context, update *tgbotapi.Update,
 			return err
 		}
 
+		return err
+	}
+
+	cb := tgbotapi.NewCallback(callbackID, "")
+	switch data.PlayerType {
+	case int32(registrator.PlayerType_PLAYER_TYPE_LEGIONER):
+		cb = tgbotapi.NewCallback(callbackID, i18n.GetTranslator(legionerIsSignedUpForTheGameLexeme)(ctx))
+	case int32(registrator.PlayerType_PLAYER_TYPE_MAIN):
+		cb = tgbotapi.NewCallback(callbackID, i18n.GetTranslator(youAreSignedUpForTheGameLexeme)(ctx))
+	}
+
+	_, err = b.bot.Request(cb)
+	if err != nil {
+		logger.Errorf(ctx, "sending callback error: %s", err)
 		return err
 	}
 
@@ -885,12 +992,20 @@ func (b *Bot) handleUnregisterGame(ctx context.Context, update *tgbotapi.Update,
 		return err
 	}
 
+	cb := tgbotapi.NewCallback(update.CallbackQuery.ID, i18n.GetTranslator(unregisteredGameLexeme)(ctx))
+	_, err = b.bot.Request(cb)
+	if err != nil {
+		logger.Errorf(ctx, "sending callback error: %s", err)
+		return err
+	}
+
 	return nil
 }
 
 func (b *Bot) handleUnregisterPlayer(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
 	clientID := update.CallbackQuery.From.ID
 	messageID := update.CallbackQuery.Message.MessageID
+	callbackID := update.CallbackQuery.ID
 
 	data := &commands.UnregisterPlayerData{}
 	err := json.Unmarshal(telegramRequest.Body, data)
@@ -906,6 +1021,20 @@ func (b *Bot) handleUnregisterPlayer(ctx context.Context, update *tgbotapi.Updat
 			return err
 		}
 
+		return err
+	}
+
+	cb := tgbotapi.NewCallback(callbackID, "")
+	switch data.PlayerType {
+	case int32(registrator.PlayerType_PLAYER_TYPE_LEGIONER):
+		cb = tgbotapi.NewCallback(callbackID, i18n.GetTranslator(legionerIsUnsignedUpForTheGameLexeme)(ctx))
+	case int32(registrator.PlayerType_PLAYER_TYPE_MAIN):
+		cb = tgbotapi.NewCallback(callbackID, i18n.GetTranslator(youAreUnsignedUpForTheGameLexeme)(ctx))
+	}
+
+	_, err = b.bot.Request(cb)
+	if err != nil {
+		logger.Errorf(ctx, "sending callback error: %s", err)
 		return err
 	}
 
@@ -991,6 +1120,22 @@ func (b *Bot) handleUpdatePayment(ctx context.Context, update *tgbotapi.Update, 
 		return err
 	}
 
+	cb := tgbotapi.NewCallback(update.CallbackQuery.ID, "")
+	switch game.Payment {
+	case model.PaymentTypeCash:
+		cb = tgbotapi.NewCallback(update.CallbackQuery.ID, i18n.GetTranslator(cashGamePaymentLexeme)(ctx))
+	case model.PaymentTypeCertificate:
+		cb = tgbotapi.NewCallback(update.CallbackQuery.ID, i18n.GetTranslator(freeGamePaymentLexeme)(ctx))
+	case model.PaymentTypeMixed:
+		cb = tgbotapi.NewCallback(update.CallbackQuery.ID, i18n.GetTranslator(mixGamePaymentLexeme)(ctx))
+	}
+
+	_, err = b.bot.Request(cb)
+	if err != nil {
+		logger.Errorf(ctx, "sending callback error: %s", err)
+		return err
+	}
+
 	return nil
 }
 
@@ -1023,6 +1168,13 @@ func (b *Bot) updateUserState(ctx context.Context, update *tgbotapi.Update, stat
 	_, err = b.bot.Send(msg)
 	if err != nil {
 		logger.Errorf(ctx, "sending message error: %s", err)
+		return err
+	}
+
+	cb := tgbotapi.NewCallback(update.CallbackQuery.ID, "")
+	_, err = b.bot.Request(cb)
+	if err != nil {
+		logger.Errorf(ctx, "sending callback error: %s", err)
 		return err
 	}
 
