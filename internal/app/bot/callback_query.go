@@ -455,7 +455,7 @@ func (b *Bot) handleGetListGamesWithPhotosNextPage(ctx context.Context, update *
 	}
 
 	leftNext := uint32(0)
-	if total > (data.Offset + data.Offset) {
+	if total > (data.Offset + data.Limit) {
 		leftNext = total - (data.Offset + data.Limit)
 	}
 
