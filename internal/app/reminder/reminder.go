@@ -8,6 +8,7 @@ import (
 	callbackdata_utils "github.com/nikita5637/quiz-telegram/internal/pkg/utils/callbackdata"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	pkgmodel "github.com/nikita5637/quiz-registrator-api/pkg/model"
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	reminder "github.com/nikita5637/quiz-registrator-api/pkg/reminder"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/commands"
@@ -27,6 +28,10 @@ var (
 	registerForLotteryLexeme = i18n.Lexeme{
 		Key:      "register_for_lottery",
 		FallBack: "Register for lottery",
+	}
+	registrationLink = i18n.Lexeme{
+		Key:      "registration_link",
+		FallBack: "Registration link",
 	}
 	remindThatThereIsAGameTodayLexeme = i18n.Lexeme{
 		Key:      "remind_that_there_is_a_game_today",
@@ -239,19 +244,30 @@ func (r *Reminder) Start(ctx context.Context) error {
 					text := fmt.Sprintf("%s %s\n", icons.Note, i18n.GetTranslator(remindThatThereIsALotteryLexeme)(ctx))
 					msg := tgbotapi.NewMessage(resp.GetUser().GetTelegramId(), text)
 
-					payload := &commands.LotteryData{
-						GameID: lotteryRemind.GameID,
-					}
+					var btnLottery tgbotapi.InlineKeyboardButton
 
-					callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandLottery, payload)
-					if err != nil {
-						logger.Errorf(ctx, "get callback data error: %s", err.Error())
+					switch lotteryRemind.LeagueID {
+					case pkgmodel.LeagueQuizPlease:
+						payload := &commands.LotteryData{
+							GameID: lotteryRemind.GameID,
+						}
+
+						var callbackData string
+						callbackData, err = callbackdata_utils.GetCallbackData(ctx, commands.CommandLottery, payload)
+						if err != nil {
+							logger.Errorf(ctx, "get callback data error: %s", err.Error())
+							continue
+						}
+
+						btnLottery = tgbotapi.InlineKeyboardButton{
+							Text:         fmt.Sprintf("%s %s", icons.Lottery, i18n.GetTranslator(registerForLotteryLexeme)(ctx)),
+							CallbackData: &callbackData,
+						}
+					case pkgmodel.LeagueSquiz:
+						text = fmt.Sprintf("%s %s", icons.Lottery, i18n.GetTranslator(registrationLink)(ctx))
+						btnLottery = tgbotapi.NewInlineKeyboardButtonURL(text, "https://spb.squiz.ru/game")
+					default:
 						continue
-					}
-
-					btnLottery := tgbotapi.InlineKeyboardButton{
-						Text:         fmt.Sprintf("%s %s", icons.Lottery, i18n.GetTranslator(registerForLotteryLexeme)(ctx)),
-						CallbackData: &callbackData,
 					}
 
 					replyMarkup := &tgbotapi.InlineKeyboardMarkup{
