@@ -39,7 +39,9 @@ func TelegramClientIDInterceptor(
 	opts ...grpc.CallOption,
 ) error {
 	telegramClientID := telegram_utils.ClientIDFromContext(ctx)
-	ctx = metadata.AppendToOutgoingContext(ctx, telegram_utils.TelegramClientID, strconv.FormatInt(telegramClientID, 10))
+	if telegramClientID != 0 {
+		ctx = metadata.AppendToOutgoingContext(ctx, telegram_utils.TelegramClientID, strconv.FormatInt(telegramClientID, 10))
+	}
 
 	err := invoker(ctx, method, req, reply, cc, opts...)
 	return err

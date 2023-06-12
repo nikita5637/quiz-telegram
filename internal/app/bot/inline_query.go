@@ -28,7 +28,7 @@ var (
 
 // HandleInlineQuery ...
 func (b *Bot) HandleInlineQuery(ctx context.Context, update *tgbotapi.Update) error {
-	ctx = metadata.AppendToOutgoingContext(ctx, "x-inline-query", "true")
+	ctx = metadata.AppendToOutgoingContext(ctx, "x-inline-query", "true", "x-service-name", "telegram")
 
 	inlineQueryID := update.InlineQuery.ID
 
