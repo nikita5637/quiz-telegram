@@ -15,6 +15,10 @@ import (
 )
 
 var (
+	addToCalendarLexeme = i18n.Lexeme{
+		Key:      "add_to_calendar",
+		FallBack: "Add to calendar",
+	}
 	cashGamePaymentLexeme = i18n.Lexeme{
 		Key:      "cash_game_payment",
 		FallBack: "We play for money",
@@ -248,6 +252,18 @@ func (b *Bot) getGameMenuSecondPage(ctx context.Context, game model.Game) (tgbot
 	callbackData, err = callbackdata_utils.GetCallbackData(ctx, commands.CommandGetGame, getGameData)
 	if err != nil {
 		return tgbotapi.InlineKeyboardMarkup{}, err
+	}
+
+	icsFile, err := b.icsFilesFacade.GetICSFileByGameID(ctx, game.ID)
+	if err == nil {
+		icsFileButtonsRow := []tgbotapi.InlineKeyboardButton{}
+		btn := tgbotapi.NewInlineKeyboardButtonURL(
+			i18n.GetTranslator(addToCalendarLexeme)(ctx),
+			"http://ics.home0705.keenetic.pro/"+icsFile.Name,
+		)
+		icsFileButtonsRow = append(icsFileButtonsRow, btn)
+
+		rows = append(rows, icsFileButtonsRow)
 	}
 
 	btnPrevMenuPage := tgbotapi.InlineKeyboardButton{

@@ -1,5 +1,6 @@
 //go:generate mockery --case underscore --name GamesFacade --with-expecter
 //go:generate mockery --case underscore --name GamePhotosFacade --with-expecter
+//go:generate mockery --case underscore --name ICSFilesFacade --with-expecter
 //go:generate mockery --case underscore --name PlacesFacade --with-expecter
 //go:generate mockery --case underscore --name UsersFacade --with-expecter
 //go:generate mockery --case underscore --name CroupierServiceClient --with-expecter
@@ -45,6 +46,11 @@ type GamePhotosFacade interface {
 	GetPhotosByGameID(ctx context.Context, gameID int32) ([]string, error)
 }
 
+// ICSFilesFacade ...
+type ICSFilesFacade interface {
+	GetICSFileByGameID(ctx context.Context, gameID int32) (model.ICSFile, error)
+}
+
 // PlacesFacade ...
 type PlacesFacade interface {
 	GetPlaceByID(ctx context.Context, id int32) (model.Place, error)
@@ -79,6 +85,7 @@ type Bot struct {
 	bot              TelegramBot // *tgbotapi.BotAPI
 	gamesFacade      GamesFacade
 	gamePhotosFacade GamePhotosFacade
+	icsFilesFacade   ICSFilesFacade
 	placesFacade     PlacesFacade
 	usersFacade      UsersFacade
 
@@ -92,6 +99,7 @@ type Config struct {
 	Bot              TelegramBot // *tgbotapi.BotAPI
 	GamesFacade      GamesFacade
 	GamePhotosFacade GamePhotosFacade
+	ICSFilesFacade   ICSFilesFacade
 	PlacesFacade     PlacesFacade
 	UsersFacade      UsersFacade
 
@@ -104,6 +112,7 @@ func New(cfg Config) (*Bot, error) {
 		bot:              cfg.Bot,
 		gamesFacade:      cfg.GamesFacade,
 		gamePhotosFacade: cfg.GamePhotosFacade,
+		icsFilesFacade:   cfg.ICSFilesFacade,
 		placesFacade:     cfg.PlacesFacade,
 		usersFacade:      cfg.UsersFacade,
 

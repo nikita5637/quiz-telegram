@@ -17,6 +17,7 @@ func translate(ctx context.Context, key string, defaultString string) string {
 var dictionary = map[string]map[string]string{
 	"ru": {
 		"address":                              "Адрес",
+		"add_to_calendar":                      "Добавить в календарь",
 		"card":                                 "Карта",
 		"cash":                                 "Наличные",
 		"cash_game_payment":                    "Играем за деньги",

@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 
+	icsfilemanagerpb "github.com/nikita5637/quiz-ics-manager-api/pkg/pb/ics_file_manager"
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	telegram "github.com/nikita5637/quiz-telegram/internal/app/bot"
 	"github.com/nikita5637/quiz-telegram/internal/app/reminder"
@@ -16,6 +17,7 @@ import (
 	"github.com/nikita5637/quiz-telegram/internal/pkg/elasticsearch"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/gamephotos"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/games"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/icsfiles"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/leagues"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/places"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/users"
@@ -100,18 +102,32 @@ func main() {
 
 	opts := grpc.WithInsecure()
 	target := fmt.Sprintf("%s:%d", registratorAPIAddress, registratorAPIPort)
-	clientConn, err := grpc.Dial(target, opts, grpc.WithChainUnaryInterceptor(
+	registratorAPIClientConn, err := grpc.Dial(target, opts, grpc.WithChainUnaryInterceptor(
 		middleware.LogInterceptor,
 		middleware.TelegramClientIDInterceptor,
 	))
 	if err != nil {
 		panic(err)
 	}
-	defer clientConn.Close()
+	defer registratorAPIClientConn.Close()
 
-	croupierServiceClient := registrator.NewCroupierServiceClient(clientConn)
-	photographerServiceClient := registrator.NewPhotographerServiceClient(clientConn)
-	registratorServiceClient := registrator.NewRegistratorServiceClient(clientConn)
+	icsManagerAPIAddress := config.GetValue("ICSManagerAPIAddress").String()
+	icsManagerAPIPort := config.GetValue("ICSManagerAPIPort").Uint16()
+
+	target = fmt.Sprintf("%s:%d", icsManagerAPIAddress, icsManagerAPIPort)
+	icsManagerAPIClientConn, err := grpc.Dial(target, opts, grpc.WithChainUnaryInterceptor(
+		middleware.LogInterceptor,
+		middleware.TelegramClientIDInterceptor,
+	))
+	if err != nil {
+		panic(err)
+	}
+	defer icsManagerAPIClientConn.Close()
+
+	croupierServiceClient := registrator.NewCroupierServiceClient(registratorAPIClientConn)
+	photographerServiceClient := registrator.NewPhotographerServiceClient(registratorAPIClientConn)
+	registratorServiceClient := registrator.NewRegistratorServiceClient(registratorAPIClientConn)
+	icsFileManagerAPIServiceClient := icsfilemanagerpb.NewServiceClient(icsManagerAPIClientConn)
 
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -143,6 +159,11 @@ func main() {
 		}
 		gamesFacade := games.NewFacade(gamesFacadeConfig)
 
+		icsFilesFacadeConfig := icsfiles.Config{
+			ICSFileManagerAPIServiceClient: icsFileManagerAPIServiceClient,
+		}
+		icsFilesFacade := icsfiles.NewFacade(icsFilesFacadeConfig)
+
 		usersFacadeConfig := users.Config{
 			RegistratorServiceClient: registratorServiceClient,
 		}
@@ -152,6 +173,7 @@ func main() {
 			Bot:              bot,
 			GamePhotosFacade: gamePhotosFacade,
 			GamesFacade:      gamesFacade,
+			ICSFilesFacade:   icsFilesFacade,
 			PlacesFacade:     placesFacade,
 			UsersFacade:      usersFacade,
 

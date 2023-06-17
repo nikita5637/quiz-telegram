@@ -6,6 +6,8 @@ import "fmt"
 type TelegramBotConfig struct {
 	GamesWithPhotosListLimit byte   `toml:"games_with_photos_list_limit"`
 	GroupID                  int64  `toml:"group_id"`
+	ICSManagerAPIAddress     string `toml:"ics_manager_api_address"`
+	ICSManagerAPIPort        uint16 `toml:"ics_manager_api_port"`
 	RegistratorAPIAddress    string `toml:"registrator_api_address"`
 	RegistratorAPIPort       uint16 `toml:"registrator_api_port"`
 	TelegramAPIBindAddress   string `toml:"telegram_api_bind_address"`

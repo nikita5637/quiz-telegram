@@ -18,7 +18,8 @@ rabbitmq_username = "quiz_reminder"
 # Telegram Bot settings
 #
 games_with_photos_list_limit = 8
-group_id = -826325866
+ics_manager_api_address = "localhost"
+ics_manager_api_port = 8082
 registrator_api_address = "localhost"
 registrator_api_port = 8080
 telegram_api_bind_address = "localhost"

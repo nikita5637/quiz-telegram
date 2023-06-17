@@ -16,7 +16,7 @@ func moduleNameInterceptor(
 	invoker grpc.UnaryInvoker,
 	opts ...grpc.CallOption,
 ) error {
-	ctx = metadata.AppendToOutgoingContext(ctx, "x-module-name", "telegram-reminder")
+	ctx = metadata.AppendToOutgoingContext(ctx, "x-service-name", "telegram-reminder")
 
 	err := invoker(ctx, method, req, reply, cc, opts...)
 	return err
