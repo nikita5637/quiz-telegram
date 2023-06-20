@@ -254,16 +254,17 @@ func (b *Bot) getGameMenuSecondPage(ctx context.Context, game model.Game) (tgbot
 		return tgbotapi.InlineKeyboardMarkup{}, err
 	}
 
-	icsFile, err := b.icsFilesFacade.GetICSFileByGameID(ctx, game.ID)
-	if err == nil {
-		icsFileButtonsRow := []tgbotapi.InlineKeyboardButton{}
-		btn := tgbotapi.NewInlineKeyboardButtonURL(
-			i18n.GetTranslator(addToCalendarLexeme)(ctx),
-			"http://ics.home0705.keenetic.pro/"+icsFile.Name,
-		)
-		icsFileButtonsRow = append(icsFileButtonsRow, btn)
+	if game.Registered {
+		if icsFile, err := b.icsFilesFacade.GetICSFileByGameID(ctx, game.ID); err == nil {
+			icsFileButtonsRow := []tgbotapi.InlineKeyboardButton{}
+			btn := tgbotapi.NewInlineKeyboardButtonURL(
+				i18n.GetTranslator(addToCalendarLexeme)(ctx),
+				"http://ics.home0705.keenetic.pro/"+icsFile.Name,
+			)
+			icsFileButtonsRow = append(icsFileButtonsRow, btn)
 
-		rows = append(rows, icsFileButtonsRow)
+			rows = append(rows, icsFileButtonsRow)
+		}
 	}
 
 	btnPrevMenuPage := tgbotapi.InlineKeyboardButton{
