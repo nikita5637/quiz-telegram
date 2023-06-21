@@ -12,6 +12,7 @@ import (
 	telegram_utils "github.com/nikita5637/quiz-telegram/utils/telegram"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	croupierpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/croupier"
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	"github.com/nikita5637/quiz-telegram/internal/config"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/commands"
@@ -339,7 +340,7 @@ func (b *Bot) handleGetGame(ctx context.Context, update *tgbotapi.Update, telegr
 		return err
 	}
 
-	lotteryResp, err := b.croupierServiceClient.GetLotteryStatus(ctx, &registrator.GetLotteryStatusRequest{
+	lotteryResp, err := b.croupierServiceClient.GetLotteryStatus(ctx, &croupierpb.GetLotteryStatusRequest{
 		GameId: game.ID,
 	})
 	if err != nil {
@@ -680,7 +681,7 @@ func (b *Bot) handleLottery(ctx context.Context, update *tgbotapi.Update, telegr
 		return err
 	}
 
-	resp, err := b.croupierServiceClient.RegisterForLottery(ctx, &registrator.RegisterForLotteryRequest{
+	resp, err := b.croupierServiceClient.RegisterForLottery(ctx, &croupierpb.RegisterForLotteryRequest{
 		GameId: data.GameID,
 	})
 	if err != nil {
@@ -836,7 +837,7 @@ func (b *Bot) handleRegisterGame(ctx context.Context, update *tgbotapi.Update, t
 		return err
 	}
 
-	lotteryResp, err := b.croupierServiceClient.GetLotteryStatus(ctx, &registrator.GetLotteryStatusRequest{
+	lotteryResp, err := b.croupierServiceClient.GetLotteryStatus(ctx, &croupierpb.GetLotteryStatusRequest{
 		GameId: game.ID,
 	})
 	if err != nil {
@@ -915,7 +916,7 @@ func (b *Bot) handleRegisterPlayer(ctx context.Context, update *tgbotapi.Update,
 		return err
 	}
 
-	lotteryResp, err := b.croupierServiceClient.GetLotteryStatus(ctx, &registrator.GetLotteryStatusRequest{
+	lotteryResp, err := b.croupierServiceClient.GetLotteryStatus(ctx, &croupierpb.GetLotteryStatusRequest{
 		GameId: game.ID,
 	})
 	if err != nil {
@@ -968,7 +969,7 @@ func (b *Bot) handleUnregisterGame(ctx context.Context, update *tgbotapi.Update,
 		return err
 	}
 
-	lotteryResp, err := b.croupierServiceClient.GetLotteryStatus(ctx, &registrator.GetLotteryStatusRequest{
+	lotteryResp, err := b.croupierServiceClient.GetLotteryStatus(ctx, &croupierpb.GetLotteryStatusRequest{
 		GameId: game.ID,
 	})
 	if err != nil {
@@ -1043,7 +1044,7 @@ func (b *Bot) handleUnregisterPlayer(ctx context.Context, update *tgbotapi.Updat
 		return err
 	}
 
-	lotteryResp, err := b.croupierServiceClient.GetLotteryStatus(ctx, &registrator.GetLotteryStatusRequest{
+	lotteryResp, err := b.croupierServiceClient.GetLotteryStatus(ctx, &croupierpb.GetLotteryStatusRequest{
 		GameId: game.ID,
 	})
 	if err != nil {
@@ -1096,7 +1097,7 @@ func (b *Bot) handleUpdatePayment(ctx context.Context, update *tgbotapi.Update, 
 		return err
 	}
 
-	lotteryResp, err := b.croupierServiceClient.GetLotteryStatus(ctx, &registrator.GetLotteryStatusRequest{
+	lotteryResp, err := b.croupierServiceClient.GetLotteryStatus(ctx, &croupierpb.GetLotteryStatusRequest{
 		GameId: game.ID,
 	})
 	if err != nil {

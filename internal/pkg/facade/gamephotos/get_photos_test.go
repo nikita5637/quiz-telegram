@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	photomanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/photo_manager"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
@@ -15,7 +15,7 @@ func TestFacade_GetPhotosByGameID(t *testing.T) {
 	t.Run("error game not found while get photos by game ID", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.photographerServiceClient.EXPECT().GetPhotosByGameID(fx.ctx, &registrator.GetPhotosByGameIDRequest{
+		fx.photographerServiceClient.EXPECT().GetPhotosByGameID(fx.ctx, &photomanagerpb.GetPhotosByGameIDRequest{
 			GameId: 1,
 		}).Return(nil, status.New(codes.NotFound, "").Err())
 
@@ -28,7 +28,7 @@ func TestFacade_GetPhotosByGameID(t *testing.T) {
 	t.Run("error while get photos by game ID", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.photographerServiceClient.EXPECT().GetPhotosByGameID(fx.ctx, &registrator.GetPhotosByGameIDRequest{
+		fx.photographerServiceClient.EXPECT().GetPhotosByGameID(fx.ctx, &photomanagerpb.GetPhotosByGameIDRequest{
 			GameId: 1,
 		}).Return(nil, errors.New("some error"))
 
@@ -40,9 +40,9 @@ func TestFacade_GetPhotosByGameID(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.photographerServiceClient.EXPECT().GetPhotosByGameID(fx.ctx, &registrator.GetPhotosByGameIDRequest{
+		fx.photographerServiceClient.EXPECT().GetPhotosByGameID(fx.ctx, &photomanagerpb.GetPhotosByGameIDRequest{
 			GameId: 1,
-		}).Return(&registrator.GetPhotosByGameIDResponse{
+		}).Return(&photomanagerpb.GetPhotosByGameIDResponse{
 			Urls: []string{
 				"url1",
 				"url2",

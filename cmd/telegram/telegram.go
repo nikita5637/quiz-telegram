@@ -9,6 +9,8 @@ import (
 	"os/signal"
 
 	icsfilemanagerpb "github.com/nikita5637/quiz-ics-manager-api/pkg/pb/ics_file_manager"
+	croupierpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/croupier"
+	photomanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/photo_manager"
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	telegram "github.com/nikita5637/quiz-telegram/internal/app/bot"
 	"github.com/nikita5637/quiz-telegram/internal/app/reminder"
@@ -124,8 +126,8 @@ func main() {
 	}
 	defer icsManagerAPIClientConn.Close()
 
-	croupierServiceClient := registrator.NewCroupierServiceClient(registratorAPIClientConn)
-	photographerServiceClient := registrator.NewPhotographerServiceClient(registratorAPIClientConn)
+	croupierServiceClient := croupierpb.NewServiceClient(registratorAPIClientConn)
+	photographerServiceClient := photomanagerpb.NewServiceClient(registratorAPIClientConn)
 	registratorServiceClient := registrator.NewRegistratorServiceClient(registratorAPIClientConn)
 	icsFileManagerAPIServiceClient := icsfilemanagerpb.NewServiceClient(icsManagerAPIClientConn)
 

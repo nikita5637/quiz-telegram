@@ -1,12 +1,12 @@
 package converter
 
 import (
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	commonpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/common"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 )
 
 // ConvertPBGameToModelGame ...
-func ConvertPBGameToModelGame(pbGame *registrator.Game) model.Game {
+func ConvertPBGameToModelGame(pbGame *commonpb.Game) model.Game {
 	return model.Game{
 		ID:                  pbGame.GetId(),
 		ExternalID:          pbGame.GetExternalId(),

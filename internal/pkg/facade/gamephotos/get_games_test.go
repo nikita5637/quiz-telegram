@@ -4,7 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	commonpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/common"
+	photomanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/photo_manager"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -15,7 +16,7 @@ func TestFacade_GetGamesWithPhotos(t *testing.T) {
 	t.Run("error while get games with photos", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.photographerServiceClient.EXPECT().GetGamesWithPhotos(fx.ctx, &registrator.GetGamesWithPhotosRequest{
+		fx.photographerServiceClient.EXPECT().GetGamesWithPhotos(fx.ctx, &photomanagerpb.GetGamesWithPhotosRequest{
 			Limit:  4,
 			Offset: 0,
 		}).Return(nil, errors.New("some error"))
@@ -29,11 +30,11 @@ func TestFacade_GetGamesWithPhotos(t *testing.T) {
 	t.Run("error while get league", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.photographerServiceClient.EXPECT().GetGamesWithPhotos(fx.ctx, &registrator.GetGamesWithPhotosRequest{
+		fx.photographerServiceClient.EXPECT().GetGamesWithPhotos(fx.ctx, &photomanagerpb.GetGamesWithPhotosRequest{
 			Limit:  4,
 			Offset: 0,
-		}).Return(&registrator.GetGamesWithPhotosResponse{
-			Games: []*registrator.Game{
+		}).Return(&photomanagerpb.GetGamesWithPhotosResponse{
+			Games: []*commonpb.Game{
 				{
 					Id:       1,
 					LeagueId: 1,
@@ -76,11 +77,11 @@ func TestFacade_GetGamesWithPhotos(t *testing.T) {
 	t.Run("error while get place", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.photographerServiceClient.EXPECT().GetGamesWithPhotos(fx.ctx, &registrator.GetGamesWithPhotosRequest{
+		fx.photographerServiceClient.EXPECT().GetGamesWithPhotos(fx.ctx, &photomanagerpb.GetGamesWithPhotosRequest{
 			Limit:  4,
 			Offset: 0,
-		}).Return(&registrator.GetGamesWithPhotosResponse{
-			Games: []*registrator.Game{
+		}).Return(&photomanagerpb.GetGamesWithPhotosResponse{
+			Games: []*commonpb.Game{
 				{
 					Id:       1,
 					LeagueId: 1,
@@ -119,11 +120,11 @@ func TestFacade_GetGamesWithPhotos(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.photographerServiceClient.EXPECT().GetGamesWithPhotos(fx.ctx, &registrator.GetGamesWithPhotosRequest{
+		fx.photographerServiceClient.EXPECT().GetGamesWithPhotos(fx.ctx, &photomanagerpb.GetGamesWithPhotosRequest{
 			Limit:  4,
 			Offset: 0,
-		}).Return(&registrator.GetGamesWithPhotosResponse{
-			Games: []*registrator.Game{
+		}).Return(&photomanagerpb.GetGamesWithPhotosResponse{
+			Games: []*commonpb.Game{
 				{
 					Id:       1,
 					LeagueId: 1,

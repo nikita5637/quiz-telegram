@@ -3,7 +3,7 @@ package gamephotos
 import (
 	"context"
 
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	photomanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/photo_manager"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -11,7 +11,7 @@ import (
 
 // GetPhotosByGameID ...
 func (f *Facade) GetPhotosByGameID(ctx context.Context, gameID int32) ([]string, error) {
-	resp, err := f.photographerServiceClient.GetPhotosByGameID(ctx, &registrator.GetPhotosByGameIDRequest{
+	resp, err := f.photographerServiceClient.GetPhotosByGameID(ctx, &photomanagerpb.GetPhotosByGameIDRequest{
 		GameId: gameID,
 	})
 	if err != nil {

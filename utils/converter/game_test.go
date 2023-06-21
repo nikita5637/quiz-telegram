@@ -3,7 +3,7 @@ package converter
 import (
 	"testing"
 
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	commonpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/common"
 	time_utils "github.com/nikita5637/quiz-registrator-api/utils/time"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	"github.com/stretchr/testify/assert"
@@ -13,7 +13,7 @@ import (
 func TestConvertPBGameToModelGame(t *testing.T) {
 	timeNow := time_utils.TimeNow()
 	type args struct {
-		pbGame *registrator.Game
+		pbGame *commonpb.Game
 	}
 	tests := []struct {
 		name string
@@ -23,11 +23,11 @@ func TestConvertPBGameToModelGame(t *testing.T) {
 		{
 			name: "test case 1",
 			args: args{
-				pbGame: &registrator.Game{
+				pbGame: &commonpb.Game{
 					Id:                  1,
 					ExternalId:          2,
 					LeagueId:            3,
-					Type:                registrator.GameType_GAME_TYPE_CLASSIC,
+					Type:                commonpb.GameType_GAME_TYPE_CLASSIC,
 					Number:              "1",
 					Name:                "name",
 					PlaceId:             4,
@@ -35,7 +35,7 @@ func TestConvertPBGameToModelGame(t *testing.T) {
 					Price:               400,
 					PaymentType:         "cash,card",
 					MaxPlayers:          9,
-					Payment:             registrator.Payment_PAYMENT_CASH,
+					Payment:             commonpb.Payment_PAYMENT_CASH,
 					Registered:          true,
 					My:                  true,
 					NumberOfMyLegioners: 3,

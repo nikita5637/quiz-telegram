@@ -6,6 +6,7 @@ import (
 
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 
+	commonpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/common"
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	converter_utils "github.com/nikita5637/quiz-telegram/utils/converter"
 )
@@ -73,7 +74,7 @@ func (f *Facade) GetUserGames(ctx context.Context, active bool, userID int32) ([
 	return f.getGames(ctx, gamesResp.GetGames())
 }
 
-func (f *Facade) getGames(ctx context.Context, pbGames []*registrator.Game) ([]model.Game, error) {
+func (f *Facade) getGames(ctx context.Context, pbGames []*commonpb.Game) ([]model.Game, error) {
 	games := make([]model.Game, 0, len(pbGames))
 	for _, pbGame := range pbGames {
 		game := converter_utils.ConvertPBGameToModelGame(pbGame)

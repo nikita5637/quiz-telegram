@@ -13,7 +13,7 @@ import (
 	"runtime/debug"
 
 	"github.com/google/uuid"
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	croupierpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/croupier"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
@@ -69,7 +69,7 @@ type UsersFacade interface {
 
 // CroupierServiceClient ...
 type CroupierServiceClient interface {
-	registrator.CroupierServiceClient
+	croupierpb.ServiceClient
 }
 
 // TelegramBot ...
@@ -103,7 +103,7 @@ type Config struct {
 	PlacesFacade     PlacesFacade
 	UsersFacade      UsersFacade
 
-	CroupierServiceClient registrator.CroupierServiceClient
+	CroupierServiceClient croupierpb.ServiceClient
 }
 
 // New ...

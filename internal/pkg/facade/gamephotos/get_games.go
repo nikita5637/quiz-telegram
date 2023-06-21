@@ -4,14 +4,15 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	commonpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/common"
+	photomanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/photo_manager"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	converter_utils "github.com/nikita5637/quiz-telegram/utils/converter"
 )
 
 // GetGamesWithPhotos ...
 func (f *Facade) GetGamesWithPhotos(ctx context.Context, limit, offset uint32) ([]model.Game, uint32, error) {
-	gamesResp, err := f.photographerServiceClient.GetGamesWithPhotos(ctx, &registrator.GetGamesWithPhotosRequest{
+	gamesResp, err := f.photographerServiceClient.GetGamesWithPhotos(ctx, &photomanagerpb.GetGamesWithPhotosRequest{
 		Limit:  limit,
 		Offset: offset,
 	})
@@ -27,7 +28,7 @@ func (f *Facade) GetGamesWithPhotos(ctx context.Context, limit, offset uint32) (
 	return games, gamesResp.GetTotal(), nil
 }
 
-func (f *Facade) getGames(ctx context.Context, pbGames []*registrator.Game) ([]model.Game, error) {
+func (f *Facade) getGames(ctx context.Context, pbGames []*commonpb.Game) ([]model.Game, error) {
 	games := make([]model.Game, 0, len(pbGames))
 	for _, pbGame := range pbGames {
 		game := converter_utils.ConvertPBGameToModelGame(pbGame)

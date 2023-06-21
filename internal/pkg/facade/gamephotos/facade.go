@@ -8,6 +8,7 @@ package gamephotos
 import (
 	"context"
 
+	photomanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/photo_manager"
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 )
@@ -24,7 +25,7 @@ type PlacesFacade interface {
 
 // PhotographerServiceClient ...
 type PhotographerServiceClient interface {
-	registrator.PhotographerServiceClient
+	photomanagerpb.ServiceClient
 }
 
 // RegistratorServiceClient ...

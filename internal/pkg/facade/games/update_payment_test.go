@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	commonpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/common"
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	"github.com/stretchr/testify/assert"
@@ -17,10 +18,10 @@ func TestFacade_UpdatePayment(t *testing.T) {
 
 		fx.registratorServiceClient.EXPECT().UpdatePayment(fx.ctx, &registrator.UpdatePaymentRequest{
 			GameId:  1,
-			Payment: registrator.Payment_PAYMENT_CERTIFICATE,
+			Payment: commonpb.Payment_PAYMENT_CERTIFICATE,
 		}).Return(nil, errors.New("some error"))
 
-		err := fx.facade.UpdatePayment(fx.ctx, 1, int32(registrator.Payment_PAYMENT_CERTIFICATE))
+		err := fx.facade.UpdatePayment(fx.ctx, 1, int32(commonpb.Payment_PAYMENT_CERTIFICATE))
 		assert.Error(t, err)
 	})
 
@@ -29,10 +30,10 @@ func TestFacade_UpdatePayment(t *testing.T) {
 
 		fx.registratorServiceClient.EXPECT().UpdatePayment(fx.ctx, &registrator.UpdatePaymentRequest{
 			GameId:  1,
-			Payment: registrator.Payment_PAYMENT_CERTIFICATE,
+			Payment: commonpb.Payment_PAYMENT_CERTIFICATE,
 		}).Return(nil, status.New(codes.NotFound, "").Err())
 
-		err := fx.facade.UpdatePayment(fx.ctx, 1, int32(registrator.Payment_PAYMENT_CERTIFICATE))
+		err := fx.facade.UpdatePayment(fx.ctx, 1, int32(commonpb.Payment_PAYMENT_CERTIFICATE))
 		assert.Error(t, err)
 		assert.ErrorIs(t, err, model.ErrGameNotFound)
 	})
@@ -42,10 +43,10 @@ func TestFacade_UpdatePayment(t *testing.T) {
 
 		fx.registratorServiceClient.EXPECT().UpdatePayment(fx.ctx, &registrator.UpdatePaymentRequest{
 			GameId:  1,
-			Payment: registrator.Payment_PAYMENT_CERTIFICATE,
+			Payment: commonpb.Payment_PAYMENT_CERTIFICATE,
 		}).Return(&registrator.UpdatePaymentResponse{}, nil)
 
-		err := fx.facade.UpdatePayment(fx.ctx, 1, int32(registrator.Payment_PAYMENT_CERTIFICATE))
+		err := fx.facade.UpdatePayment(fx.ctx, 1, int32(commonpb.Payment_PAYMENT_CERTIFICATE))
 		assert.NoError(t, err)
 	})
 }

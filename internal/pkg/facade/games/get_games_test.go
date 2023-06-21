@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	commonpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/common"
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	"github.com/stretchr/testify/assert"
@@ -45,7 +46,7 @@ func TestFacade_GetGameByID(t *testing.T) {
 		fx.registratorServiceClient.EXPECT().GetGameByID(fx.ctx, &registrator.GetGameByIDRequest{
 			GameId: 1,
 		}).Return(&registrator.GetGameByIDResponse{
-			Game: &registrator.Game{
+			Game: &commonpb.Game{
 				Id:       1,
 				LeagueId: 1,
 				PlaceId:  1,
@@ -65,7 +66,7 @@ func TestFacade_GetGameByID(t *testing.T) {
 		fx.registratorServiceClient.EXPECT().GetGameByID(fx.ctx, &registrator.GetGameByIDRequest{
 			GameId: 1,
 		}).Return(&registrator.GetGameByIDResponse{
-			Game: &registrator.Game{
+			Game: &commonpb.Game{
 				Id:       1,
 				LeagueId: 1,
 				PlaceId:  1,
@@ -89,7 +90,7 @@ func TestFacade_GetGameByID(t *testing.T) {
 		fx.registratorServiceClient.EXPECT().GetGameByID(fx.ctx, &registrator.GetGameByIDRequest{
 			GameId: 1,
 		}).Return(&registrator.GetGameByIDResponse{
-			Game: &registrator.Game{
+			Game: &commonpb.Game{
 				Id:       1,
 				LeagueId: 1,
 				PlaceId:  1,
@@ -139,7 +140,7 @@ func TestFacade_GetGames(t *testing.T) {
 		fx.registratorServiceClient.EXPECT().GetGames(fx.ctx, &registrator.GetGamesRequest{
 			Active: true,
 		}).Return(&registrator.GetGamesResponse{
-			Games: []*registrator.Game{
+			Games: []*commonpb.Game{
 				{
 					Id:       1,
 					LeagueId: 1,
@@ -206,7 +207,7 @@ func TestFacade_GetGames(t *testing.T) {
 		fx.registratorServiceClient.EXPECT().GetGames(fx.ctx, &registrator.GetGamesRequest{
 			Active: true,
 		}).Return(&registrator.GetGamesResponse{
-			Games: []*registrator.Game{
+			Games: []*commonpb.Game{
 				{
 					Id:       1,
 					LeagueId: 1,
@@ -261,7 +262,7 @@ func TestFacade_GetGames(t *testing.T) {
 		fx.registratorServiceClient.EXPECT().GetGames(fx.ctx, &registrator.GetGamesRequest{
 			Active: true,
 		}).Return(&registrator.GetGamesResponse{
-			Games: []*registrator.Game{
+			Games: []*commonpb.Game{
 				{
 					Id:       1,
 					LeagueId: 1,
@@ -410,7 +411,7 @@ func TestFacade_GetRegisteredGames(t *testing.T) {
 		fx.registratorServiceClient.EXPECT().GetRegisteredGames(fx.ctx, &registrator.GetRegisteredGamesRequest{
 			Active: true,
 		}).Return(&registrator.GetRegisteredGamesResponse{
-			Games: []*registrator.Game{
+			Games: []*commonpb.Game{
 				{
 					Id:         1,
 					LeagueId:   1,
@@ -483,7 +484,7 @@ func TestFacade_GetRegisteredGames(t *testing.T) {
 		fx.registratorServiceClient.EXPECT().GetRegisteredGames(fx.ctx, &registrator.GetRegisteredGamesRequest{
 			Active: true,
 		}).Return(&registrator.GetRegisteredGamesResponse{
-			Games: []*registrator.Game{
+			Games: []*commonpb.Game{
 				{
 					Id:         1,
 					LeagueId:   1,
@@ -544,7 +545,7 @@ func TestFacade_GetRegisteredGames(t *testing.T) {
 		fx.registratorServiceClient.EXPECT().GetRegisteredGames(fx.ctx, &registrator.GetRegisteredGamesRequest{
 			Active: true,
 		}).Return(&registrator.GetRegisteredGamesResponse{
-			Games: []*registrator.Game{
+			Games: []*commonpb.Game{
 				{
 					Id:         1,
 					LeagueId:   1,
@@ -707,7 +708,7 @@ func TestFacade_GetUserGames(t *testing.T) {
 			Active: true,
 			UserId: 1,
 		}).Return(&registrator.GetUserGamesResponse{
-			Games: []*registrator.Game{
+			Games: []*commonpb.Game{
 				{
 					Id:         1,
 					LeagueId:   1,
@@ -781,7 +782,7 @@ func TestFacade_GetUserGames(t *testing.T) {
 			Active: true,
 			UserId: 1,
 		}).Return(&registrator.GetUserGamesResponse{
-			Games: []*registrator.Game{
+			Games: []*commonpb.Game{
 				{
 					Id:         1,
 					LeagueId:   1,
@@ -843,7 +844,7 @@ func TestFacade_GetUserGames(t *testing.T) {
 			Active: true,
 			UserId: 1,
 		}).Return(&registrator.GetUserGamesResponse{
-			Games: []*registrator.Game{
+			Games: []*commonpb.Game{
 				{
 					Id:         1,
 					LeagueId:   1,
