@@ -28,6 +28,21 @@ func LogInterceptor(
 	return err
 }
 
+// ServiceNameInterceptor ...
+func ServiceNameInterceptor(
+	ctx context.Context,
+	method string,
+	req interface{},
+	reply interface{},
+	cc *grpc.ClientConn,
+	invoker grpc.UnaryInvoker,
+	opts ...grpc.CallOption,
+) error {
+	ctx = metadata.AppendToOutgoingContext(ctx, "x-service-name", "telegram")
+	err := invoker(ctx, method, req, reply, cc, opts...)
+	return err
+}
+
 // TelegramClientIDInterceptor ...
 func TelegramClientIDInterceptor(
 	ctx context.Context,

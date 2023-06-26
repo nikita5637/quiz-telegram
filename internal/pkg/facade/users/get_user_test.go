@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	"github.com/stretchr/testify/assert"
 )
@@ -13,7 +13,7 @@ func TestFacade_GetUserByID(t *testing.T) {
 	t.Run("error", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.registratorServiceClient.EXPECT().GetUserByID(fx.ctx, &registrator.GetUserByIDRequest{
+		fx.userManagerServiceClient.EXPECT().GetUser(fx.ctx, &usermanagerpb.GetUserRequest{
 			Id: 1,
 		}).Return(nil, errors.New("some error"))
 
@@ -25,16 +25,14 @@ func TestFacade_GetUserByID(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.registratorServiceClient.EXPECT().GetUserByID(fx.ctx, &registrator.GetUserByIDRequest{
+		fx.userManagerServiceClient.EXPECT().GetUser(fx.ctx, &usermanagerpb.GetUserRequest{
 			Id: 1,
-		}).Return(&registrator.GetUserByIDResponse{
-			User: &registrator.User{
-				Id:    1,
-				Email: "email",
-				Name:  "name",
-				Phone: "phone",
-				State: registrator.UserState_USER_STATE_CHANGING_NAME,
-			},
+		}).Return(&usermanagerpb.User{
+			Id:    1,
+			Email: "email",
+			Name:  "name",
+			Phone: "phone",
+			State: usermanagerpb.UserState_USER_STATE_CHANGING_NAME,
 		}, nil)
 
 		got, err := fx.facade.GetUserByID(fx.ctx, 1)
@@ -43,7 +41,7 @@ func TestFacade_GetUserByID(t *testing.T) {
 			Email: "email",
 			Name:  "name",
 			Phone: "phone",
-			State: int32(registrator.UserState_USER_STATE_CHANGING_NAME),
+			State: int32(usermanagerpb.UserState_USER_STATE_CHANGING_NAME),
 		}, got)
 		assert.NoError(t, err)
 	})
@@ -53,7 +51,7 @@ func TestFacade_GetUserByTelegramID(t *testing.T) {
 	t.Run("error", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.registratorServiceClient.EXPECT().GetUserByTelegramID(fx.ctx, &registrator.GetUserByTelegramIDRequest{
+		fx.userManagerServiceClient.EXPECT().GetUserByTelegramID(fx.ctx, &usermanagerpb.GetUserByTelegramIDRequest{
 			TelegramId: -100,
 		}).Return(nil, errors.New("some error"))
 
@@ -65,16 +63,14 @@ func TestFacade_GetUserByTelegramID(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.registratorServiceClient.EXPECT().GetUserByTelegramID(fx.ctx, &registrator.GetUserByTelegramIDRequest{
+		fx.userManagerServiceClient.EXPECT().GetUserByTelegramID(fx.ctx, &usermanagerpb.GetUserByTelegramIDRequest{
 			TelegramId: -100,
-		}).Return(&registrator.GetUserByTelegramIDResponse{
-			User: &registrator.User{
-				Id:    1,
-				Email: "email",
-				Name:  "name",
-				Phone: "phone",
-				State: registrator.UserState_USER_STATE_CHANGING_NAME,
-			},
+		}).Return(&usermanagerpb.User{
+			Id:    1,
+			Email: "email",
+			Name:  "name",
+			Phone: "phone",
+			State: usermanagerpb.UserState_USER_STATE_CHANGING_NAME,
 		}, nil)
 
 		got, err := fx.facade.GetUserByTelegramID(fx.ctx, -100)
@@ -83,7 +79,7 @@ func TestFacade_GetUserByTelegramID(t *testing.T) {
 			Email: "email",
 			Name:  "name",
 			Phone: "phone",
-			State: int32(registrator.UserState_USER_STATE_CHANGING_NAME),
+			State: int32(usermanagerpb.UserState_USER_STATE_CHANGING_NAME),
 		}, got)
 		assert.NoError(t, err)
 	})

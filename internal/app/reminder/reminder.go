@@ -8,8 +8,8 @@ import (
 	callbackdata_utils "github.com/nikita5637/quiz-telegram/internal/pkg/utils/callbackdata"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	pkgmodel "github.com/nikita5637/quiz-registrator-api/pkg/model"
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	registratorpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
 	reminder "github.com/nikita5637/quiz-registrator-api/pkg/reminder"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/commands"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
@@ -47,9 +47,14 @@ var (
 	}
 )
 
+// UserManagerServiceClient ...
+type UserManagerServiceClient interface {
+	usermanagerpb.ServiceClient
+}
+
 // RegistratorServiceClient ...
 type RegistratorServiceClient interface {
-	registrator.RegistratorServiceClient
+	registratorpb.RegistratorServiceClient
 }
 
 // TelegramBot ...
@@ -69,6 +74,7 @@ type Reminder struct {
 	registratorAPIAddress    string
 	registratorAPIPort       uint16
 	registratorServiceClient RegistratorServiceClient
+	userManagerServiceClient UserManagerServiceClient
 }
 
 // Config ...
@@ -104,7 +110,8 @@ func (r *Reminder) Start(ctx context.Context) error {
 		return fmt.Errorf("could not connect: %w", err)
 	}
 
-	r.registratorServiceClient = registrator.NewRegistratorServiceClient(cc)
+	r.registratorServiceClient = registratorpb.NewRegistratorServiceClient(cc)
+	r.userManagerServiceClient = usermanagerpb.NewServiceClient(cc)
 
 	gameReminderQueue, err := r.rabbitMQChanel.QueueDeclare(
 		r.gameReminderQueueName,
@@ -168,7 +175,7 @@ func (r *Reminder) Start(ctx context.Context) error {
 					continue
 				}
 
-				gameResp, err := r.registratorServiceClient.GetGameByID(ctx, &registrator.GetGameByIDRequest{
+				gameResp, err := r.registratorServiceClient.GetGameByID(ctx, &registratorpb.GetGameByIDRequest{
 					GameId: gameRemind.GameID,
 				})
 				if err != nil {
@@ -176,7 +183,7 @@ func (r *Reminder) Start(ctx context.Context) error {
 					continue
 				}
 
-				placeResp, err := r.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
+				placeResp, err := r.registratorServiceClient.GetPlaceByID(ctx, &registratorpb.GetPlaceByIDRequest{
 					Id: gameResp.GetGame().GetPlaceId(),
 				})
 				if err != nil {
@@ -189,7 +196,7 @@ func (r *Reminder) Start(ctx context.Context) error {
 				text += fmt.Sprintf("%s %s: %s\n", icons.Place, i18n.GetTranslator(placeLexeme)(ctx), placeResp.GetPlace().GetAddress())
 
 				for _, playerID := range gameRemind.PlayerIDs {
-					resp, err := r.registratorServiceClient.GetUserByID(ctx, &registrator.GetUserByIDRequest{
+					pbUser, err := r.userManagerServiceClient.GetUser(ctx, &usermanagerpb.GetUserRequest{
 						Id: playerID,
 					})
 					if err != nil {
@@ -197,14 +204,14 @@ func (r *Reminder) Start(ctx context.Context) error {
 						continue
 					}
 
-					textMessage := tgbotapi.NewMessage(resp.GetUser().GetTelegramId(), text)
+					textMessage := tgbotapi.NewMessage(pbUser.GetTelegramId(), text)
 					_, err = r.bot.Send(textMessage)
 					if err != nil {
 						logger.Errorf(ctx, "send game reminder text message error: %s", err.Error())
 						continue
 					}
 
-					venueMessage := tgbotapi.NewVenue(resp.GetUser().GetTelegramId(),
+					venueMessage := tgbotapi.NewVenue(pbUser.GetTelegramId(),
 						placeResp.GetPlace().GetName(),
 						placeResp.GetPlace().GetAddress(),
 						float64(placeResp.GetPlace().GetLatitude()),
@@ -216,7 +223,7 @@ func (r *Reminder) Start(ctx context.Context) error {
 						continue
 					}
 
-					logger.InfoKV(ctx, "sent game reminder messages to user", "user", resp.GetUser())
+					logger.InfoKV(ctx, "sent game reminder messages to user", "user", pbUser)
 				}
 			}
 		}(ctx)
@@ -233,7 +240,7 @@ func (r *Reminder) Start(ctx context.Context) error {
 				}
 
 				for _, playerID := range lotteryRemind.PlayerIDs {
-					resp, err := r.registratorServiceClient.GetUserByID(ctx, &registrator.GetUserByIDRequest{
+					pbUser, err := r.userManagerServiceClient.GetUser(ctx, &usermanagerpb.GetUserRequest{
 						Id: playerID,
 					})
 					if err != nil {
@@ -242,12 +249,12 @@ func (r *Reminder) Start(ctx context.Context) error {
 					}
 
 					text := fmt.Sprintf("%s %s\n", icons.Note, i18n.GetTranslator(remindThatThereIsALotteryLexeme)(ctx))
-					msg := tgbotapi.NewMessage(resp.GetUser().GetTelegramId(), text)
+					msg := tgbotapi.NewMessage(pbUser.GetTelegramId(), text)
 
 					var btnLottery tgbotapi.InlineKeyboardButton
 
 					switch lotteryRemind.LeagueID {
-					case pkgmodel.LeagueQuizPlease:
+					case model.LeagueQuizPlease:
 						payload := &commands.LotteryData{
 							GameID: lotteryRemind.GameID,
 						}
@@ -263,7 +270,7 @@ func (r *Reminder) Start(ctx context.Context) error {
 							Text:         fmt.Sprintf("%s %s", icons.Lottery, i18n.GetTranslator(registerForLotteryLexeme)(ctx)),
 							CallbackData: &callbackData,
 						}
-					case pkgmodel.LeagueSquiz:
+					case model.LeagueSquiz:
 						text = fmt.Sprintf("%s %s", icons.Lottery, i18n.GetTranslator(registrationLink)(ctx))
 						btnLottery = tgbotapi.NewInlineKeyboardButtonURL(text, "https://spb.squiz.ru/game")
 					default:
@@ -285,7 +292,7 @@ func (r *Reminder) Start(ctx context.Context) error {
 						continue
 					}
 
-					logger.InfoKV(ctx, "sent lottery reminder message to user", "user", resp.GetUser())
+					logger.InfoKV(ctx, "sent lottery reminder message to user", "user", pbUser)
 				}
 			}
 		}(ctx)

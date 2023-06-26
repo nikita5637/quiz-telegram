@@ -4,7 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
+	telegramutils "github.com/nikita5637/quiz-telegram/utils/telegram"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,13 +13,17 @@ func TestFacade_CreateUser(t *testing.T) {
 	t.Run("error", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.registratorServiceClient.EXPECT().CreateUser(fx.ctx, &registrator.CreateUserRequest{
-			Name:       "name",
-			TelegramId: -100,
-			State:      registrator.UserState_USER_STATE_WELCOME,
+		ctx := telegramutils.NewContextWithClientID(fx.ctx, 0)
+
+		fx.userManagerServiceClient.EXPECT().CreateUser(ctx, &usermanagerpb.CreateUserRequest{
+			User: &usermanagerpb.User{
+				Name:       "name",
+				TelegramId: -100,
+				State:      usermanagerpb.UserState_USER_STATE_WELCOME,
+			},
 		}).Return(nil, errors.New("some error"))
 
-		got, err := fx.facade.CreateUser(fx.ctx, "name", -100, int32(registrator.UserState_USER_STATE_WELCOME))
+		got, err := fx.facade.CreateUser(fx.ctx, "name", -100, int32(usermanagerpb.UserState_USER_STATE_WELCOME))
 		assert.Equal(t, int32(0), got)
 		assert.Error(t, err)
 	})
@@ -26,15 +31,21 @@ func TestFacade_CreateUser(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.registratorServiceClient.EXPECT().CreateUser(fx.ctx, &registrator.CreateUserRequest{
-			Name:       "name",
+		ctx := telegramutils.NewContextWithClientID(fx.ctx, 0)
+
+		fx.userManagerServiceClient.EXPECT().CreateUser(ctx, &usermanagerpb.CreateUserRequest{
+			User: &usermanagerpb.User{
+				Name:       "name",
+				TelegramId: -100,
+				State:      usermanagerpb.UserState_USER_STATE_WELCOME,
+			},
+		}).Return(&usermanagerpb.User{
+			Id:         1,
 			TelegramId: -100,
-			State:      registrator.UserState_USER_STATE_WELCOME,
-		}).Return(&registrator.CreateUserResponse{
-			Id: 1,
+			State:      usermanagerpb.UserState_USER_STATE_WELCOME,
 		}, nil)
 
-		got, err := fx.facade.CreateUser(fx.ctx, "name", -100, int32(registrator.UserState_USER_STATE_WELCOME))
+		got, err := fx.facade.CreateUser(fx.ctx, "name", -100, int32(usermanagerpb.UserState_USER_STATE_WELCOME))
 		assert.Equal(t, int32(1), got)
 		assert.NoError(t, err)
 	})

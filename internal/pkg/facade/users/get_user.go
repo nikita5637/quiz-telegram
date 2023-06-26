@@ -3,35 +3,35 @@ package users
 import (
 	"context"
 
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 )
 
 // GetUserByID ...
 func (f *Facade) GetUserByID(ctx context.Context, userID int32) (model.User, error) {
-	resp, err := f.registratorServiceClient.GetUserByID(ctx, &registrator.GetUserByIDRequest{
+	pbUser, err := f.userManagerServiceClient.GetUser(ctx, &usermanagerpb.GetUserRequest{
 		Id: userID,
 	})
 	if err != nil {
 		return model.User{}, err
 	}
 
-	return convertPBUserToModelUser(resp.GetUser()), nil
+	return convertPBUserToModelUser(pbUser), nil
 }
 
 // GetUserByTelegramID ...
 func (f *Facade) GetUserByTelegramID(ctx context.Context, telegramID int64) (model.User, error) {
-	resp, err := f.registratorServiceClient.GetUserByTelegramID(ctx, &registrator.GetUserByTelegramIDRequest{
+	pbUser, err := f.userManagerServiceClient.GetUserByTelegramID(ctx, &usermanagerpb.GetUserByTelegramIDRequest{
 		TelegramId: telegramID,
 	})
 	if err != nil {
 		return model.User{}, err
 	}
 
-	return convertPBUserToModelUser(resp.GetUser()), nil
+	return convertPBUserToModelUser(pbUser), nil
 }
 
-func convertPBUserToModelUser(pbUser *registrator.User) model.User {
+func convertPBUserToModelUser(pbUser *usermanagerpb.User) model.User {
 	return model.User{
 		ID:    pbUser.GetId(),
 		Email: pbUser.GetEmail(),

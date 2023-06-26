@@ -11,18 +11,18 @@ type fixture struct {
 	ctx    context.Context
 	facade *Facade
 
-	registratorServiceClient *mocks.RegistratorServiceClient
+	userManagerServiceClient *mocks.UserManagerServiceClient
 }
 
 func tearUp(t *testing.T) *fixture {
 	fx := &fixture{
 		ctx: context.Background(),
 
-		registratorServiceClient: mocks.NewRegistratorServiceClient(t),
+		userManagerServiceClient: mocks.NewUserManagerServiceClient(t),
 	}
 
 	fx.facade = &Facade{
-		registratorServiceClient: fx.registratorServiceClient,
+		userManagerServiceClient: fx.userManagerServiceClient,
 	}
 
 	t.Cleanup(func() {

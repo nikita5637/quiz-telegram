@@ -11,7 +11,8 @@ import (
 	icsfilemanagerpb "github.com/nikita5637/quiz-ics-manager-api/pkg/pb/ics_file_manager"
 	croupierpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/croupier"
 	photomanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/photo_manager"
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	registratorpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
 	telegram "github.com/nikita5637/quiz-telegram/internal/app/bot"
 	"github.com/nikita5637/quiz-telegram/internal/app/reminder"
 	"github.com/nikita5637/quiz-telegram/internal/app/telegramapi"
@@ -106,6 +107,7 @@ func main() {
 	target := fmt.Sprintf("%s:%d", registratorAPIAddress, registratorAPIPort)
 	registratorAPIClientConn, err := grpc.Dial(target, opts, grpc.WithChainUnaryInterceptor(
 		middleware.LogInterceptor,
+		middleware.ServiceNameInterceptor,
 		middleware.TelegramClientIDInterceptor,
 	))
 	if err != nil {
@@ -128,7 +130,8 @@ func main() {
 
 	croupierServiceClient := croupierpb.NewServiceClient(registratorAPIClientConn)
 	photographerServiceClient := photomanagerpb.NewServiceClient(registratorAPIClientConn)
-	registratorServiceClient := registrator.NewRegistratorServiceClient(registratorAPIClientConn)
+	registratorServiceClient := registratorpb.NewRegistratorServiceClient(registratorAPIClientConn)
+	userManagerServiceClient := usermanagerpb.NewServiceClient(registratorAPIClientConn)
 	icsFileManagerAPIServiceClient := icsfilemanagerpb.NewServiceClient(icsManagerAPIClientConn)
 
 	g, ctx := errgroup.WithContext(ctx)
@@ -167,7 +170,7 @@ func main() {
 		icsFilesFacade := icsfiles.NewFacade(icsFilesFacadeConfig)
 
 		usersFacadeConfig := users.Config{
-			RegistratorServiceClient: registratorServiceClient,
+			UserManagerServiceClient: userManagerServiceClient,
 		}
 		usersFacade := users.NewFacade(usersFacadeConfig)
 

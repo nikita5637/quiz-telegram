@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
 	"github.com/nikita5637/quiz-telegram/internal/config"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/commands"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
@@ -135,7 +135,7 @@ func (b *Bot) HandleMessage(ctx context.Context, update *tgbotapi.Update) error 
 			name = userName
 		}
 
-		_, err = b.usersFacade.CreateUser(ctx, name, clientID, int32(registrator.UserState_USER_STATE_WELCOME))
+		_, err = b.usersFacade.CreateUser(ctx, name, clientID, int32(usermanagerpb.UserState_USER_STATE_WELCOME))
 		if err != nil {
 			st := status.Convert(err)
 
@@ -290,7 +290,7 @@ func (b *Bot) handleDefaultMessage(ctx context.Context, update *tgbotapi.Update)
 							name = update.Message.Chat.UserName
 						}
 
-						_, err = b.usersFacade.CreateUser(ctx, name, clientID, int32(registrator.UserState_USER_STATE_WELCOME))
+						_, err = b.usersFacade.CreateUser(ctx, name, clientID, int32(usermanagerpb.UserState_USER_STATE_WELCOME))
 						if err != nil {
 							logger.Errorf(ctx, "error while create user: %s", err.Error())
 						}
@@ -307,7 +307,7 @@ func (b *Bot) handleDefaultMessage(ctx context.Context, update *tgbotapi.Update)
 	}
 
 	switch user.State {
-	case int32(registrator.UserState_USER_STATE_CHANGING_EMAIL):
+	case int32(usermanagerpb.UserState_USER_STATE_CHANGING_EMAIL):
 		err = b.usersFacade.UpdateUserEmail(ctx, user.ID, update.Message.Text)
 		if err != nil {
 			return err
@@ -317,7 +317,7 @@ func (b *Bot) handleDefaultMessage(ctx context.Context, update *tgbotapi.Update)
 		msg.ReplyMarkup = replyKeyboardMarkup(ctx)
 
 		_, err = b.bot.Send(msg)
-	case int32(registrator.UserState_USER_STATE_CHANGING_NAME):
+	case int32(usermanagerpb.UserState_USER_STATE_CHANGING_NAME):
 		err = b.usersFacade.UpdateUserName(ctx, user.ID, update.Message.Text)
 		if err != nil {
 			return err
@@ -327,7 +327,7 @@ func (b *Bot) handleDefaultMessage(ctx context.Context, update *tgbotapi.Update)
 		msg.ReplyMarkup = replyKeyboardMarkup(ctx)
 
 		_, err = b.bot.Send(msg)
-	case int32(registrator.UserState_USER_STATE_CHANGING_PHONE):
+	case int32(usermanagerpb.UserState_USER_STATE_CHANGING_PHONE):
 		err = b.usersFacade.UpdateUserPhone(ctx, user.ID, update.Message.Text)
 		if err != nil {
 			return err

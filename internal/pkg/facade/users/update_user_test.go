@@ -4,17 +4,27 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
 func TestFacade_UpdateUserEmail(t *testing.T) {
 	t.Run("error", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.registratorServiceClient.EXPECT().UpdateUserEmail(fx.ctx, &registrator.UpdateUserEmailRequest{
-			UserId: 1,
-			Email:  "email",
+		fx.userManagerServiceClient.EXPECT().PatchUser(fx.ctx, &usermanagerpb.PatchUserRequest{
+			User: &usermanagerpb.User{
+				Id:    1,
+				Email: "email",
+				State: usermanagerpb.UserState_USER_STATE_REGISTERED,
+			},
+			UpdateMask: &fieldmaskpb.FieldMask{
+				Paths: []string{
+					"email",
+					"state",
+				},
+			},
 		}).Return(nil, errors.New("some error"))
 
 		err := fx.facade.UpdateUserEmail(fx.ctx, 1, "email")
@@ -24,9 +34,18 @@ func TestFacade_UpdateUserEmail(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.registratorServiceClient.EXPECT().UpdateUserEmail(fx.ctx, &registrator.UpdateUserEmailRequest{
-			UserId: 1,
-			Email:  "email",
+		fx.userManagerServiceClient.EXPECT().PatchUser(fx.ctx, &usermanagerpb.PatchUserRequest{
+			User: &usermanagerpb.User{
+				Id:    1,
+				Email: "email",
+				State: usermanagerpb.UserState_USER_STATE_REGISTERED,
+			},
+			UpdateMask: &fieldmaskpb.FieldMask{
+				Paths: []string{
+					"email",
+					"state",
+				},
+			},
 		}).Return(nil, nil)
 
 		err := fx.facade.UpdateUserEmail(fx.ctx, 1, "email")
@@ -38,9 +57,18 @@ func TestFacade_UpdateUserName(t *testing.T) {
 	t.Run("error", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.registratorServiceClient.EXPECT().UpdateUserName(fx.ctx, &registrator.UpdateUserNameRequest{
-			UserId: 1,
-			Name:   "name",
+		fx.userManagerServiceClient.EXPECT().PatchUser(fx.ctx, &usermanagerpb.PatchUserRequest{
+			User: &usermanagerpb.User{
+				Id:    1,
+				Name:  "name",
+				State: usermanagerpb.UserState_USER_STATE_REGISTERED,
+			},
+			UpdateMask: &fieldmaskpb.FieldMask{
+				Paths: []string{
+					"name",
+					"state",
+				},
+			},
 		}).Return(nil, errors.New("some error"))
 
 		err := fx.facade.UpdateUserName(fx.ctx, 1, "name")
@@ -50,9 +78,18 @@ func TestFacade_UpdateUserName(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.registratorServiceClient.EXPECT().UpdateUserName(fx.ctx, &registrator.UpdateUserNameRequest{
-			UserId: 1,
-			Name:   "name",
+		fx.userManagerServiceClient.EXPECT().PatchUser(fx.ctx, &usermanagerpb.PatchUserRequest{
+			User: &usermanagerpb.User{
+				Id:    1,
+				Name:  "name",
+				State: usermanagerpb.UserState_USER_STATE_REGISTERED,
+			},
+			UpdateMask: &fieldmaskpb.FieldMask{
+				Paths: []string{
+					"name",
+					"state",
+				},
+			},
 		}).Return(nil, nil)
 
 		err := fx.facade.UpdateUserName(fx.ctx, 1, "name")
@@ -64,9 +101,18 @@ func TestFacade_UpdateUserPhone(t *testing.T) {
 	t.Run("error", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.registratorServiceClient.EXPECT().UpdateUserPhone(fx.ctx, &registrator.UpdateUserPhoneRequest{
-			UserId: 1,
-			Phone:  "phone",
+		fx.userManagerServiceClient.EXPECT().PatchUser(fx.ctx, &usermanagerpb.PatchUserRequest{
+			User: &usermanagerpb.User{
+				Id:    1,
+				Phone: "phone",
+				State: usermanagerpb.UserState_USER_STATE_REGISTERED,
+			},
+			UpdateMask: &fieldmaskpb.FieldMask{
+				Paths: []string{
+					"phone",
+					"state",
+				},
+			},
 		}).Return(nil, errors.New("some error"))
 
 		err := fx.facade.UpdateUserPhone(fx.ctx, 1, "phone")
@@ -76,9 +122,18 @@ func TestFacade_UpdateUserPhone(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.registratorServiceClient.EXPECT().UpdateUserPhone(fx.ctx, &registrator.UpdateUserPhoneRequest{
-			UserId: 1,
-			Phone:  "phone",
+		fx.userManagerServiceClient.EXPECT().PatchUser(fx.ctx, &usermanagerpb.PatchUserRequest{
+			User: &usermanagerpb.User{
+				Id:    1,
+				Phone: "phone",
+				State: usermanagerpb.UserState_USER_STATE_REGISTERED,
+			},
+			UpdateMask: &fieldmaskpb.FieldMask{
+				Paths: []string{
+					"phone",
+					"state",
+				},
+			},
 		}).Return(nil, nil)
 
 		err := fx.facade.UpdateUserPhone(fx.ctx, 1, "phone")
@@ -90,24 +145,38 @@ func TestFacade_UpdateUserState(t *testing.T) {
 	t.Run("error", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.registratorServiceClient.EXPECT().UpdateUserState(fx.ctx, &registrator.UpdateUserStateRequest{
-			UserId: 1,
-			State:  registrator.UserState_USER_STATE_CHANGING_NAME,
+		fx.userManagerServiceClient.EXPECT().PatchUser(fx.ctx, &usermanagerpb.PatchUserRequest{
+			User: &usermanagerpb.User{
+				Id:    1,
+				State: usermanagerpb.UserState_USER_STATE_CHANGING_NAME,
+			},
+			UpdateMask: &fieldmaskpb.FieldMask{
+				Paths: []string{
+					"state",
+				},
+			},
 		}).Return(nil, errors.New("some error"))
 
-		err := fx.facade.UpdateUserState(fx.ctx, 1, int32(registrator.UserState_USER_STATE_CHANGING_NAME))
+		err := fx.facade.UpdateUserState(fx.ctx, 1, int32(usermanagerpb.UserState_USER_STATE_CHANGING_NAME))
 		assert.Error(t, err)
 	})
 
 	t.Run("ok", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.registratorServiceClient.EXPECT().UpdateUserState(fx.ctx, &registrator.UpdateUserStateRequest{
-			UserId: 1,
-			State:  registrator.UserState_USER_STATE_CHANGING_NAME,
+		fx.userManagerServiceClient.EXPECT().PatchUser(fx.ctx, &usermanagerpb.PatchUserRequest{
+			User: &usermanagerpb.User{
+				Id:    1,
+				State: usermanagerpb.UserState_USER_STATE_CHANGING_NAME,
+			},
+			UpdateMask: &fieldmaskpb.FieldMask{
+				Paths: []string{
+					"state",
+				},
+			},
 		}).Return(nil, nil)
 
-		err := fx.facade.UpdateUserState(fx.ctx, 1, int32(registrator.UserState_USER_STATE_CHANGING_NAME))
+		err := fx.facade.UpdateUserState(fx.ctx, 1, int32(usermanagerpb.UserState_USER_STATE_CHANGING_NAME))
 		assert.NoError(t, err)
 	})
 }

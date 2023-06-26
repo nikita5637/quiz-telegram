@@ -3,24 +3,43 @@ package users
 import (
 	"context"
 
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
 // UpdateUserEmail ...
 func (f *Facade) UpdateUserEmail(ctx context.Context, userID int32, email string) error {
-	_, err := f.registratorServiceClient.UpdateUserEmail(ctx, &registrator.UpdateUserEmailRequest{
-		UserId: userID,
-		Email:  email,
+	_, err := f.userManagerServiceClient.PatchUser(ctx, &usermanagerpb.PatchUserRequest{
+		User: &usermanagerpb.User{
+			Id:    userID,
+			Email: email,
+			State: usermanagerpb.UserState_USER_STATE_REGISTERED,
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{
+			Paths: []string{
+				"email",
+				"state",
+			},
+		},
 	})
 
 	return err
 }
 
-//  UpdateUserName ...
+// UpdateUserName ...
 func (f *Facade) UpdateUserName(ctx context.Context, userID int32, name string) error {
-	_, err := f.registratorServiceClient.UpdateUserName(ctx, &registrator.UpdateUserNameRequest{
-		UserId: userID,
-		Name:   name,
+	_, err := f.userManagerServiceClient.PatchUser(ctx, &usermanagerpb.PatchUserRequest{
+		User: &usermanagerpb.User{
+			Id:    userID,
+			Name:  name,
+			State: usermanagerpb.UserState_USER_STATE_REGISTERED,
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{
+			Paths: []string{
+				"name",
+				"state",
+			},
+		},
 	})
 
 	return err
@@ -28,9 +47,18 @@ func (f *Facade) UpdateUserName(ctx context.Context, userID int32, name string) 
 
 // UpdateUserPhone ...
 func (f *Facade) UpdateUserPhone(ctx context.Context, userID int32, phone string) error {
-	_, err := f.registratorServiceClient.UpdateUserPhone(ctx, &registrator.UpdateUserPhoneRequest{
-		UserId: userID,
-		Phone:  phone,
+	_, err := f.userManagerServiceClient.PatchUser(ctx, &usermanagerpb.PatchUserRequest{
+		User: &usermanagerpb.User{
+			Id:    userID,
+			Phone: phone,
+			State: usermanagerpb.UserState_USER_STATE_REGISTERED,
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{
+			Paths: []string{
+				"phone",
+				"state",
+			},
+		},
 	})
 
 	return err
@@ -38,9 +66,16 @@ func (f *Facade) UpdateUserPhone(ctx context.Context, userID int32, phone string
 
 // UpdateUserState ...
 func (f *Facade) UpdateUserState(ctx context.Context, userID, state int32) error {
-	_, err := f.registratorServiceClient.UpdateUserState(ctx, &registrator.UpdateUserStateRequest{
-		UserId: userID,
-		State:  registrator.UserState(state),
+	_, err := f.userManagerServiceClient.PatchUser(ctx, &usermanagerpb.PatchUserRequest{
+		User: &usermanagerpb.User{
+			Id:    userID,
+			State: usermanagerpb.UserState(state),
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{
+			Paths: []string{
+				"state",
+			},
+		},
 	})
 
 	return err

@@ -14,6 +14,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	croupierpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/croupier"
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
 	"github.com/nikita5637/quiz-telegram/internal/config"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/commands"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
@@ -155,7 +156,7 @@ func (b *Bot) HandleCallbackQuery(ctx context.Context, update *tgbotapi.Update) 
 			name = update.CallbackQuery.Message.Chat.UserName
 		}
 
-		_, err = b.usersFacade.CreateUser(ctx, name, clientID, int32(registrator.UserState_USER_STATE_WELCOME))
+		_, err = b.usersFacade.CreateUser(ctx, name, clientID, int32(usermanagerpb.UserState_USER_STATE_WELCOME))
 		if err != nil {
 			st := status.Convert(err)
 
@@ -256,15 +257,15 @@ func (b *Bot) HandleCallbackQuery(ctx context.Context, update *tgbotapi.Update) 
 }
 
 func (b *Bot) handleChangeEmail(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
-	return b.updateUserState(ctx, update, int32(registrator.UserState_USER_STATE_CHANGING_EMAIL))
+	return b.updateUserState(ctx, update, int32(usermanagerpb.UserState_USER_STATE_CHANGING_EMAIL))
 }
 
 func (b *Bot) handleChangeName(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
-	return b.updateUserState(ctx, update, int32(registrator.UserState_USER_STATE_CHANGING_NAME))
+	return b.updateUserState(ctx, update, int32(usermanagerpb.UserState_USER_STATE_CHANGING_NAME))
 }
 
 func (b *Bot) handleChangePhone(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
-	return b.updateUserState(ctx, update, int32(registrator.UserState_USER_STATE_CHANGING_PHONE))
+	return b.updateUserState(ctx, update, int32(usermanagerpb.UserState_USER_STATE_CHANGING_PHONE))
 }
 
 func (b *Bot) handleGetGamesList(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
@@ -1154,14 +1155,14 @@ func (b *Bot) updateUserState(ctx context.Context, update *tgbotapi.Update, stat
 	}
 
 	msg := tgbotapi.MessageConfig{}
-	switch registrator.UserState(state) {
-	case registrator.UserState_USER_STATE_CHANGING_EMAIL:
+	switch usermanagerpb.UserState(state) {
+	case usermanagerpb.UserState_USER_STATE_CHANGING_EMAIL:
 		msg = tgbotapi.NewMessage(clientID, i18n.GetTranslator(enterYourEmailLexeme)(ctx))
 		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
-	case registrator.UserState_USER_STATE_CHANGING_NAME:
+	case usermanagerpb.UserState_USER_STATE_CHANGING_NAME:
 		msg = tgbotapi.NewMessage(clientID, i18n.GetTranslator(enterYourNameLexeme)(ctx))
 		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
-	case registrator.UserState_USER_STATE_CHANGING_PHONE:
+	case usermanagerpb.UserState_USER_STATE_CHANGING_PHONE:
 		msg = tgbotapi.NewMessage(clientID, i18n.GetTranslator(enterYourPhoneLexeme)(ctx))
 		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
 	}
