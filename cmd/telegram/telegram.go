@@ -10,6 +10,7 @@ import (
 
 	icsfilemanagerpb "github.com/nikita5637/quiz-ics-manager-api/pkg/pb/ics_file_manager"
 	croupierpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/croupier"
+	leaguepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/league"
 	photomanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/photo_manager"
 	registratorpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
@@ -129,6 +130,7 @@ func main() {
 	defer icsManagerAPIClientConn.Close()
 
 	croupierServiceClient := croupierpb.NewServiceClient(registratorAPIClientConn)
+	leagueServiceClient := leaguepb.NewServiceClient(registratorAPIClientConn)
 	photographerServiceClient := photomanagerpb.NewServiceClient(registratorAPIClientConn)
 	registratorServiceClient := registratorpb.NewRegistratorServiceClient(registratorAPIClientConn)
 	userManagerServiceClient := usermanagerpb.NewServiceClient(registratorAPIClientConn)
@@ -138,7 +140,7 @@ func main() {
 
 	g.Go(func() error {
 		leaguesFacadeConfig := leagues.Config{
-			RegistratorServiceClient: registratorServiceClient,
+			LeagueServiceClient: leagueServiceClient,
 		}
 		leaguesFacade := leagues.NewFacade(leaguesFacadeConfig)
 

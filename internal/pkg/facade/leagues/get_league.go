@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	leaguepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/league"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	"google.golang.org/grpc/codes"
@@ -19,7 +19,7 @@ func (f *Facade) GetLeagueByID(ctx context.Context, leagueID int32) (model.Leagu
 
 	logger.DebugKV(ctx, "league not found in cache", "league ID", leagueID)
 
-	leagueResp, err := f.registratorServiceClient.GetLeagueByID(ctx, &registrator.GetLeagueByIDRequest{
+	pbLeague, err := f.leagueServiceClient.GetLeague(ctx, &leaguepb.GetLeagueRequest{
 		Id: leagueID,
 	})
 	if err != nil {
@@ -31,13 +31,13 @@ func (f *Facade) GetLeagueByID(ctx context.Context, leagueID int32) (model.Leagu
 		return model.League{}, fmt.Errorf("get league error: %w", err)
 	}
 
-	league := convertPBLeagueToModelLeague(leagueResp.GetLeague())
+	league := convertPBLeagueToModelLeague(pbLeague)
 	f.leaguesCache[leagueID] = league
 
 	return league, nil
 }
 
-func convertPBLeagueToModelLeague(pbLeague *registrator.League) model.League {
+func convertPBLeagueToModelLeague(pbLeague *leaguepb.League) model.League {
 	return model.League{
 		ID:        pbLeague.GetId(),
 		Name:      pbLeague.GetName(),

@@ -5,18 +5,18 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	leaguepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/league"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-func TestFacade_GetLeagueByID(t *testing.T) {
+func TestFacade_GetLeague(t *testing.T) {
 	t.Run("error league not found while get league", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.registratorServiceClient.EXPECT().GetLeagueByID(fx.ctx, &registrator.GetLeagueByIDRequest{
+		fx.leagueServiceClient.EXPECT().GetLeague(fx.ctx, &leaguepb.GetLeagueRequest{
 			Id: 1,
 		}).Return(nil, status.New(codes.NotFound, "").Err())
 
@@ -29,7 +29,7 @@ func TestFacade_GetLeagueByID(t *testing.T) {
 	t.Run("error while get league", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.registratorServiceClient.EXPECT().GetLeagueByID(fx.ctx, &registrator.GetLeagueByIDRequest{
+		fx.leagueServiceClient.EXPECT().GetLeague(fx.ctx, &leaguepb.GetLeagueRequest{
 			Id: 1,
 		}).Return(nil, errors.New("some error"))
 
@@ -41,13 +41,11 @@ func TestFacade_GetLeagueByID(t *testing.T) {
 	t.Run("ok without cache", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.registratorServiceClient.EXPECT().GetLeagueByID(fx.ctx, &registrator.GetLeagueByIDRequest{
+		fx.leagueServiceClient.EXPECT().GetLeague(fx.ctx, &leaguepb.GetLeagueRequest{
 			Id: 1,
-		}).Return(&registrator.GetLeagueByIDResponse{
-			League: &registrator.League{
-				Id:   1,
-				Name: "name",
-			},
+		}).Return(&leaguepb.League{
+			Id:   1,
+			Name: "name",
 		}, nil)
 
 		got, err := fx.facade.GetLeagueByID(fx.ctx, 1)
@@ -76,7 +74,7 @@ func TestFacade_GetLeagueByID(t *testing.T) {
 
 func Test_convertPBLeagueToModelLeague(t *testing.T) {
 	type args struct {
-		pbLeague *registrator.League
+		pbLeague *leaguepb.League
 	}
 	tests := []struct {
 		name string
@@ -86,7 +84,7 @@ func Test_convertPBLeagueToModelLeague(t *testing.T) {
 		{
 			name: "test case 1",
 			args: args{
-				pbLeague: &registrator.League{
+				pbLeague: &leaguepb.League{
 					Id:        1,
 					Name:      "name",
 					ShortName: "short_name",

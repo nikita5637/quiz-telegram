@@ -335,68 +335,6 @@ func (_c *RegistratorServiceClient_GetGames_Call) Return(_a0 *registrator.GetGam
 	return _c
 }
 
-// GetLeagueByID provides a mock function with given fields: ctx, in, opts
-func (_m *RegistratorServiceClient) GetLeagueByID(ctx context.Context, in *registrator.GetLeagueByIDRequest, opts ...grpc.CallOption) (*registrator.GetLeagueByIDResponse, error) {
-	_va := make([]interface{}, len(opts))
-	for _i := range opts {
-		_va[_i] = opts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, ctx, in)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
-
-	var r0 *registrator.GetLeagueByIDResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *registrator.GetLeagueByIDRequest, ...grpc.CallOption) *registrator.GetLeagueByIDResponse); ok {
-		r0 = rf(ctx, in, opts...)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*registrator.GetLeagueByIDResponse)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *registrator.GetLeagueByIDRequest, ...grpc.CallOption) error); ok {
-		r1 = rf(ctx, in, opts...)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// RegistratorServiceClient_GetLeagueByID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetLeagueByID'
-type RegistratorServiceClient_GetLeagueByID_Call struct {
-	*mock.Call
-}
-
-// GetLeagueByID is a helper method to define mock.On call
-//  - ctx context.Context
-//  - in *registrator.GetLeagueByIDRequest
-//  - opts ...grpc.CallOption
-func (_e *RegistratorServiceClient_Expecter) GetLeagueByID(ctx interface{}, in interface{}, opts ...interface{}) *RegistratorServiceClient_GetLeagueByID_Call {
-	return &RegistratorServiceClient_GetLeagueByID_Call{Call: _e.mock.On("GetLeagueByID",
-		append([]interface{}{ctx, in}, opts...)...)}
-}
-
-func (_c *RegistratorServiceClient_GetLeagueByID_Call) Run(run func(ctx context.Context, in *registrator.GetLeagueByIDRequest, opts ...grpc.CallOption)) *RegistratorServiceClient_GetLeagueByID_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		variadicArgs := make([]grpc.CallOption, len(args)-2)
-		for i, a := range args[2:] {
-			if a != nil {
-				variadicArgs[i] = a.(grpc.CallOption)
-			}
-		}
-		run(args[0].(context.Context), args[1].(*registrator.GetLeagueByIDRequest), variadicArgs...)
-	})
-	return _c
-}
-
-func (_c *RegistratorServiceClient_GetLeagueByID_Call) Return(_a0 *registrator.GetLeagueByIDResponse, _a1 error) *RegistratorServiceClient_GetLeagueByID_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
 // GetPlaceByID provides a mock function with given fields: ctx, in, opts
 func (_m *RegistratorServiceClient) GetPlaceByID(ctx context.Context, in *registrator.GetPlaceByIDRequest, opts ...grpc.CallOption) (*registrator.GetPlaceByIDResponse, error) {
 	_va := make([]interface{}, len(opts))
