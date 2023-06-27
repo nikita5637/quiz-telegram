@@ -8,6 +8,8 @@ import (
 	callbackdata_utils "github.com/nikita5637/quiz-telegram/internal/pkg/utils/callbackdata"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	leaguepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/league"
+	placepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/place"
 	registratorpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
 	reminder "github.com/nikita5637/quiz-registrator-api/pkg/reminder"
@@ -47,14 +49,19 @@ var (
 	}
 )
 
-// UserManagerServiceClient ...
-type UserManagerServiceClient interface {
-	usermanagerpb.ServiceClient
+// PlaceServiceClient ...
+type PlaceServiceClient interface {
+	placepb.ServiceClient
 }
 
 // RegistratorServiceClient ...
 type RegistratorServiceClient interface {
 	registratorpb.RegistratorServiceClient
+}
+
+// UserManagerServiceClient ...
+type UserManagerServiceClient interface {
+	usermanagerpb.ServiceClient
 }
 
 // TelegramBot ...
@@ -73,6 +80,7 @@ type Reminder struct {
 	rabbitMQChanel           *amqp.Channel
 	registratorAPIAddress    string
 	registratorAPIPort       uint16
+	placeServiceClient       PlaceServiceClient
 	registratorServiceClient RegistratorServiceClient
 	userManagerServiceClient UserManagerServiceClient
 }
@@ -110,6 +118,7 @@ func (r *Reminder) Start(ctx context.Context) error {
 		return fmt.Errorf("could not connect: %w", err)
 	}
 
+	r.placeServiceClient = placepb.NewServiceClient(cc)
 	r.registratorServiceClient = registratorpb.NewRegistratorServiceClient(cc)
 	r.userManagerServiceClient = usermanagerpb.NewServiceClient(cc)
 
@@ -183,7 +192,7 @@ func (r *Reminder) Start(ctx context.Context) error {
 					continue
 				}
 
-				placeResp, err := r.registratorServiceClient.GetPlaceByID(ctx, &registratorpb.GetPlaceByIDRequest{
+				pbPlace, err := r.placeServiceClient.GetPlace(ctx, &placepb.GetPlaceRequest{
 					Id: gameResp.GetGame().GetPlaceId(),
 				})
 				if err != nil {
@@ -193,7 +202,7 @@ func (r *Reminder) Start(ctx context.Context) error {
 
 				text := fmt.Sprintf("%s %s\n", icons.Note, i18n.GetTranslator(remindThatThereIsAGameTodayLexeme)(ctx))
 				text += fmt.Sprintf("%s %s: %s\n", icons.Time, i18n.GetTranslator(timeLexeme)(ctx), model.DateTime(gameResp.GetGame().GetDate().AsTime()).Time())
-				text += fmt.Sprintf("%s %s: %s\n", icons.Place, i18n.GetTranslator(placeLexeme)(ctx), placeResp.GetPlace().GetAddress())
+				text += fmt.Sprintf("%s %s: %s\n", icons.Place, i18n.GetTranslator(placeLexeme)(ctx), pbPlace.GetAddress())
 
 				for _, playerID := range gameRemind.PlayerIDs {
 					pbUser, err := r.userManagerServiceClient.GetUser(ctx, &usermanagerpb.GetUserRequest{
@@ -212,10 +221,10 @@ func (r *Reminder) Start(ctx context.Context) error {
 					}
 
 					venueMessage := tgbotapi.NewVenue(pbUser.GetTelegramId(),
-						placeResp.GetPlace().GetName(),
-						placeResp.GetPlace().GetAddress(),
-						float64(placeResp.GetPlace().GetLatitude()),
-						float64(placeResp.GetPlace().GetLongitude()),
+						pbPlace.GetName(),
+						pbPlace.GetAddress(),
+						float64(pbPlace.GetLatitude()),
+						float64(pbPlace.GetLongitude()),
 					)
 					_, err = r.bot.Request(venueMessage)
 					if err != nil {
@@ -254,7 +263,7 @@ func (r *Reminder) Start(ctx context.Context) error {
 					var btnLottery tgbotapi.InlineKeyboardButton
 
 					switch lotteryRemind.LeagueID {
-					case model.LeagueQuizPlease:
+					case int32(leaguepb.LeagueID_QUIZ_PLEASE):
 						payload := &commands.LotteryData{
 							GameID: lotteryRemind.GameID,
 						}
@@ -270,7 +279,7 @@ func (r *Reminder) Start(ctx context.Context) error {
 							Text:         fmt.Sprintf("%s %s", icons.Lottery, i18n.GetTranslator(registerForLotteryLexeme)(ctx)),
 							CallbackData: &callbackData,
 						}
-					case model.LeagueSquiz:
+					case int32(leaguepb.LeagueID_SQUIZ):
 						text = fmt.Sprintf("%s %s", icons.Lottery, i18n.GetTranslator(registrationLink)(ctx))
 						btnLottery = tgbotapi.NewInlineKeyboardButtonURL(text, "https://spb.squiz.ru/game")
 					default:

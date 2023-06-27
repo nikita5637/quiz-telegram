@@ -12,6 +12,7 @@ import (
 	croupierpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/croupier"
 	leaguepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/league"
 	photomanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/photo_manager"
+	placepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/place"
 	registratorpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
 	telegram "github.com/nikita5637/quiz-telegram/internal/app/bot"
@@ -132,6 +133,7 @@ func main() {
 	croupierServiceClient := croupierpb.NewServiceClient(registratorAPIClientConn)
 	leagueServiceClient := leaguepb.NewServiceClient(registratorAPIClientConn)
 	photographerServiceClient := photomanagerpb.NewServiceClient(registratorAPIClientConn)
+	placeServiceClient := placepb.NewServiceClient(registratorAPIClientConn)
 	registratorServiceClient := registratorpb.NewRegistratorServiceClient(registratorAPIClientConn)
 	userManagerServiceClient := usermanagerpb.NewServiceClient(registratorAPIClientConn)
 	icsFileManagerAPIServiceClient := icsfilemanagerpb.NewServiceClient(icsManagerAPIClientConn)
@@ -145,7 +147,7 @@ func main() {
 		leaguesFacade := leagues.NewFacade(leaguesFacadeConfig)
 
 		placesFacadeConfig := places.Config{
-			RegistratorServiceClient: registratorServiceClient,
+			PlaceServiceClient: placeServiceClient,
 		}
 		placesFacade := places.NewFacade(placesFacadeConfig)
 
@@ -154,7 +156,6 @@ func main() {
 			PlacesFacade:  placesFacade,
 
 			PhotographerServiceClient: photographerServiceClient,
-			RegistratorServiceClient:  registratorServiceClient,
 		}
 		gamePhotosFacade := gamephotos.NewFacade(gamePhotosFacadeConfig)
 

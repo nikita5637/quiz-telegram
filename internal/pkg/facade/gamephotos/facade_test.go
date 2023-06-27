@@ -13,7 +13,6 @@ func TestNewFacade(t *testing.T) {
 			PlacesFacade:  nil,
 
 			PhotographerServiceClient: nil,
-			RegistratorServiceClient:  nil,
 		})
 
 		assert.Equal(t, &Facade{}, f)

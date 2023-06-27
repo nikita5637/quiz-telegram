@@ -1,7 +1,6 @@
 //go:generate mockery --case underscore --name LeaguesFacade --with-expecter
 //go:generate mockery --case underscore --name PlacesFacade --with-expecter
 //go:generate mockery --case underscore --name PhotographerServiceClient --with-expecter
-//go:generate mockery --case underscore --name RegistratorServiceClient --with-expecter
 
 package gamephotos
 
@@ -9,7 +8,6 @@ import (
 	"context"
 
 	photomanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/photo_manager"
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 )
 
@@ -28,18 +26,12 @@ type PhotographerServiceClient interface {
 	photomanagerpb.ServiceClient
 }
 
-// RegistratorServiceClient ...
-type RegistratorServiceClient interface {
-	registrator.RegistratorServiceClient
-}
-
 // Facade ...
 type Facade struct {
 	leaguesFacade LeaguesFacade
 	placesFacade  PlacesFacade
 
 	photographerServiceClient PhotographerServiceClient
-	registratorServiceClient  RegistratorServiceClient
 }
 
 // Config ...
@@ -48,7 +40,6 @@ type Config struct {
 	PlacesFacade  PlacesFacade
 
 	PhotographerServiceClient PhotographerServiceClient
-	RegistratorServiceClient  RegistratorServiceClient
 }
 
 // NewFacade ...
@@ -58,6 +49,5 @@ func NewFacade(cfg Config) *Facade {
 		placesFacade:  cfg.PlacesFacade,
 
 		photographerServiceClient: cfg.PhotographerServiceClient,
-		registratorServiceClient:  cfg.RegistratorServiceClient,
 	}
 }

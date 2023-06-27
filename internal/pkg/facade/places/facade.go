@@ -1,30 +1,30 @@
-//go:generate mockery --case underscore --name RegistratorServiceClient --with-expecter
+//go:generate mockery --case underscore --name PlaceServiceClient --with-expecter
 
 package places
 
 import (
 	"context"
 
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	placepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/place"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	"google.golang.org/grpc"
 )
 
-// RegistratorServiceClient ...
-type RegistratorServiceClient interface {
-	GetPlaceByID(ctx context.Context, in *registrator.GetPlaceByIDRequest, opts ...grpc.CallOption) (*registrator.GetPlaceByIDResponse, error)
+// PlaceServiceClient ...
+type PlaceServiceClient interface {
+	GetPlace(ctx context.Context, in *placepb.GetPlaceRequest, opts ...grpc.CallOption) (*placepb.Place, error)
 }
 
 // Facade ...
 type Facade struct {
 	placesCache map[int32]model.Place
 
-	registratorServiceClient RegistratorServiceClient
+	placeServiceClient PlaceServiceClient
 }
 
 // Config ...
 type Config struct {
-	RegistratorServiceClient RegistratorServiceClient
+	PlaceServiceClient PlaceServiceClient
 }
 
 // NewFacade ...
@@ -32,6 +32,6 @@ func NewFacade(cfg Config) *Facade {
 	return &Facade{
 		placesCache: make(map[int32]model.Place, 0),
 
-		registratorServiceClient: cfg.RegistratorServiceClient,
+		placeServiceClient: cfg.PlaceServiceClient,
 	}
 }

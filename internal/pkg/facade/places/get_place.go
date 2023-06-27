@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	placepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/place"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	"google.golang.org/grpc/codes"
@@ -19,7 +19,7 @@ func (f *Facade) GetPlaceByID(ctx context.Context, placeID int32) (model.Place, 
 
 	logger.DebugKV(ctx, "place not found in cache", "place ID", placeID)
 
-	placeResp, err := f.registratorServiceClient.GetPlaceByID(ctx, &registrator.GetPlaceByIDRequest{
+	pbPlace, err := f.placeServiceClient.GetPlace(ctx, &placepb.GetPlaceRequest{
 		Id: placeID,
 	})
 	if err != nil {
@@ -31,13 +31,13 @@ func (f *Facade) GetPlaceByID(ctx context.Context, placeID int32) (model.Place, 
 		return model.Place{}, fmt.Errorf("get place error: %w", err)
 	}
 
-	place := convertPBPlaceToModelPlace(placeResp.GetPlace())
+	place := convertPBPlaceToModelPlace(pbPlace)
 	f.placesCache[placeID] = place
 
 	return place, nil
 }
 
-func convertPBPlaceToModelPlace(pbPlace *registrator.Place) model.Place {
+func convertPBPlaceToModelPlace(pbPlace *placepb.Place) model.Place {
 	return model.Place{
 		ID:        pbPlace.GetId(),
 		Address:   pbPlace.GetAddress(),

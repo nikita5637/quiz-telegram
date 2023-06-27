@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
+	placepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/place"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
@@ -16,7 +16,7 @@ func TestFacade_GetPlaceByID(t *testing.T) {
 	t.Run("error place not found while get place", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.registratorServiceClient.EXPECT().GetPlaceByID(fx.ctx, &registrator.GetPlaceByIDRequest{
+		fx.placeServiceClient.EXPECT().GetPlace(fx.ctx, &placepb.GetPlaceRequest{
 			Id: 1,
 		}).Return(nil, status.New(codes.NotFound, "").Err())
 
@@ -29,7 +29,7 @@ func TestFacade_GetPlaceByID(t *testing.T) {
 	t.Run("error while get place", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.registratorServiceClient.EXPECT().GetPlaceByID(fx.ctx, &registrator.GetPlaceByIDRequest{
+		fx.placeServiceClient.EXPECT().GetPlace(fx.ctx, &placepb.GetPlaceRequest{
 			Id: 1,
 		}).Return(nil, errors.New("some error"))
 
@@ -41,13 +41,11 @@ func TestFacade_GetPlaceByID(t *testing.T) {
 	t.Run("ok without cache", func(t *testing.T) {
 		fx := tearUp(t)
 
-		fx.registratorServiceClient.EXPECT().GetPlaceByID(fx.ctx, &registrator.GetPlaceByIDRequest{
+		fx.placeServiceClient.EXPECT().GetPlace(fx.ctx, &placepb.GetPlaceRequest{
 			Id: 1,
-		}).Return(&registrator.GetPlaceByIDResponse{
-			Place: &registrator.Place{
-				Id:   1,
-				Name: "name",
-			},
+		}).Return(&placepb.Place{
+			Id:   1,
+			Name: "name",
 		}, nil)
 
 		got, err := fx.facade.GetPlaceByID(fx.ctx, 1)
@@ -76,7 +74,7 @@ func TestFacade_GetPlaceByID(t *testing.T) {
 
 func Test_convertPBPlaceToModelPlace(t *testing.T) {
 	type args struct {
-		pbPlace *registrator.Place
+		pbPlace *placepb.Place
 	}
 	tests := []struct {
 		name string
@@ -86,7 +84,7 @@ func Test_convertPBPlaceToModelPlace(t *testing.T) {
 		{
 			name: "test case 1",
 			args: args{
-				pbPlace: &registrator.Place{
+				pbPlace: &placepb.Place{
 					Id:        1,
 					Address:   "address",
 					Name:      "name",

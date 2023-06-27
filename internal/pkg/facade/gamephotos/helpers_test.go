@@ -15,7 +15,6 @@ type fixture struct {
 	placesFacade  *mocks.PlacesFacade
 
 	photographerServiceClient *mocks.PhotographerServiceClient
-	registratorServiceClient  *mocks.RegistratorServiceClient
 }
 
 func tearUp(t *testing.T) *fixture {
@@ -26,7 +25,6 @@ func tearUp(t *testing.T) *fixture {
 		placesFacade:  mocks.NewPlacesFacade(t),
 
 		photographerServiceClient: mocks.NewPhotographerServiceClient(t),
-		registratorServiceClient:  mocks.NewRegistratorServiceClient(t),
 	}
 
 	fx.facade = &Facade{
@@ -34,7 +32,6 @@ func tearUp(t *testing.T) *fixture {
 		placesFacade:  fx.placesFacade,
 
 		photographerServiceClient: fx.photographerServiceClient,
-		registratorServiceClient:  fx.registratorServiceClient,
 	}
 
 	t.Cleanup(func() {
