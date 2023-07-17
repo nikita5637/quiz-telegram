@@ -7,6 +7,7 @@ import (
 	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 func TestFacade_GetUserByID(t *testing.T) {
@@ -28,10 +29,14 @@ func TestFacade_GetUserByID(t *testing.T) {
 		fx.userManagerServiceClient.EXPECT().GetUser(fx.ctx, &usermanagerpb.GetUserRequest{
 			Id: 1,
 		}).Return(&usermanagerpb.User{
-			Id:    1,
-			Email: "email",
-			Name:  "name",
-			Phone: "phone",
+			Id: 1,
+			Email: &wrapperspb.StringValue{
+				Value: "email",
+			},
+			Name: "name",
+			Phone: &wrapperspb.StringValue{
+				Value: "phone",
+			},
 			State: usermanagerpb.UserState_USER_STATE_CHANGING_NAME,
 		}, nil)
 
@@ -66,10 +71,14 @@ func TestFacade_GetUserByTelegramID(t *testing.T) {
 		fx.userManagerServiceClient.EXPECT().GetUserByTelegramID(fx.ctx, &usermanagerpb.GetUserByTelegramIDRequest{
 			TelegramId: -100,
 		}).Return(&usermanagerpb.User{
-			Id:    1,
-			Email: "email",
-			Name:  "name",
-			Phone: "phone",
+			Id: 1,
+			Email: &wrapperspb.StringValue{
+				Value: "email",
+			},
+			Name: "name",
+			Phone: &wrapperspb.StringValue{
+				Value: "phone",
+			},
 			State: usermanagerpb.UserState_USER_STATE_CHANGING_NAME,
 		}, nil)
 

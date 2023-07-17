@@ -2,6 +2,7 @@ package users
 
 import (
 	"context"
+	"time"
 
 	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
@@ -32,11 +33,21 @@ func (f *Facade) GetUserByTelegramID(ctx context.Context, telegramID int64) (mod
 }
 
 func convertPBUserToModelUser(pbUser *usermanagerpb.User) model.User {
+	birthdate := ""
+	if pbUser.GetBirthdate() != nil {
+		birthdateTime, err := time.Parse("2006-01-02", pbUser.GetBirthdate().GetValue())
+		if err == nil {
+			birthdate = birthdateTime.Format("02.01.2006")
+		}
+	}
+
 	return model.User{
-		ID:    pbUser.GetId(),
-		Email: pbUser.GetEmail(),
-		Name:  pbUser.GetName(),
-		Phone: pbUser.GetPhone(),
-		State: int32(pbUser.GetState()),
+		ID:        pbUser.GetId(),
+		Email:     pbUser.GetEmail().GetValue(),
+		Name:      pbUser.GetName(),
+		Phone:     pbUser.GetPhone().GetValue(),
+		State:     int32(pbUser.GetState()),
+		Birthdate: birthdate,
+		Sex:       model.Sex(pbUser.GetSex()),
 	}
 }

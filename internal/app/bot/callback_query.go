@@ -62,6 +62,10 @@ var (
 		Key:      "datetime",
 		FallBack: "Datetime",
 	}
+	enterYourBirthdateLexeme = i18n.Lexeme{
+		Key:      "enter_your_birthdate",
+		FallBack: "OK. Enter your birthdate(format DD.MM.YYYY).",
+	}
 	enterYourEmailLexeme = i18n.Lexeme{
 		Key:      "enter_your_email",
 		FallBack: "OK. Enter your email.",
@@ -73,6 +77,10 @@ var (
 	enterYourPhoneLexeme = i18n.Lexeme{
 		Key:      "enter_your_phone",
 		FallBack: "OK. Enter your phone(format +79XXXXXXXXX).",
+	}
+	enterYourSexLexeme = i18n.Lexeme{
+		Key:      "enter_your_sex",
+		FallBack: "OK. Enter your sex",
 	}
 	gameCostLexeme = i18n.Lexeme{
 		Key:      "game_cost",
@@ -182,6 +190,10 @@ func (b *Bot) HandleCallbackQuery(ctx context.Context, update *tgbotapi.Update) 
 	type handlerFunc func(ctx context.Context) error
 	var handler handlerFunc
 	switch telegramRequest.Command {
+	case commands.CommandChangeBirthdate:
+		handler = func(ctx context.Context) error {
+			return b.handleChangeBirthdate(ctx, update, telegramRequest)
+		}
 	case commands.CommandChangeEmail:
 		handler = func(ctx context.Context) error {
 			return b.handleChangeEmail(ctx, update, telegramRequest)
@@ -193,6 +205,10 @@ func (b *Bot) HandleCallbackQuery(ctx context.Context, update *tgbotapi.Update) 
 	case commands.CommandChangePhone:
 		handler = func(ctx context.Context) error {
 			return b.handleChangePhone(ctx, update, telegramRequest)
+		}
+	case commands.CommandChangeSex:
+		handler = func(ctx context.Context) error {
+			return b.handleChangeSex(ctx, update, telegramRequest)
 		}
 	case commands.CommandGetGamesList:
 		handler = func(ctx context.Context) error {
@@ -256,6 +272,10 @@ func (b *Bot) HandleCallbackQuery(ctx context.Context, update *tgbotapi.Update) 
 	return nil
 }
 
+func (b *Bot) handleChangeBirthdate(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
+	return b.updateUserState(ctx, update, int32(usermanagerpb.UserState_USER_STATE_CHANGING_BIRTHDATE))
+}
+
 func (b *Bot) handleChangeEmail(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
 	return b.updateUserState(ctx, update, int32(usermanagerpb.UserState_USER_STATE_CHANGING_EMAIL))
 }
@@ -266,6 +286,10 @@ func (b *Bot) handleChangeName(ctx context.Context, update *tgbotapi.Update, tel
 
 func (b *Bot) handleChangePhone(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
 	return b.updateUserState(ctx, update, int32(usermanagerpb.UserState_USER_STATE_CHANGING_PHONE))
+}
+
+func (b *Bot) handleChangeSex(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
+	return b.updateUserState(ctx, update, int32(usermanagerpb.UserState_USER_STATE_CHANGING_SEX))
 }
 
 func (b *Bot) handleGetGamesList(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
@@ -1156,6 +1180,9 @@ func (b *Bot) updateUserState(ctx context.Context, update *tgbotapi.Update, stat
 
 	msg := tgbotapi.MessageConfig{}
 	switch usermanagerpb.UserState(state) {
+	case usermanagerpb.UserState_USER_STATE_CHANGING_BIRTHDATE:
+		msg = tgbotapi.NewMessage(clientID, i18n.GetTranslator(enterYourBirthdateLexeme)(ctx))
+		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
 	case usermanagerpb.UserState_USER_STATE_CHANGING_EMAIL:
 		msg = tgbotapi.NewMessage(clientID, i18n.GetTranslator(enterYourEmailLexeme)(ctx))
 		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
@@ -1164,6 +1191,9 @@ func (b *Bot) updateUserState(ctx context.Context, update *tgbotapi.Update, stat
 		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
 	case usermanagerpb.UserState_USER_STATE_CHANGING_PHONE:
 		msg = tgbotapi.NewMessage(clientID, i18n.GetTranslator(enterYourPhoneLexeme)(ctx))
+		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
+	case usermanagerpb.UserState_USER_STATE_CHANGING_SEX:
+		msg = tgbotapi.NewMessage(clientID, i18n.GetTranslator(enterYourSexLexeme)(ctx))
 		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
 	}
 

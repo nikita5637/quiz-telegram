@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	callbackdata_utils "github.com/nikita5637/quiz-telegram/internal/pkg/utils/callbackdata"
 	telegram_utils "github.com/nikita5637/quiz-telegram/utils/telegram"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -26,6 +27,14 @@ const (
 )
 
 var (
+	birthdateChangedLexeme = i18n.Lexeme{
+		Key:      "birthdate_changed",
+		FallBack: "Birthdate changed",
+	}
+	changeBirthdateLexeme = i18n.Lexeme{
+		Key:      "change_birthdate",
+		FallBack: "Change birthdate",
+	}
 	changeEmailLexeme = i18n.Lexeme{
 		Key:      "change_email",
 		FallBack: "Change email",
@@ -37,6 +46,10 @@ var (
 	changePhoneLexeme = i18n.Lexeme{
 		Key:      "change_phone",
 		FallBack: "Change phone",
+	}
+	changeSexLexeme = i18n.Lexeme{
+		Key:      "change_sex",
+		FallBack: "Change sex",
 	}
 	chooseGameLexeme = i18n.Lexeme{
 		Key:      "choose_a_game",
@@ -101,6 +114,10 @@ var (
 	settingsLexeme = i18n.Lexeme{
 		Key:      "settings",
 		FallBack: "Settings",
+	}
+	sexChangedLexeme = i18n.Lexeme{
+		Key:      "sex_changed",
+		FallBack: "Sex changed",
 	}
 	somethingWentWrongLexeme = i18n.Lexeme{
 		Key:      "something_went_wrong",
@@ -307,6 +324,16 @@ func (b *Bot) handleDefaultMessage(ctx context.Context, update *tgbotapi.Update)
 	}
 
 	switch user.State {
+	case int32(usermanagerpb.UserState_USER_STATE_CHANGING_BIRTHDATE):
+		err = b.usersFacade.UpdateUserBirthdate(ctx, user.ID, update.Message.Text)
+		if err != nil {
+			return err
+		}
+
+		msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(birthdateChangedLexeme)(ctx))
+		msg.ReplyMarkup = replyKeyboardMarkup(ctx)
+
+		_, err = b.bot.Send(msg)
 	case int32(usermanagerpb.UserState_USER_STATE_CHANGING_EMAIL):
 		err = b.usersFacade.UpdateUserEmail(ctx, user.ID, update.Message.Text)
 		if err != nil {
@@ -334,6 +361,16 @@ func (b *Bot) handleDefaultMessage(ctx context.Context, update *tgbotapi.Update)
 		}
 
 		msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(phoneChangedLexeme)(ctx))
+		msg.ReplyMarkup = replyKeyboardMarkup(ctx)
+
+		_, err = b.bot.Send(msg)
+	case int32(usermanagerpb.UserState_USER_STATE_CHANGING_SEX):
+		err = b.usersFacade.UpdateUserSex(ctx, user.ID, model.SexFromString(update.Message.Text))
+		if err != nil {
+			return err
+		}
+
+		msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(sexChangedLexeme)(ctx))
 		msg.ReplyMarkup = replyKeyboardMarkup(ctx)
 
 		_, err = b.bot.Send(msg)
@@ -589,6 +626,32 @@ func (b *Bot) getSettingsMessage(ctx context.Context, update *tgbotapi.Update) (
 			CallbackData: &callbackData,
 		}
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnPhone))
+	}
+
+	{
+		callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandChangeBirthdate, "")
+		if err != nil {
+			return nil, err
+		}
+
+		btnBirthdate := tgbotapi.InlineKeyboardButton{
+			Text:         fmt.Sprintf(settingFormatString, i18n.GetTranslator(changeBirthdateLexeme)(ctx), user.Birthdate),
+			CallbackData: &callbackData,
+		}
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnBirthdate))
+	}
+
+	{
+		callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandChangeSex, "")
+		if err != nil {
+			return nil, err
+		}
+
+		btnSex := tgbotapi.InlineKeyboardButton{
+			Text:         fmt.Sprintf(settingFormatString, i18n.GetTranslator(changeSexLexeme)(ctx), user.Sex),
+			CallbackData: &callbackData,
+		}
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnSex))
 	}
 
 	msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(settingsLexeme)(ctx))

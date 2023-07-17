@@ -159,6 +159,45 @@ func (_c *UsersFacade_GetUserByTelegramID_Call) Return(_a0 model.User, _a1 error
 	return _c
 }
 
+// UpdateUserBirthdate provides a mock function with given fields: ctx, userID, birthdate
+func (_m *UsersFacade) UpdateUserBirthdate(ctx context.Context, userID int32, birthdate string) error {
+	ret := _m.Called(ctx, userID, birthdate)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, int32, string) error); ok {
+		r0 = rf(ctx, userID, birthdate)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UsersFacade_UpdateUserBirthdate_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateUserBirthdate'
+type UsersFacade_UpdateUserBirthdate_Call struct {
+	*mock.Call
+}
+
+// UpdateUserBirthdate is a helper method to define mock.On call
+//  - ctx context.Context
+//  - userID int32
+//  - birthdate string
+func (_e *UsersFacade_Expecter) UpdateUserBirthdate(ctx interface{}, userID interface{}, birthdate interface{}) *UsersFacade_UpdateUserBirthdate_Call {
+	return &UsersFacade_UpdateUserBirthdate_Call{Call: _e.mock.On("UpdateUserBirthdate", ctx, userID, birthdate)}
+}
+
+func (_c *UsersFacade_UpdateUserBirthdate_Call) Run(run func(ctx context.Context, userID int32, birthdate string)) *UsersFacade_UpdateUserBirthdate_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(int32), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *UsersFacade_UpdateUserBirthdate_Call) Return(_a0 error) *UsersFacade_UpdateUserBirthdate_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
 // UpdateUserEmail provides a mock function with given fields: ctx, userID, email
 func (_m *UsersFacade) UpdateUserEmail(ctx context.Context, userID int32, email string) error {
 	ret := _m.Called(ctx, userID, email)
@@ -272,6 +311,45 @@ func (_c *UsersFacade_UpdateUserPhone_Call) Run(run func(ctx context.Context, us
 }
 
 func (_c *UsersFacade_UpdateUserPhone_Call) Return(_a0 error) *UsersFacade_UpdateUserPhone_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+// UpdateUserSex provides a mock function with given fields: ctx, userID, sex
+func (_m *UsersFacade) UpdateUserSex(ctx context.Context, userID int32, sex model.Sex) error {
+	ret := _m.Called(ctx, userID, sex)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, int32, model.Sex) error); ok {
+		r0 = rf(ctx, userID, sex)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UsersFacade_UpdateUserSex_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateUserSex'
+type UsersFacade_UpdateUserSex_Call struct {
+	*mock.Call
+}
+
+// UpdateUserSex is a helper method to define mock.On call
+//  - ctx context.Context
+//  - userID int32
+//  - sex model.Sex
+func (_e *UsersFacade_Expecter) UpdateUserSex(ctx interface{}, userID interface{}, sex interface{}) *UsersFacade_UpdateUserSex_Call {
+	return &UsersFacade_UpdateUserSex_Call{Call: _e.mock.On("UpdateUserSex", ctx, userID, sex)}
+}
+
+func (_c *UsersFacade_UpdateUserSex_Call) Run(run func(ctx context.Context, userID int32, sex model.Sex)) *UsersFacade_UpdateUserSex_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(int32), args[2].(model.Sex))
+	})
+	return _c
+}
+
+func (_c *UsersFacade_UpdateUserSex_Call) Return(_a0 error) *UsersFacade_UpdateUserSex_Call {
 	_c.Call.Return(_a0)
 	return _c
 }

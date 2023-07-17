@@ -61,10 +61,12 @@ type UsersFacade interface {
 	CreateUser(ctx context.Context, name string, telegramID int64, state int32) (int32, error)
 	GetUserByID(ctx context.Context, userID int32) (model.User, error)
 	GetUserByTelegramID(ctx context.Context, telegramID int64) (model.User, error)
+	UpdateUserBirthdate(ctx context.Context, userID int32, birthdate string) error
 	UpdateUserEmail(ctx context.Context, userID int32, email string) error
 	UpdateUserName(ctx context.Context, userID int32, name string) error
 	UpdateUserPhone(ctx context.Context, userID int32, phone string) error
 	UpdateUserState(ctx context.Context, userID, state int32) error
+	UpdateUserSex(ctx context.Context, userID int32, sex model.Sex) error
 }
 
 // CroupierServiceClient ...
