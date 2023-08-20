@@ -4,7 +4,7 @@ import (
 	"context"
 
 	photomanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/photo_manager"
-	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/games"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -17,7 +17,7 @@ func (f *Facade) GetPhotosByGameID(ctx context.Context, gameID int32) ([]string,
 	if err != nil {
 		st := status.Convert(err)
 		if st.Code() == codes.NotFound {
-			return nil, model.ErrGameNotFound
+			return nil, games.ErrGameNotFound
 		}
 
 		return nil, err

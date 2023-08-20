@@ -25,7 +25,7 @@ func (f *Facade) GetLeagueByID(ctx context.Context, leagueID int32) (model.Leagu
 	if err != nil {
 		st := status.Convert(err)
 		if st.Code() == codes.NotFound {
-			return model.League{}, model.ErrLeagueNotFound
+			return model.League{}, ErrLeagueNotFound
 		}
 
 		return model.League{}, fmt.Errorf("get league error: %w", err)

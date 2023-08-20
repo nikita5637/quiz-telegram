@@ -149,68 +149,6 @@ func (_c *RegistratorServiceClient_GetGames_Call) Return(_a0 *registrator.GetGam
 	return _c
 }
 
-// GetPlayersByGameID provides a mock function with given fields: ctx, in, opts
-func (_m *RegistratorServiceClient) GetPlayersByGameID(ctx context.Context, in *registrator.GetPlayersByGameIDRequest, opts ...grpc.CallOption) (*registrator.GetPlayersByGameIDResponse, error) {
-	_va := make([]interface{}, len(opts))
-	for _i := range opts {
-		_va[_i] = opts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, ctx, in)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
-
-	var r0 *registrator.GetPlayersByGameIDResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *registrator.GetPlayersByGameIDRequest, ...grpc.CallOption) *registrator.GetPlayersByGameIDResponse); ok {
-		r0 = rf(ctx, in, opts...)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*registrator.GetPlayersByGameIDResponse)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *registrator.GetPlayersByGameIDRequest, ...grpc.CallOption) error); ok {
-		r1 = rf(ctx, in, opts...)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// RegistratorServiceClient_GetPlayersByGameID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetPlayersByGameID'
-type RegistratorServiceClient_GetPlayersByGameID_Call struct {
-	*mock.Call
-}
-
-// GetPlayersByGameID is a helper method to define mock.On call
-//  - ctx context.Context
-//  - in *registrator.GetPlayersByGameIDRequest
-//  - opts ...grpc.CallOption
-func (_e *RegistratorServiceClient_Expecter) GetPlayersByGameID(ctx interface{}, in interface{}, opts ...interface{}) *RegistratorServiceClient_GetPlayersByGameID_Call {
-	return &RegistratorServiceClient_GetPlayersByGameID_Call{Call: _e.mock.On("GetPlayersByGameID",
-		append([]interface{}{ctx, in}, opts...)...)}
-}
-
-func (_c *RegistratorServiceClient_GetPlayersByGameID_Call) Run(run func(ctx context.Context, in *registrator.GetPlayersByGameIDRequest, opts ...grpc.CallOption)) *RegistratorServiceClient_GetPlayersByGameID_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		variadicArgs := make([]grpc.CallOption, len(args)-2)
-		for i, a := range args[2:] {
-			if a != nil {
-				variadicArgs[i] = a.(grpc.CallOption)
-			}
-		}
-		run(args[0].(context.Context), args[1].(*registrator.GetPlayersByGameIDRequest), variadicArgs...)
-	})
-	return _c
-}
-
-func (_c *RegistratorServiceClient_GetPlayersByGameID_Call) Return(_a0 *registrator.GetPlayersByGameIDResponse, _a1 error) *RegistratorServiceClient_GetPlayersByGameID_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
 // GetRegisteredGames provides a mock function with given fields: ctx, in, opts
 func (_m *RegistratorServiceClient) GetRegisteredGames(ctx context.Context, in *registrator.GetRegisteredGamesRequest, opts ...grpc.CallOption) (*registrator.GetRegisteredGamesResponse, error) {
 	_va := make([]interface{}, len(opts))
@@ -397,68 +335,6 @@ func (_c *RegistratorServiceClient_RegisterGame_Call) Return(_a0 *registrator.Re
 	return _c
 }
 
-// RegisterPlayer provides a mock function with given fields: ctx, in, opts
-func (_m *RegistratorServiceClient) RegisterPlayer(ctx context.Context, in *registrator.RegisterPlayerRequest, opts ...grpc.CallOption) (*registrator.RegisterPlayerResponse, error) {
-	_va := make([]interface{}, len(opts))
-	for _i := range opts {
-		_va[_i] = opts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, ctx, in)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
-
-	var r0 *registrator.RegisterPlayerResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *registrator.RegisterPlayerRequest, ...grpc.CallOption) *registrator.RegisterPlayerResponse); ok {
-		r0 = rf(ctx, in, opts...)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*registrator.RegisterPlayerResponse)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *registrator.RegisterPlayerRequest, ...grpc.CallOption) error); ok {
-		r1 = rf(ctx, in, opts...)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// RegistratorServiceClient_RegisterPlayer_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RegisterPlayer'
-type RegistratorServiceClient_RegisterPlayer_Call struct {
-	*mock.Call
-}
-
-// RegisterPlayer is a helper method to define mock.On call
-//  - ctx context.Context
-//  - in *registrator.RegisterPlayerRequest
-//  - opts ...grpc.CallOption
-func (_e *RegistratorServiceClient_Expecter) RegisterPlayer(ctx interface{}, in interface{}, opts ...interface{}) *RegistratorServiceClient_RegisterPlayer_Call {
-	return &RegistratorServiceClient_RegisterPlayer_Call{Call: _e.mock.On("RegisterPlayer",
-		append([]interface{}{ctx, in}, opts...)...)}
-}
-
-func (_c *RegistratorServiceClient_RegisterPlayer_Call) Run(run func(ctx context.Context, in *registrator.RegisterPlayerRequest, opts ...grpc.CallOption)) *RegistratorServiceClient_RegisterPlayer_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		variadicArgs := make([]grpc.CallOption, len(args)-2)
-		for i, a := range args[2:] {
-			if a != nil {
-				variadicArgs[i] = a.(grpc.CallOption)
-			}
-		}
-		run(args[0].(context.Context), args[1].(*registrator.RegisterPlayerRequest), variadicArgs...)
-	})
-	return _c
-}
-
-func (_c *RegistratorServiceClient_RegisterPlayer_Call) Return(_a0 *registrator.RegisterPlayerResponse, _a1 error) *RegistratorServiceClient_RegisterPlayer_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
 // UnregisterGame provides a mock function with given fields: ctx, in, opts
 func (_m *RegistratorServiceClient) UnregisterGame(ctx context.Context, in *registrator.UnregisterGameRequest, opts ...grpc.CallOption) (*registrator.UnregisterGameResponse, error) {
 	_va := make([]interface{}, len(opts))
@@ -517,68 +393,6 @@ func (_c *RegistratorServiceClient_UnregisterGame_Call) Run(run func(ctx context
 }
 
 func (_c *RegistratorServiceClient_UnregisterGame_Call) Return(_a0 *registrator.UnregisterGameResponse, _a1 error) *RegistratorServiceClient_UnregisterGame_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-// UnregisterPlayer provides a mock function with given fields: ctx, in, opts
-func (_m *RegistratorServiceClient) UnregisterPlayer(ctx context.Context, in *registrator.UnregisterPlayerRequest, opts ...grpc.CallOption) (*registrator.UnregisterPlayerResponse, error) {
-	_va := make([]interface{}, len(opts))
-	for _i := range opts {
-		_va[_i] = opts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, ctx, in)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
-
-	var r0 *registrator.UnregisterPlayerResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *registrator.UnregisterPlayerRequest, ...grpc.CallOption) *registrator.UnregisterPlayerResponse); ok {
-		r0 = rf(ctx, in, opts...)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*registrator.UnregisterPlayerResponse)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *registrator.UnregisterPlayerRequest, ...grpc.CallOption) error); ok {
-		r1 = rf(ctx, in, opts...)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// RegistratorServiceClient_UnregisterPlayer_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UnregisterPlayer'
-type RegistratorServiceClient_UnregisterPlayer_Call struct {
-	*mock.Call
-}
-
-// UnregisterPlayer is a helper method to define mock.On call
-//  - ctx context.Context
-//  - in *registrator.UnregisterPlayerRequest
-//  - opts ...grpc.CallOption
-func (_e *RegistratorServiceClient_Expecter) UnregisterPlayer(ctx interface{}, in interface{}, opts ...interface{}) *RegistratorServiceClient_UnregisterPlayer_Call {
-	return &RegistratorServiceClient_UnregisterPlayer_Call{Call: _e.mock.On("UnregisterPlayer",
-		append([]interface{}{ctx, in}, opts...)...)}
-}
-
-func (_c *RegistratorServiceClient_UnregisterPlayer_Call) Run(run func(ctx context.Context, in *registrator.UnregisterPlayerRequest, opts ...grpc.CallOption)) *RegistratorServiceClient_UnregisterPlayer_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		variadicArgs := make([]grpc.CallOption, len(args)-2)
-		for i, a := range args[2:] {
-			if a != nil {
-				variadicArgs[i] = a.(grpc.CallOption)
-			}
-		}
-		run(args[0].(context.Context), args[1].(*registrator.UnregisterPlayerRequest), variadicArgs...)
-	})
-	return _c
-}
-
-func (_c *RegistratorServiceClient_UnregisterPlayer_Call) Return(_a0 *registrator.UnregisterPlayerResponse, _a1 error) *RegistratorServiceClient_UnregisterPlayer_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }

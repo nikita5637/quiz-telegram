@@ -20,6 +20,10 @@ var (
 		Key:      "registration_for_a_game",
 		FallBack: "Registration for a game",
 	}
+	thereAreNoGamePlayersLexeme = i18n.Lexeme{
+		Key:      "there_are_no_game_players_lexeme",
+		FallBack: "There are no game players lexeme",
+	}
 	zoyaLexeme = i18n.Lexeme{
 		Key:      "zoya",
 		FallBack: "Zoya",
@@ -71,8 +75,8 @@ func (b *Bot) HandleInlineQuery(ctx context.Context, update *tgbotapi.Update) er
 		article.ThumbHeight = 100
 		article.ThumbWidth = 100
 
-		var players []model.Player
-		players, err = b.gamesFacade.GetPlayersByGameID(ctx, game.ID)
+		var gamePlayers []model.GamePlayer
+		gamePlayers, err = b.gamePlayersFacade.GetGamePlayersByGameID(ctx, game.ID)
 		if err != nil {
 			logger.Errorf(ctx, "get players by game ID error: %s", err.Error())
 			continue
@@ -80,15 +84,15 @@ func (b *Bot) HandleInlineQuery(ctx context.Context, update *tgbotapi.Update) er
 
 		textBuilder := strings.Builder{}
 
-		if len(players) == 0 {
-			textBuilder.WriteString("Нет игроков")
+		if len(gamePlayers) == 0 {
+			textBuilder.WriteString(i18n.GetTranslator(thereAreNoGamePlayersLexeme)(ctx))
 		}
 
-		for i, player := range players {
+		for i, gamePlayer := range gamePlayers {
 			playerName := ""
-			if player.UserID > 0 {
+			if userID, ok := gamePlayer.UserID.Get(); ok {
 				var user model.User
-				if user, err = b.usersFacade.GetUserByID(ctx, player.UserID); err != nil {
+				if user, err = b.usersFacade.GetUserByID(ctx, userID); err != nil {
 					return err
 				}
 				playerName = user.Name
@@ -98,7 +102,7 @@ func (b *Bot) HandleInlineQuery(ctx context.Context, update *tgbotapi.Update) er
 
 			ss := strings.Split(playerName, " ")
 			name := ss[0]
-			if i < len(players)-1 {
+			if i < len(gamePlayers)-1 {
 				textBuilder.WriteString(fmt.Sprintf("%s, ", name))
 			} else {
 				textBuilder.WriteString(name)

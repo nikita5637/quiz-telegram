@@ -7,5 +7,5 @@ import (
 )
 
 func TestCommands_Number(t *testing.T) {
-	assert.Equal(t, CommandsNumber, Command(19))
+	assert.Equal(t, CommandsNumber, Command(20))
 }

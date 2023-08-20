@@ -8,12 +8,15 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/mono83/maybe"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/gameplayers"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/games"
 	callbackdata_utils "github.com/nikita5637/quiz-telegram/internal/pkg/utils/callbackdata"
 	telegram_utils "github.com/nikita5637/quiz-telegram/utils/telegram"
+	user_utils "github.com/nikita5637/quiz-telegram/utils/user"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	croupierpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/croupier"
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
 	"github.com/nikita5637/quiz-telegram/internal/config"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/commands"
@@ -27,16 +30,16 @@ import (
 )
 
 var (
-	degreeMap = map[registrator.Degree]i18n.Lexeme{
-		registrator.Degree_DEGREE_INVALID: i18n.Lexeme{
+	degreeMap = map[model.Degree]i18n.Lexeme{
+		model.DegreeInvalid: {
 			Key:      "invalid_degree",
 			FallBack: "invalid degree",
 		},
-		registrator.Degree_DEGREE_LIKELY: i18n.Lexeme{
+		model.DegreeLikely: {
 			Key:      "plays_likely",
 			FallBack: "plays likely",
 		},
-		registrator.Degree_DEGREE_UNLIKELY: i18n.Lexeme{
+		model.DegreeUnlikely: {
 			Key:      "plays_unlikely",
 			FallBack: "plays unlikely",
 		},
@@ -86,6 +89,10 @@ var (
 		Key:      "game_cost",
 		FallBack: "Game cost",
 	}
+	gameHasPassedLexeme = i18n.Lexeme{
+		Key:      "game_has_passed",
+		FallBack: "Game has passed",
+	}
 	gameNotFoundLexeme = i18n.Lexeme{
 		Key:      "game_not_found",
 		FallBack: "Game not found",
@@ -97,6 +104,10 @@ var (
 	legionerIsSignedUpForTheGameLexeme = i18n.Lexeme{
 		Key:      "legioner_is_signed_up_for_the_game",
 		FallBack: "Legioner is signed up for the game",
+	}
+	legionerIsSignedUpForTheGameUnlikelyLexeme = i18n.Lexeme{
+		Key:      "legioner_is_signed_up_for_the_game_unlikely",
+		FallBack: "Legioner is signed up for the game unlikely",
 	}
 	legionerIsUnsignedUpForTheGameLexeme = i18n.Lexeme{
 		Key:      "legioner_is_unsigned_up_for_the_game",
@@ -126,6 +137,10 @@ var (
 		Key:      "registered_game",
 		FallBack: "We are registered for the game",
 	}
+	thereAreNoYourLegionersRegisteredForTheGameLexeme = i18n.Lexeme{
+		Key:      "there_are_no_your_legioners_registered_for_the_game",
+		FallBack: "There are no your legioners registered for the game",
+	}
 	titleLexeme = i18n.Lexeme{
 		Key:      "title",
 		FallBack: "Title",
@@ -134,9 +149,17 @@ var (
 		Key:      "unregistered_game",
 		FallBack: "We are unregistered for the game",
 	}
+	youAreNotRegisteredForTheGameLexeme = i18n.Lexeme{
+		Key:      "you_are_not_registered_for_the_game",
+		FallBack: "You are not registered for the game",
+	}
 	youAreSignedUpForTheGameLexeme = i18n.Lexeme{
 		Key:      "you_are_signed_up_for_the_game",
 		FallBack: "You are signed up for the game",
+	}
+	youAreSignedUpForTheGameUnlikelyLexeme = i18n.Lexeme{
+		Key:      "you_are_signed_up_for_the_game_unlikely",
+		FallBack: "You are signed up for the game unlikely",
 	}
 	youAreUnsignedUpForTheGameLexeme = i18n.Lexeme{
 		Key:      "you_are_unsigned_up_for_the_game",
@@ -157,7 +180,7 @@ func (b *Bot) HandleCallbackQuery(ctx context.Context, update *tgbotapi.Update) 
 	clientID := update.CallbackQuery.From.ID
 	ctx = telegram_utils.NewContextWithClientID(ctx, clientID)
 
-	err := b.checkAuth(ctx, clientID)
+	user, err := b.checkAuth(ctx, clientID)
 	if err != nil {
 		name := update.CallbackQuery.Message.Chat.FirstName
 		if name == "" {
@@ -179,6 +202,8 @@ func (b *Bot) HandleCallbackQuery(ctx context.Context, update *tgbotapi.Update) 
 		_, err = b.bot.Send(welcomeMessage)
 		return err
 	}
+
+	ctx = user_utils.NewContextWithUser(ctx, user)
 
 	telegramRequest := commands.TelegramRequest{}
 
@@ -240,7 +265,12 @@ func (b *Bot) HandleCallbackQuery(ctx context.Context, update *tgbotapi.Update) 
 		}
 	case commands.CommandPlayersListByGame:
 		handler = func(ctx context.Context) error {
-			return b.handlePlayersList(ctx, update, telegramRequest)
+			data := &commands.PlayersListByGameData{}
+			if err = json.Unmarshal(telegramRequest.Body, data); err != nil {
+				return fmt.Errorf("telegram request body unmarshal error: %w", err)
+			}
+
+			return b.handlePlayersList(ctx, update, data)
 		}
 	case commands.CommandRegisterGame:
 		handler = func(ctx context.Context) error {
@@ -256,11 +286,25 @@ func (b *Bot) HandleCallbackQuery(ctx context.Context, update *tgbotapi.Update) 
 		}
 	case commands.CommandUnregisterPlayer:
 		handler = func(ctx context.Context) error {
-			return b.handleUnregisterPlayer(ctx, update, telegramRequest)
+			data := &commands.UnregisterPlayerData{}
+			if err = json.Unmarshal(telegramRequest.Body, data); err != nil {
+				return fmt.Errorf("telegram request body unmarshal error: %w", err)
+			}
+
+			return b.handleUnregisterPlayer(ctx, update, data)
 		}
 	case commands.CommandUpdatePayment:
 		handler = func(ctx context.Context) error {
 			return b.handleUpdatePayment(ctx, update, telegramRequest)
+		}
+	case commands.CommandUpdatePlayerRegistration:
+		handler = func(ctx context.Context) error {
+			data := &commands.UpdatePlayerRegistration{}
+			if err = json.Unmarshal(telegramRequest.Body, data); err != nil {
+				return fmt.Errorf("telegram request body unmarshal error: %w", err)
+			}
+
+			return b.handleUpdatePlayerRegistration(ctx, update, data)
 		}
 	}
 
@@ -356,7 +400,7 @@ func (b *Bot) handleGetGame(ctx context.Context, update *tgbotapi.Update, telegr
 
 	game, err := b.gamesFacade.GetGameByID(ctx, data.GameID)
 	if err != nil {
-		if errors.Is(err, model.ErrGameNotFound) {
+		if errors.Is(err, games.ErrGameNotFound) {
 			msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(gameNotFoundLexeme)(ctx))
 			_, err = b.bot.Send(msg)
 			return err
@@ -412,7 +456,7 @@ func (b *Bot) handleGetGamePhotos(ctx context.Context, update *tgbotapi.Update, 
 
 	urls, err := b.gamePhotosFacade.GetPhotosByGameID(ctx, data.GameID)
 	if err != nil {
-		if errors.Is(err, model.ErrGameNotFound) {
+		if errors.Is(err, games.ErrGameNotFound) {
 			msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(gameNotFoundLexeme)(ctx))
 			_, err = b.bot.Send(msg)
 			return err
@@ -767,69 +811,64 @@ func (b *Bot) handleLottery(ctx context.Context, update *tgbotapi.Update, telegr
 	return nil
 }
 
-func (b *Bot) handlePlayersList(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
-	clientID := update.CallbackQuery.From.ID
-	messageID := update.CallbackQuery.Message.MessageID
-
-	data := &commands.PlayersListByGameData{}
-
-	err := json.Unmarshal(telegramRequest.Body, data)
-	if err != nil {
-		return err
-	}
-
-	players, err := b.gamesFacade.GetPlayersByGameID(ctx, data.GameID)
-	if err != nil {
-		if errors.Is(err, model.ErrGameNotFound) {
-			msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(gameNotFoundLexeme)(ctx))
-			_, err = b.bot.Send(msg)
-			return err
+func (b *Bot) handlePlayersList(ctx context.Context, update *tgbotapi.Update, data *commands.PlayersListByGameData) error {
+	fn := func(ctx context.Context, update *tgbotapi.Update, data *commands.PlayersListByGameData) (*tgbotapi.MessageConfig, *tgbotapi.CallbackConfig, error) {
+		clientID := update.CallbackQuery.From.ID
+		gamePlayers, err := b.gamePlayersFacade.GetGamePlayersByGameID(ctx, data.GameID)
+		if err != nil {
+			return nil, nil, fmt.Errorf("get game players by game ID error: %w", err)
 		}
 
-		return err
-	}
+		if len(gamePlayers) == 0 {
+			msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(listOfPlayersIsEmptyLexeme)(ctx))
+			return &msg, nil, nil
+		}
 
-	textBuilder := strings.Builder{}
-	for i, player := range players {
-		playerName := ""
-		if player.UserID > 0 {
-			var user model.User
-			if user, err = b.usersFacade.GetUserByID(ctx, player.UserID); err != nil {
-				return err
+		textBuilder := strings.Builder{}
+		for i, gamePlayer := range gamePlayers {
+			playerName := ""
+			if userID, ok := gamePlayer.UserID.Get(); ok {
+				var user model.User
+				if user, err = b.usersFacade.GetUserByID(ctx, userID); err != nil {
+					return nil, nil, fmt.Errorf("get user by ID error: %w", err)
+				}
+				playerName = user.Name
+			} else {
+				var user model.User
+				if user, err = b.usersFacade.GetUserByID(ctx, gamePlayer.RegisteredBy); err != nil {
+					return nil, nil, fmt.Errorf("get user by ID error: %w", err)
+				}
+				playerName = fmt.Sprintf("%s %s", i18n.GetTranslator(legionerByLexeme)(ctx), user.Name)
 			}
-			playerName = user.Name
-		} else {
-			var user model.User
-			if user, err = b.usersFacade.GetUserByID(ctx, player.RegisteredBy); err != nil {
-				return err
+
+			if gamePlayer.Degree == model.DegreeUnlikely {
+				textBuilder.WriteString(fmt.Sprintf("%d. %s (%s)\n", i+1, playerName, i18n.GetTranslator(degreeMap[model.DegreeUnlikely])(ctx)))
+			} else {
+				textBuilder.WriteString(fmt.Sprintf("%d. %s\n", i+1, playerName))
 			}
-			playerName = fmt.Sprintf("%s %s", i18n.GetTranslator(legionerByLexeme)(ctx), user.Name)
 		}
 
-		if player.Degree == int32(registrator.Degree_DEGREE_UNLIKELY) {
-			textBuilder.WriteString(fmt.Sprintf("%d. %s (%s)\n", i+1, playerName, i18n.GetTranslator(degreeMap[registrator.Degree_DEGREE_UNLIKELY])(ctx)))
-		} else {
-			textBuilder.WriteString(fmt.Sprintf("%d. %s\n", i+1, playerName))
+		msg := tgbotapi.NewMessage(clientID, textBuilder.String())
+		cb := tgbotapi.NewCallback(update.CallbackQuery.ID, "")
+
+		return &msg, &cb, nil
+	}
+
+	msg, cb, err := fn(ctx, update, data)
+	if err != nil {
+		return fmt.Errorf("prepare game players list message error: %w", err)
+	}
+
+	if msg != nil {
+		if _, err := b.bot.Send(msg); err != nil {
+			logger.Errorf(ctx, "sending message error: %s", err)
 		}
 	}
 
-	text := textBuilder.String()
-	if text == "" {
-		text = fmt.Sprintf("%s", i18n.GetTranslator(listOfPlayersIsEmptyLexeme)(ctx))
-	}
-
-	msg := tgbotapi.NewMessage(clientID, text)
-	_, err = b.bot.Send(msg)
-	if err != nil {
-		logger.Errorf(ctx, "sending message error: %s", err)
-		return err
-	}
-
-	cb := tgbotapi.NewCallback(update.CallbackQuery.ID, "")
-	_, err = b.bot.Request(cb)
-	if err != nil {
-		logger.Errorf(ctx, "sending callback error: %s", err)
-		return err
+	if cb != nil {
+		if _, err := b.bot.Request(cb); err != nil {
+			logger.Errorf(ctx, "sending callback error: %s", err)
+		}
 	}
 
 	return nil
@@ -848,7 +887,7 @@ func (b *Bot) handleRegisterGame(ctx context.Context, update *tgbotapi.Update, t
 
 	_, err = b.gamesFacade.RegisterGame(ctx, data.GameID)
 	if err != nil {
-		if errors.Is(err, model.ErrGameNotFound) {
+		if errors.Is(err, games.ErrGameNotFound) {
 			msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(gameNotFoundLexeme)(ctx))
 			_, err = b.bot.Send(msg)
 			return err
@@ -907,14 +946,33 @@ func (b *Bot) handleRegisterPlayer(ctx context.Context, update *tgbotapi.Update,
 		return err
 	}
 
-	_, err = b.gamesFacade.RegisterPlayer(ctx, data.GameID, data.PlayerType, data.Degree)
+	gamePlayer := model.GamePlayer{
+		GameID:       data.GameID,
+		UserID:       maybe.Nothing[int32](),
+		RegisteredBy: data.RegisteredBy,
+		Degree:       data.Degree,
+	}
+
+	if data.UserID != 0 {
+		gamePlayer.UserID = maybe.Just(data.UserID)
+	}
+
+	err = b.gamePlayersFacade.RegisterPlayer(ctx, gamePlayer)
 	if err != nil {
-		if errors.Is(err, model.ErrGameNotFound) {
+		if errors.Is(err, games.ErrGameHasPassed) {
+			msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(gameHasPassedLexeme)(ctx))
+			_, err = b.bot.Send(msg)
+			return err
+		} else if errors.Is(err, games.ErrGameNotFound) {
 			msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(gameNotFoundLexeme)(ctx))
 			_, err = b.bot.Send(msg)
 			return err
-		} else if errors.Is(err, model.ErrNoFreeSlot) {
-			msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(noFreeSlotLexeme)(ctx))
+		} else if errors.Is(err, gameplayers.ErrNoFreeSlot) {
+			msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(noFreeSlotLexeme)(ctx))
+			_, err = b.bot.Send(msg)
+			return err
+		} else if errors.Is(err, gameplayers.ErrGamePlayerAlreadyRegistered) {
+			msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(youAreAlreadyRegisteredForTheGameLexeme)(ctx))
 			_, err = b.bot.Send(msg)
 			return err
 		}
@@ -923,11 +981,18 @@ func (b *Bot) handleRegisterPlayer(ctx context.Context, update *tgbotapi.Update,
 	}
 
 	cb := tgbotapi.NewCallback(callbackID, "")
-	switch data.PlayerType {
-	case int32(registrator.PlayerType_PLAYER_TYPE_LEGIONER):
-		cb = tgbotapi.NewCallback(callbackID, i18n.GetTranslator(legionerIsSignedUpForTheGameLexeme)(ctx))
-	case int32(registrator.PlayerType_PLAYER_TYPE_MAIN):
-		cb = tgbotapi.NewCallback(callbackID, i18n.GetTranslator(youAreSignedUpForTheGameLexeme)(ctx))
+	if data.UserID == 0 && data.RegisteredBy != data.UserID {
+		if data.Degree == model.DegreeLikely {
+			cb = tgbotapi.NewCallback(callbackID, i18n.GetTranslator(legionerIsSignedUpForTheGameLexeme)(ctx))
+		} else {
+			cb = tgbotapi.NewCallback(callbackID, i18n.GetTranslator(legionerIsSignedUpForTheGameUnlikelyLexeme)(ctx))
+		}
+	} else if data.UserID != 0 && data.RegisteredBy == data.UserID {
+		if data.Degree == model.DegreeLikely {
+			cb = tgbotapi.NewCallback(callbackID, i18n.GetTranslator(youAreSignedUpForTheGameLexeme)(ctx))
+		} else {
+			cb = tgbotapi.NewCallback(callbackID, i18n.GetTranslator(youAreSignedUpForTheGameUnlikelyLexeme)(ctx))
+		}
 	}
 
 	_, err = b.bot.Request(cb)
@@ -980,7 +1045,7 @@ func (b *Bot) handleUnregisterGame(ctx context.Context, update *tgbotapi.Update,
 
 	_, err = b.gamesFacade.UnregisterGame(ctx, data.GameID)
 	if err != nil {
-		if errors.Is(err, model.ErrGameNotFound) {
+		if errors.Is(err, games.ErrGameNotFound) {
 			msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(gameNotFoundLexeme)(ctx))
 			_, err = b.bot.Send(msg)
 			return err
@@ -1028,69 +1093,90 @@ func (b *Bot) handleUnregisterGame(ctx context.Context, update *tgbotapi.Update,
 	return nil
 }
 
-func (b *Bot) handleUnregisterPlayer(ctx context.Context, update *tgbotapi.Update, telegramRequest commands.TelegramRequest) error {
-	clientID := update.CallbackQuery.From.ID
-	messageID := update.CallbackQuery.Message.MessageID
-	callbackID := update.CallbackQuery.ID
+func (b *Bot) handleUnregisterPlayer(ctx context.Context, update *tgbotapi.Update, data *commands.UnregisterPlayerData) error {
+	fn := func(ctx context.Context, update *tgbotapi.Update, data *commands.UnregisterPlayerData) (*tgbotapi.EditMessageTextConfig, *tgbotapi.CallbackConfig, error) {
+		clientID := update.CallbackQuery.From.ID
+		messageID := update.CallbackQuery.Message.MessageID
+		callbackID := update.CallbackQuery.ID
 
-	data := &commands.UnregisterPlayerData{}
-	err := json.Unmarshal(telegramRequest.Body, data)
-	if err != nil {
-		return err
-	}
-
-	_, err = b.gamesFacade.UnregisterPlayer(ctx, data.GameID, data.PlayerType)
-	if err != nil {
-		if errors.Is(err, model.ErrGameNotFound) {
-			msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(gameNotFoundLexeme)(ctx))
-			_, err = b.bot.Send(msg)
-			return err
+		gamePlayer := model.GamePlayer{
+			GameID:       data.GameID,
+			UserID:       maybe.Nothing[int32](),
+			RegisteredBy: data.RegisteredBy,
+			Degree:       data.Degree,
+		}
+		if data.UserID != 0 {
+			gamePlayer.UserID = maybe.Just(data.UserID)
 		}
 
-		return err
+		if err := b.gamePlayersFacade.UnregisterPlayer(ctx, gamePlayer); err != nil {
+			if errors.Is(err, games.ErrGameNotFound) {
+				msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(gameNotFoundLexeme)(ctx))
+				return &msg, nil, nil
+			} else if errors.Is(err, games.ErrGameHasPassed) {
+				cb := tgbotapi.NewCallback(callbackID, i18n.GetTranslator(gameHasPassedLexeme)(ctx))
+				return nil, &cb, nil
+			} else if errors.Is(err, gameplayers.ErrGamePlayerNotFound) {
+				var cb tgbotapi.CallbackConfig
+				if data.UserID != 0 && data.RegisteredBy == data.UserID {
+					cb = tgbotapi.NewCallback(callbackID, i18n.GetTranslator(youAreNotRegisteredForTheGameLexeme)(ctx))
+				} else {
+					cb = tgbotapi.NewCallback(callbackID, i18n.GetTranslator(thereAreNoYourLegionersRegisteredForTheGameLexeme)(ctx))
+				}
+				return nil, &cb, nil
+			}
+
+			return nil, nil, err
+		}
+
+		cb := tgbotapi.NewCallback(callbackID, "")
+		if data.UserID == 0 && data.RegisteredBy != data.UserID {
+			cb = tgbotapi.NewCallback(callbackID, i18n.GetTranslator(legionerIsUnsignedUpForTheGameLexeme)(ctx))
+		} else if data.UserID != 0 && data.RegisteredBy == data.UserID {
+			cb = tgbotapi.NewCallback(callbackID, i18n.GetTranslator(youAreUnsignedUpForTheGameLexeme)(ctx))
+		}
+
+		game, err := b.gamesFacade.GetGameByID(ctx, data.GameID)
+		if err != nil {
+			return nil, nil, fmt.Errorf("get game by ID error: %w", err)
+		}
+
+		lotteryResp, err := b.croupierServiceClient.GetLotteryStatus(ctx, &croupierpb.GetLotteryStatusRequest{
+			GameId: game.ID,
+		})
+		if err != nil {
+			logger.Warnf(ctx, "getting lottery status error: %w", err)
+		} else {
+			game.WithLottery = lotteryResp.GetActive()
+		}
+
+		var menu tgbotapi.InlineKeyboardMarkup
+		menu, err = b.getGameMenu(ctx, game, 0)
+		if err != nil {
+			return nil, nil, fmt.Errorf("get game menu error: %w", err)
+		}
+
+		msg := tgbotapi.NewEditMessageText(clientID, messageID, detailInfo(ctx, game))
+		msg.ReplyMarkup = &menu
+
+		return &msg, &cb, nil
 	}
 
-	cb := tgbotapi.NewCallback(callbackID, "")
-	switch data.PlayerType {
-	case int32(registrator.PlayerType_PLAYER_TYPE_LEGIONER):
-		cb = tgbotapi.NewCallback(callbackID, i18n.GetTranslator(legionerIsUnsignedUpForTheGameLexeme)(ctx))
-	case int32(registrator.PlayerType_PLAYER_TYPE_MAIN):
-		cb = tgbotapi.NewCallback(callbackID, i18n.GetTranslator(youAreUnsignedUpForTheGameLexeme)(ctx))
-	}
-
-	_, err = b.bot.Request(cb)
+	msg, cb, err := fn(ctx, update, data)
 	if err != nil {
-		logger.Errorf(ctx, "sending callback error: %s", err)
-		return err
+		return fmt.Errorf("prepare unregister player message error: %w", err)
 	}
 
-	game, err := b.gamesFacade.GetGameByID(ctx, data.GameID)
-	if err != nil {
-		return err
+	if msg != nil {
+		if _, err := b.bot.Send(msg); err != nil {
+			logger.Errorf(ctx, "sending message error: %s", err)
+		}
 	}
 
-	lotteryResp, err := b.croupierServiceClient.GetLotteryStatus(ctx, &croupierpb.GetLotteryStatusRequest{
-		GameId: game.ID,
-	})
-	if err != nil {
-		logger.Warnf(ctx, "getting lottery status error: %w", err)
-	} else {
-		game.WithLottery = lotteryResp.GetActive()
-	}
-
-	var menu tgbotapi.InlineKeyboardMarkup
-	menu, err = b.getGameMenu(ctx, game, 0)
-	if err != nil {
-		return err
-	}
-
-	msg := tgbotapi.NewEditMessageText(clientID, messageID, detailInfo(ctx, game))
-	msg.ReplyMarkup = &menu
-
-	_, err = b.bot.Send(msg)
-	if err != nil {
-		logger.Errorf(ctx, "sending message error: %s", err)
-		return err
+	if cb != nil {
+		if _, err := b.bot.Request(cb); err != nil {
+			logger.Errorf(ctx, "sending callback error: %s", err)
+		}
 	}
 
 	return nil
@@ -1108,7 +1194,7 @@ func (b *Bot) handleUpdatePayment(ctx context.Context, update *tgbotapi.Update, 
 
 	err = b.gamesFacade.UpdatePayment(ctx, data.GameID, data.Payment)
 	if err != nil {
-		if errors.Is(err, model.ErrGameNotFound) {
+		if errors.Is(err, games.ErrGameNotFound) {
 			msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(gameNotFoundLexeme)(ctx))
 			_, err = b.bot.Send(msg)
 			return err
@@ -1160,6 +1246,90 @@ func (b *Bot) handleUpdatePayment(ctx context.Context, update *tgbotapi.Update, 
 	if err != nil {
 		logger.Errorf(ctx, "sending callback error: %s", err)
 		return err
+	}
+
+	return nil
+}
+
+func (b *Bot) handleUpdatePlayerRegistration(ctx context.Context, update *tgbotapi.Update, data *commands.UpdatePlayerRegistration) error {
+	fn := func(ctx context.Context, update *tgbotapi.Update, data *commands.UpdatePlayerRegistration) (*tgbotapi.EditMessageTextConfig, *tgbotapi.CallbackConfig, error) {
+
+		clientID := update.CallbackQuery.From.ID
+		messageID := update.CallbackQuery.Message.MessageID
+		callbackID := update.CallbackQuery.ID
+
+		gamePlayer := model.GamePlayer{
+			GameID:       data.GameID,
+			UserID:       maybe.Just(data.UserID),
+			RegisteredBy: data.RegisteredBy,
+			Degree:       data.Degree,
+		}
+
+		if err := b.gamePlayersFacade.UpdatePlayerRegistration(ctx, gamePlayer); err != nil {
+			if errors.Is(err, games.ErrGameNotFound) {
+				msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(gameNotFoundLexeme)(ctx))
+				return &msg, nil, nil
+			}
+
+			return nil, nil, fmt.Errorf("update player registration error: %w", err)
+		}
+
+		cb := tgbotapi.NewCallback(callbackID, "")
+		if data.UserID == 0 && data.RegisteredBy != data.UserID {
+			if data.Degree == model.DegreeUnlikely {
+				cb = tgbotapi.NewCallback(callbackID, i18n.GetTranslator(legionerIsSignedUpForTheGameUnlikelyLexeme)(ctx))
+			} else {
+				cb = tgbotapi.NewCallback(callbackID, i18n.GetTranslator(legionerIsSignedUpForTheGameLexeme)(ctx))
+			}
+		} else if data.UserID != 0 && data.RegisteredBy == data.UserID {
+			if data.Degree == model.DegreeUnlikely {
+				cb = tgbotapi.NewCallback(callbackID, i18n.GetTranslator(youAreSignedUpForTheGameUnlikelyLexeme)(ctx))
+			} else {
+				cb = tgbotapi.NewCallback(callbackID, i18n.GetTranslator(youAreSignedUpForTheGameLexeme)(ctx))
+			}
+		}
+
+		game, err := b.gamesFacade.GetGameByID(ctx, data.GameID)
+		if err != nil {
+			return nil, nil, fmt.Errorf("get game by ID error: %w", err)
+		}
+
+		lotteryResp, err := b.croupierServiceClient.GetLotteryStatus(ctx, &croupierpb.GetLotteryStatusRequest{
+			GameId: game.ID,
+		})
+		if err != nil {
+			logger.Warnf(ctx, "getting lottery status error: %w", err)
+		} else {
+			game.WithLottery = lotteryResp.GetActive()
+		}
+
+		var menu tgbotapi.InlineKeyboardMarkup
+		menu, err = b.getGameMenu(ctx, game, 0)
+		if err != nil {
+			return nil, nil, fmt.Errorf("get game menu error: %w", err)
+		}
+
+		msg := tgbotapi.NewEditMessageText(clientID, messageID, detailInfo(ctx, game))
+		msg.ReplyMarkup = &menu
+
+		return &msg, &cb, nil
+	}
+
+	msg, cb, err := fn(ctx, update, data)
+	if err != nil {
+		return fmt.Errorf("prepare update game player registration message error: %w", err)
+	}
+
+	if cb != nil {
+		if _, err := b.bot.Request(cb); err != nil {
+			logger.Errorf(ctx, "sending callback error: %s", err)
+		}
+	}
+
+	if msg != nil {
+		if _, err := b.bot.Send(msg); err != nil {
+			logger.Errorf(ctx, "sending message error: %s", err)
+		}
 	}
 
 	return nil

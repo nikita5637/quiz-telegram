@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/users"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	callbackdata_utils "github.com/nikita5637/quiz-telegram/internal/pkg/utils/callbackdata"
 	telegram_utils "github.com/nikita5637/quiz-telegram/utils/telegram"
+	userutils "github.com/nikita5637/quiz-telegram/utils/user"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -145,7 +147,7 @@ func (b *Bot) HandleMessage(ctx context.Context, update *tgbotapi.Update) error 
 
 	logger.DebugKV(ctx, "new private message incoming", "clientID", clientID, "text", text)
 
-	err := b.checkAuth(ctx, clientID)
+	user, err := b.checkAuth(ctx, clientID)
 	if err != nil {
 		name := firstName
 		if name == "" {
@@ -167,6 +169,8 @@ func (b *Bot) HandleMessage(ctx context.Context, update *tgbotapi.Update) error 
 		_, err = b.bot.Send(welcomeMessage)
 		return err
 	}
+
+	ctx = userutils.NewContextWithUser(ctx, user)
 
 	var handler func(ctx context.Context) error
 
@@ -301,7 +305,7 @@ func (b *Bot) handleDefaultMessage(ctx context.Context, update *tgbotapi.Update)
 				switch t := detail.(type) {
 				case *errdetails.ErrorInfo:
 					reason := t.GetReason()
-					if reason == "user not found" {
+					if reason == users.ReasonUserNotFound {
 						name := update.Message.Chat.FirstName
 						if name == "" {
 							name = update.Message.Chat.UserName

@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	callbackdata_utils "github.com/nikita5637/quiz-telegram/internal/pkg/utils/callbackdata"
+	userutils "github.com/nikita5637/quiz-telegram/utils/user"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/commands"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/icons"
@@ -69,13 +69,8 @@ var (
 	}
 )
 
-func (b *Bot) checkAuth(ctx context.Context, clientID int64) error {
-	_, err := b.usersFacade.GetUserByTelegramID(ctx, clientID)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (b *Bot) checkAuth(ctx context.Context, clientID int64) (model.User, error) {
+	return b.usersFacade.GetUserByTelegramID(ctx, clientID)
 }
 
 func (b *Bot) getGameMenu(ctx context.Context, game model.Game, page uint32) (tgbotapi.InlineKeyboardMarkup, error) {
@@ -90,31 +85,61 @@ func (b *Bot) getGameMenu(ctx context.Context, game model.Game, page uint32) (tg
 }
 
 func (b *Bot) getGameMenuFirstPage(ctx context.Context, game model.Game) (tgbotapi.InlineKeyboardMarkup, error) {
-	var err error
-
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
 	if game.WithLottery {
 		var btnLottery tgbotapi.InlineKeyboardButton
-		btnLottery, err = b.lotteryButton(ctx, game.ID)
-		if err != nil {
+		var err error
+		if btnLottery, err = b.lotteryButton(ctx, game.ID); err != nil {
 			return tgbotapi.InlineKeyboardMarkup{}, err
 		}
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnLottery))
 	}
 
+	user := userutils.GetUserFromContext(ctx)
+
+	gamePlayers, err := b.gamePlayersFacade.GetGamePlayersByGameID(ctx, game.ID)
+	if err != nil {
+		return tgbotapi.InlineKeyboardMarkup{}, err
+	}
+
+	playerDegree := model.DegreeInvalid
+	for _, gamePlayer := range gamePlayers {
+		if gamePlayer.UserID.Value() == user.ID {
+			playerDegree = gamePlayer.Degree
+			break
+		}
+	}
+
 	if game.NumberOfLegioners+game.NumberOfPlayers == game.MaxPlayers {
 		if game.My {
 			var btn1 tgbotapi.InlineKeyboardButton
-			btn1, err = b.unregisterPlayerButton(ctx, game.ID, registrator.PlayerType_PLAYER_TYPE_MAIN)
+			btn1, err = b.unregisterPlayerButton(ctx, game.ID, user.ID, user.ID)
 			if err != nil {
 				return tgbotapi.InlineKeyboardMarkup{}, err
 			}
-			rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn1))
+
+			if playerDegree != model.DegreeInvalid {
+				newDegree := model.DegreeInvalid
+				if playerDegree == model.DegreeLikely {
+					newDegree = model.DegreeUnlikely
+				} else if playerDegree == model.DegreeUnlikely {
+					newDegree = model.DegreeLikely
+				}
+
+				var btn2 tgbotapi.InlineKeyboardButton
+				if btn2, err = b.updatePlayerRegistionButton(ctx, game.ID, user.ID, user.ID, newDegree); err != nil {
+					return tgbotapi.InlineKeyboardMarkup{}, err
+				}
+
+				rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn1, btn2))
+			} else {
+				rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn1))
+			}
 		}
 
 		if game.NumberOfMyLegioners > 0 {
 			var btn1 tgbotapi.InlineKeyboardButton
-			btn1, err = b.unregisterPlayerButton(ctx, game.ID, registrator.PlayerType_PLAYER_TYPE_LEGIONER)
+			btn1, err = b.unregisterPlayerButton(ctx, game.ID, 0, user.ID)
 			if err != nil {
 				return tgbotapi.InlineKeyboardMarkup{}, err
 			}
@@ -123,19 +148,36 @@ func (b *Bot) getGameMenuFirstPage(ctx context.Context, game model.Game) (tgbota
 	} else {
 		if game.My {
 			var btn1 tgbotapi.InlineKeyboardButton
-			btn1, err = b.unregisterPlayerButton(ctx, game.ID, registrator.PlayerType_PLAYER_TYPE_MAIN)
+			btn1, err = b.unregisterPlayerButton(ctx, game.ID, user.ID, user.ID)
 			if err != nil {
 				return tgbotapi.InlineKeyboardMarkup{}, err
 			}
-			rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn1))
+
+			if playerDegree != model.DegreeInvalid {
+				newDegree := model.DegreeInvalid
+				if playerDegree == model.DegreeLikely {
+					newDegree = model.DegreeUnlikely
+				} else if playerDegree == model.DegreeUnlikely {
+					newDegree = model.DegreeLikely
+				}
+
+				var btn2 tgbotapi.InlineKeyboardButton
+				if btn2, err = b.updatePlayerRegistionButton(ctx, game.ID, user.ID, user.ID, newDegree); err != nil {
+					return tgbotapi.InlineKeyboardMarkup{}, err
+				}
+
+				rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn1, btn2))
+			} else {
+				rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn1))
+			}
 		} else {
 			var btn1 tgbotapi.InlineKeyboardButton
-			btn1, err = b.registerPlayerButton(ctx, game.ID, registrator.PlayerType_PLAYER_TYPE_MAIN, registrator.Degree_DEGREE_LIKELY)
+			btn1, err = b.registerPlayerButton(ctx, game.ID, user.ID, user.ID, model.DegreeLikely)
 			if err != nil {
 				return tgbotapi.InlineKeyboardMarkup{}, err
 			}
 			var btn2 tgbotapi.InlineKeyboardButton
-			btn2, err = b.registerPlayerButton(ctx, game.ID, registrator.PlayerType_PLAYER_TYPE_MAIN, registrator.Degree_DEGREE_UNLIKELY)
+			btn2, err = b.registerPlayerButton(ctx, game.ID, user.ID, user.ID, model.DegreeUnlikely)
 			if err != nil {
 				return tgbotapi.InlineKeyboardMarkup{}, err
 			}
@@ -143,13 +185,13 @@ func (b *Bot) getGameMenuFirstPage(ctx context.Context, game model.Game) (tgbota
 		}
 
 		var btn1 tgbotapi.InlineKeyboardButton
-		btn1, err = b.registerPlayerButton(ctx, game.ID, registrator.PlayerType_PLAYER_TYPE_LEGIONER, registrator.Degree_DEGREE_LIKELY)
+		btn1, err = b.registerPlayerButton(ctx, game.ID, 0, user.ID, model.DegreeLikely)
 		if err != nil {
 			return tgbotapi.InlineKeyboardMarkup{}, err
 		}
 
 		var btn2 tgbotapi.InlineKeyboardButton
-		btn2, err = b.registerPlayerButton(ctx, game.ID, registrator.PlayerType_PLAYER_TYPE_LEGIONER, registrator.Degree_DEGREE_UNLIKELY)
+		btn2, err = b.registerPlayerButton(ctx, game.ID, 0, user.ID, model.DegreeUnlikely)
 		if err != nil {
 			return tgbotapi.InlineKeyboardMarkup{}, err
 		}
@@ -157,7 +199,7 @@ func (b *Bot) getGameMenuFirstPage(ctx context.Context, game model.Game) (tgbota
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn1, btn2))
 		if game.NumberOfMyLegioners > 0 {
 			var btn3 tgbotapi.InlineKeyboardButton
-			btn3, err = b.unregisterPlayerButton(ctx, game.ID, registrator.PlayerType_PLAYER_TYPE_LEGIONER)
+			btn3, err = b.unregisterPlayerButton(ctx, game.ID, 0, user.ID)
 			if err != nil {
 				return tgbotapi.InlineKeyboardMarkup{}, err
 			}
@@ -364,11 +406,12 @@ func (b *Bot) registerGameButton(ctx context.Context, gameID int32) (tgbotapi.In
 	return btn, nil
 }
 
-func (b *Bot) registerPlayerButton(ctx context.Context, gameID int32, playerType registrator.PlayerType, degree registrator.Degree) (tgbotapi.InlineKeyboardButton, error) {
+func (b *Bot) registerPlayerButton(ctx context.Context, gameID, userID, registeredBy int32, degree model.Degree) (tgbotapi.InlineKeyboardButton, error) {
 	payload := &commands.RegisterPlayerData{
-		GameID:     gameID,
-		PlayerType: int32(playerType),
-		Degree:     int32(degree),
+		GameID:       gameID,
+		UserID:       userID,
+		RegisteredBy: registeredBy,
+		Degree:       degree,
 	}
 
 	callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandRegisterPlayer, payload)
@@ -377,16 +420,16 @@ func (b *Bot) registerPlayerButton(ctx context.Context, gameID int32, playerType
 	}
 
 	text := ""
-	if playerType == registrator.PlayerType_PLAYER_TYPE_MAIN && degree == registrator.Degree_DEGREE_LIKELY {
+	if userID == registeredBy && degree == model.DegreeLikely {
 		text = fmt.Sprintf("%s %s", icons.PlayerLikely, i18n.GetTranslator(playerIsLikelyToComeLexeme)(ctx))
 	}
-	if playerType == registrator.PlayerType_PLAYER_TYPE_MAIN && degree == registrator.Degree_DEGREE_UNLIKELY {
+	if userID == registeredBy && degree == model.DegreeUnlikely {
 		text = fmt.Sprintf("%s %s", icons.PlayerUnlikely, i18n.GetTranslator(playerIsUnlikelyToComeLexeme)(ctx))
 	}
-	if playerType == registrator.PlayerType_PLAYER_TYPE_LEGIONER && degree == registrator.Degree_DEGREE_LIKELY {
+	if userID != registeredBy && degree == model.DegreeLikely {
 		text = fmt.Sprintf("%s %s", icons.LegionerLikely, i18n.GetTranslator(legionerIsLikelyToComeLexeme)(ctx))
 	}
-	if playerType == registrator.PlayerType_PLAYER_TYPE_LEGIONER && degree == registrator.Degree_DEGREE_UNLIKELY {
+	if userID != registeredBy && degree == model.DegreeUnlikely {
 		text = fmt.Sprintf("%s %s", icons.LegionerUnlikely, i18n.GetTranslator(legionerIsUnlikelyToComeLexeme)(ctx))
 	}
 	btn := tgbotapi.InlineKeyboardButton{
@@ -415,10 +458,12 @@ func (b *Bot) unregisterGameButton(ctx context.Context, gameID int32) (tgbotapi.
 	return btn, nil
 }
 
-func (b *Bot) unregisterPlayerButton(ctx context.Context, gameID int32, playerType registrator.PlayerType) (tgbotapi.InlineKeyboardButton, error) {
+func (b *Bot) unregisterPlayerButton(ctx context.Context, gameID, userID, registeredBy int32) (tgbotapi.InlineKeyboardButton, error) {
 	payload := &commands.UnregisterPlayerData{
-		GameID:     gameID,
-		PlayerType: int32(playerType),
+		GameID:       gameID,
+		UserID:       userID,
+		RegisteredBy: registeredBy,
+		Degree:       model.DegreeInvalid,
 	}
 
 	callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandUnregisterPlayer, payload)
@@ -427,11 +472,39 @@ func (b *Bot) unregisterPlayerButton(ctx context.Context, gameID int32, playerTy
 	}
 
 	text := ""
-	if playerType == registrator.PlayerType_PLAYER_TYPE_MAIN {
+	if userID == registeredBy {
 		text = fmt.Sprintf("%s %s", icons.PlayerWillNotCome, i18n.GetTranslator(playerWillNotComeLexeme)(ctx))
-	}
-	if playerType == registrator.PlayerType_PLAYER_TYPE_LEGIONER {
+	} else {
 		text = fmt.Sprintf("%s %s", icons.LegionerWillNotCome, i18n.GetTranslator(legionerWillNotComeLexeme)(ctx))
+	}
+
+	btn := tgbotapi.InlineKeyboardButton{
+		Text:         text,
+		CallbackData: &callbackData,
+	}
+
+	return btn, nil
+}
+
+func (b *Bot) updatePlayerRegistionButton(ctx context.Context, gameID, userID, registeredBy int32, degree model.Degree) (tgbotapi.InlineKeyboardButton, error) {
+	payload := &commands.UpdatePlayerRegistration{
+		GameID:       gameID,
+		UserID:       userID,
+		RegisteredBy: registeredBy,
+		Degree:       degree,
+	}
+
+	callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandUpdatePlayerRegistration, payload)
+	if err != nil {
+		return tgbotapi.InlineKeyboardButton{}, err
+	}
+
+	text := ""
+	if degree == model.DegreeLikely {
+		text = fmt.Sprintf("%s %s", icons.PlayerLikely, i18n.GetTranslator(playerIsLikelyToComeLexeme)(ctx))
+	}
+	if degree == model.DegreeUnlikely {
+		text = fmt.Sprintf("%s %s", icons.PlayerUnlikely, i18n.GetTranslator(playerIsUnlikelyToComeLexeme)(ctx))
 	}
 	btn := tgbotapi.InlineKeyboardButton{
 		Text:         text,

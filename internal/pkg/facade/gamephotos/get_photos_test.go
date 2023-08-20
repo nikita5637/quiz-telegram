@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	photomanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/photo_manager"
-	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/games"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -22,7 +22,7 @@ func TestFacade_GetPhotosByGameID(t *testing.T) {
 		got, err := fx.facade.GetPhotosByGameID(fx.ctx, int32(1))
 		assert.Nil(t, got)
 		assert.Error(t, err)
-		assert.ErrorIs(t, err, model.ErrGameNotFound)
+		assert.ErrorIs(t, err, games.ErrGameNotFound)
 	})
 
 	t.Run("error while get photos by game ID", func(t *testing.T) {

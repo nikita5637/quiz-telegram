@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
-	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -34,7 +33,7 @@ func TestFacade_UnregisterGame(t *testing.T) {
 		got, err := fx.facade.UnregisterGame(fx.ctx, 1)
 		assert.Equal(t, int32(registrator.UnregisterGameStatus_UNREGISTER_GAME_STATUS_INVALID), got)
 		assert.Error(t, err)
-		assert.ErrorIs(t, err, model.ErrGameNotFound)
+		assert.ErrorIs(t, err, ErrGameNotFound)
 	})
 
 	t.Run("ok", func(t *testing.T) {

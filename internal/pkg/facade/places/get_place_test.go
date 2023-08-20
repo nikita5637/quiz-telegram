@@ -23,7 +23,7 @@ func TestFacade_GetPlaceByID(t *testing.T) {
 		got, err := fx.facade.GetPlaceByID(fx.ctx, 1)
 		assert.Equal(t, model.Place{}, got)
 		assert.Error(t, err)
-		assert.ErrorIs(t, err, model.ErrPlaceNotFound)
+		assert.ErrorIs(t, err, ErrPlaceNotFound)
 	})
 
 	t.Run("error while get place", func(t *testing.T) {

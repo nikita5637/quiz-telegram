@@ -1,5 +1,7 @@
 package commands
 
+import "github.com/nikita5637/quiz-telegram/internal/pkg/model"
+
 // Command ...
 type Command byte
 
@@ -43,6 +45,8 @@ const (
 	CommandChangeBirthdate
 	// CommandChangeSex ...
 	CommandChangeSex
+	// CommandUpdatePlayerRegistration ...
+	CommandUpdatePlayerRegistration
 	// ...
 
 	// CommandsNumber ...
@@ -99,9 +103,10 @@ type RegisterGameData struct {
 
 // RegisterPlayerData is a payload for command CommandRegisterPlayer
 type RegisterPlayerData struct {
-	GameID     int32 `json:"g,omitempty"`
-	PlayerType int32 `json:"p,omitempty"`
-	Degree     int32 `json:"d,omitempty"`
+	GameID       int32        `json:"g,omitempty"`
+	UserID       int32        `json:"u,omitempty"`
+	RegisteredBy int32        `json:"r,omitempty"`
+	Degree       model.Degree `json:"d,omitempty"`
 }
 
 // UnregisterGameData is a payload for command CommandUnregisterGame
@@ -111,12 +116,22 @@ type UnregisterGameData struct {
 
 // UnregisterPlayerData is a payload for command CommandUnregisterPlayer
 type UnregisterPlayerData struct {
-	GameID     int32 `json:"g,omitempty"`
-	PlayerType int32 `json:"p,omitempty"`
+	GameID       int32        `json:"g,omitempty"`
+	UserID       int32        `json:"u,omitempty"`
+	RegisteredBy int32        `json:"r,omitempty"`
+	Degree       model.Degree `json:"d,omitempty"`
 }
 
 // UpdatePaymentData is a payload for command CommandUpdatePayment
 type UpdatePaymentData struct {
 	GameID  int32 `json:"g,omitempty"`
 	Payment int32 `json:"p,omitempty"`
+}
+
+// UpdatePlayerRegistration is a payload for command CommandUpdatePlayerRegistration
+type UpdatePlayerRegistration struct {
+	GameID       int32        `json:"g,omitempty"`
+	UserID       int32        `json:"u,omitempty"`
+	RegisteredBy int32        `json:"r,omitempty"`
+	Degree       model.Degree `json:"d,omitempty"`
 }

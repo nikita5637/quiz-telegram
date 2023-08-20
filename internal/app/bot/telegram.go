@@ -1,5 +1,6 @@
 //go:generate mockery --case underscore --name GamesFacade --with-expecter
 //go:generate mockery --case underscore --name GamePhotosFacade --with-expecter
+//go:generate mockery --case underscore --name GamePlayersFacade --with-expecter
 //go:generate mockery --case underscore --name ICSFilesFacade --with-expecter
 //go:generate mockery --case underscore --name PlacesFacade --with-expecter
 //go:generate mockery --case underscore --name UsersFacade --with-expecter
@@ -12,13 +13,11 @@ import (
 	"context"
 	"runtime/debug"
 
-	"github.com/google/uuid"
 	croupierpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/croupier"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	telegrampb "github.com/nikita5637/quiz-telegram/pkg/pb/telegram"
-	uuid_utils "github.com/nikita5637/quiz-telegram/utils/uuid"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -30,13 +29,10 @@ import (
 type GamesFacade interface {
 	GetGameByID(ctx context.Context, id int32) (model.Game, error)
 	GetGames(ctx context.Context, active bool) ([]model.Game, error)
-	GetPlayersByGameID(ctx context.Context, gameID int32) ([]model.Player, error)
 	GetRegisteredGames(ctx context.Context, active bool) ([]model.Game, error)
 	GetUserGames(ctx context.Context, active bool, userID int32) ([]model.Game, error)
 	RegisterGame(ctx context.Context, gameID int32) (int32, error)
-	RegisterPlayer(ctx context.Context, gameID, playerType, degree int32) (int32, error)
 	UnregisterGame(ctx context.Context, gameID int32) (int32, error)
-	UnregisterPlayer(ctx context.Context, gameID, playerType int32) (int32, error)
 	UpdatePayment(ctx context.Context, gameID, payment int32) error
 }
 
@@ -44,6 +40,14 @@ type GamesFacade interface {
 type GamePhotosFacade interface {
 	GetGamesWithPhotos(ctx context.Context, limit, offset uint32) ([]model.Game, uint32, error)
 	GetPhotosByGameID(ctx context.Context, gameID int32) ([]string, error)
+}
+
+// GamePlayersFacade ...
+type GamePlayersFacade interface {
+	GetGamePlayersByGameID(ctx context.Context, gameID int32) ([]model.GamePlayer, error)
+	RegisterPlayer(ctx context.Context, gamePlayer model.GamePlayer) error
+	UnregisterPlayer(ctx context.Context, gamePlayer model.GamePlayer) error
+	UpdatePlayerRegistration(ctx context.Context, gamePlayer model.GamePlayer) error
 }
 
 // ICSFilesFacade ...
@@ -84,12 +88,13 @@ type TelegramBot interface { // nolint:revive
 
 // Bot ...
 type Bot struct {
-	bot              TelegramBot // *tgbotapi.BotAPI
-	gamesFacade      GamesFacade
-	gamePhotosFacade GamePhotosFacade
-	icsFilesFacade   ICSFilesFacade
-	placesFacade     PlacesFacade
-	usersFacade      UsersFacade
+	bot               TelegramBot // *tgbotapi.BotAPI
+	gamesFacade       GamesFacade
+	gamePhotosFacade  GamePhotosFacade
+	gamePlayersFacade GamePlayersFacade
+	icsFilesFacade    ICSFilesFacade
+	placesFacade      PlacesFacade
+	usersFacade       UsersFacade
 
 	croupierServiceClient CroupierServiceClient
 
@@ -98,12 +103,13 @@ type Bot struct {
 
 // Config ...
 type Config struct {
-	Bot              TelegramBot // *tgbotapi.BotAPI
-	GamesFacade      GamesFacade
-	GamePhotosFacade GamePhotosFacade
-	ICSFilesFacade   ICSFilesFacade
-	PlacesFacade     PlacesFacade
-	UsersFacade      UsersFacade
+	Bot               TelegramBot // *tgbotapi.BotAPI
+	GamesFacade       GamesFacade
+	GamePhotosFacade  GamePhotosFacade
+	GamePlayersFacade GamePlayersFacade
+	ICSFilesFacade    ICSFilesFacade
+	PlacesFacade      PlacesFacade
+	UsersFacade       UsersFacade
 
 	CroupierServiceClient croupierpb.ServiceClient
 }
@@ -111,12 +117,13 @@ type Config struct {
 // New ...
 func New(cfg Config) (*Bot, error) {
 	bot := &Bot{
-		bot:              cfg.Bot,
-		gamesFacade:      cfg.GamesFacade,
-		gamePhotosFacade: cfg.GamePhotosFacade,
-		icsFilesFacade:   cfg.ICSFilesFacade,
-		placesFacade:     cfg.PlacesFacade,
-		usersFacade:      cfg.UsersFacade,
+		bot:               cfg.Bot,
+		gamesFacade:       cfg.GamesFacade,
+		gamePhotosFacade:  cfg.GamePhotosFacade,
+		gamePlayersFacade: cfg.GamePlayersFacade,
+		icsFilesFacade:    cfg.ICSFilesFacade,
+		placesFacade:      cfg.PlacesFacade,
+		usersFacade:       cfg.UsersFacade,
 
 		croupierServiceClient: cfg.CroupierServiceClient,
 	}
@@ -142,9 +149,6 @@ func (b *Bot) Start(ctx context.Context) error {
 				if update.CallbackQuery == nil && update.Message == nil && update.InlineQuery == nil {
 					return
 				}
-
-				groupUUID := uuid.New().String()
-				ctx = uuid_utils.NewContextWithGroupUUID(ctx, groupUUID)
 
 				if update.CallbackQuery != nil && update.CallbackQuery.Message != nil {
 					if err := b.HandleCallbackQuery(ctx, &update); err != nil {

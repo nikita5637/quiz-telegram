@@ -37,7 +37,7 @@ func TestFacade_GetGameByID(t *testing.T) {
 		got, err := fx.facade.GetGameByID(fx.ctx, 1)
 		assert.Equal(t, model.Game{}, got)
 		assert.Error(t, err)
-		assert.ErrorIs(t, err, model.ErrGameNotFound)
+		assert.ErrorIs(t, err, ErrGameNotFound)
 	})
 
 	t.Run("error while get league by ID", func(t *testing.T) {

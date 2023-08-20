@@ -10,6 +10,7 @@ import (
 
 	icsfilemanagerpb "github.com/nikita5637/quiz-ics-manager-api/pkg/pb/ics_file_manager"
 	croupierpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/croupier"
+	gameplayerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/game_player"
 	leaguepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/league"
 	photomanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/photo_manager"
 	placepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/place"
@@ -21,6 +22,7 @@ import (
 	"github.com/nikita5637/quiz-telegram/internal/config"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/elasticsearch"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/gamephotos"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/gameplayers"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/games"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/icsfiles"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/leagues"
@@ -131,6 +133,8 @@ func main() {
 	defer icsManagerAPIClientConn.Close()
 
 	croupierServiceClient := croupierpb.NewServiceClient(registratorAPIClientConn)
+	gamePlayerServiceClient := gameplayerpb.NewServiceClient(registratorAPIClientConn)
+	gamePlayerRegistratorServiceClient := gameplayerpb.NewRegistratorServiceClient(registratorAPIClientConn)
 	leagueServiceClient := leaguepb.NewServiceClient(registratorAPIClientConn)
 	photographerServiceClient := photomanagerpb.NewServiceClient(registratorAPIClientConn)
 	placeServiceClient := placepb.NewServiceClient(registratorAPIClientConn)
@@ -167,6 +171,13 @@ func main() {
 		}
 		gamesFacade := games.NewFacade(gamesFacadeConfig)
 
+		gamePlayersFacadeConfig := gameplayers.Config{
+			GamePlayerServiceClient:            gamePlayerServiceClient,
+			GamePlayerRegistratorServiceClient: gamePlayerRegistratorServiceClient,
+			RegistratorServiceClient:           registratorServiceClient,
+		}
+		gamePlayersFacade := gameplayers.New(gamePlayersFacadeConfig)
+
 		icsFilesFacadeConfig := icsfiles.Config{
 			ICSFileManagerAPIServiceClient: icsFileManagerAPIServiceClient,
 		}
@@ -178,12 +189,13 @@ func main() {
 		usersFacade := users.NewFacade(usersFacadeConfig)
 
 		telegramBotConfig := telegram.Config{
-			Bot:              bot,
-			GamePhotosFacade: gamePhotosFacade,
-			GamesFacade:      gamesFacade,
-			ICSFilesFacade:   icsFilesFacade,
-			PlacesFacade:     placesFacade,
-			UsersFacade:      usersFacade,
+			Bot:               bot,
+			GamesFacade:       gamesFacade,
+			GamePhotosFacade:  gamePhotosFacade,
+			GamePlayersFacade: gamePlayersFacade,
+			ICSFilesFacade:    icsFilesFacade,
+			PlacesFacade:      placesFacade,
+			UsersFacade:       usersFacade,
 
 			CroupierServiceClient: croupierServiceClient,
 		}

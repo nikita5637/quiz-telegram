@@ -25,7 +25,7 @@ func (f *Facade) GetPlaceByID(ctx context.Context, placeID int32) (model.Place, 
 	if err != nil {
 		st := status.Convert(err)
 		if st.Code() == codes.NotFound {
-			return model.Place{}, model.ErrPlaceNotFound
+			return model.Place{}, ErrPlaceNotFound
 		}
 
 		return model.Place{}, fmt.Errorf("get place error: %w", err)
