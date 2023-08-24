@@ -51,7 +51,7 @@ func (f *Facade) UpdatePlayerRegistration(ctx context.Context, gamePlayer model.
 		switch st.Code() {
 		case codes.NotFound:
 			return ErrGamePlayerNotFound
-		case codes.InvalidArgument:
+		case codes.FailedPrecondition:
 			if errorInfo.Reason == games.ReasonGameNotFound {
 				return games.ErrGameNotFound
 			}

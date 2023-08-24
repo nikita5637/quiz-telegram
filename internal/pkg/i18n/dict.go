@@ -91,6 +91,7 @@ var dictionary = map[string]map[string]string{
 		"time":                                        "Время",
 		"title":                                       "Название",
 		"there_are_no_game_players_lexeme":            "Нет игроков",
+		"there_are_no_registration_for_the_game":      "Нет регистрации на игру",
 		"there_are_no_your_legioners_registered_for_the_game": "Нет твоих легионеров, зарегистрированных на игру",
 		"unregistered_game":                               "Мы не зарегистрированы на игру",
 		"welcome_message":                                 "Привет, %s!\nЯ Зоя :)\nДобро пожаловать :)\nСписок доступных команд:\n/games - список всех игр\n/mygames - список игр, на которые ты идёшь\n/photos - фотографии с игр\n/registeredgames - список игр, на которые мы зарегистрированы\n/settings - настройки\n/help - помощь",

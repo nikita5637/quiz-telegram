@@ -80,6 +80,9 @@ func (b *Bot) handleInlineMessage(ctx context.Context, update *tgbotapi.Update) 
 			} else if errors.Is(err, games.ErrGameHasPassed) {
 				cb := tgbotapi.NewCallback(update.CallbackQuery.ID, i18n.GetTranslator(gameHasPassedLexeme)(ctx))
 				return &cb, nil
+			} else if errors.Is(err, gameplayers.ErrThereAreNoRegistrationForTheGame) {
+				cb := tgbotapi.NewCallback(update.CallbackQuery.ID, i18n.GetTranslator(thereAreNoRegistrationForTheGameLexeme)(ctx))
+				return &cb, nil
 			}
 
 			return nil, err

@@ -56,6 +56,8 @@ func handleRegisterPlayerError(err error) error {
 			return games.ErrGameNotFound
 		case ReasonNoFreeSlot:
 			return ErrNoFreeSlot
+		case ReasonThereAreNoRegistrationForTheGame:
+			return ErrThereAreNoRegistrationForTheGame
 		}
 	case codes.AlreadyExists:
 		return ErrGamePlayerAlreadyRegistered

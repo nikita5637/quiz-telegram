@@ -156,6 +156,19 @@ func Test_handleRegisterPlayerError(t *testing.T) {
 		assert.ErrorIs(t, err, ErrNoFreeSlot)
 	})
 
+	t.Run("failed precondition error. reasonThereAreNoRegistrationForTheGame", func(t *testing.T) {
+		st := status.New(codes.FailedPrecondition, "some error")
+		errorInfo := &errdetails.ErrorInfo{
+			Reason: ReasonThereAreNoRegistrationForTheGame,
+		}
+		st, err := st.WithDetails(errorInfo)
+		assert.NoError(t, err)
+
+		err = handleRegisterPlayerError(st.Err())
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrThereAreNoRegistrationForTheGame)
+	})
+
 	t.Run("already exists error", func(t *testing.T) {
 		st := status.New(codes.AlreadyExists, "some error")
 		err := handleRegisterPlayerError(st.Err())
