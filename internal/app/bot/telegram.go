@@ -1,3 +1,4 @@
+//go:generate mockery --case underscore --name CertificatesFacade --with-expecter
 //go:generate mockery --case underscore --name GamesFacade --with-expecter
 //go:generate mockery --case underscore --name GamePhotosFacade --with-expecter
 //go:generate mockery --case underscore --name GamePlayersFacade --with-expecter
@@ -24,6 +25,11 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
+
+// CertificatesFacade ...
+type CertificatesFacade interface {
+	GetActiveCertificates(ctx context.Context) ([]model.Certificate, error)
+}
 
 // GamesFacade ...
 type GamesFacade interface {
@@ -88,13 +94,14 @@ type TelegramBot interface { // nolint:revive
 
 // Bot ...
 type Bot struct {
-	bot               TelegramBot // *tgbotapi.BotAPI
-	gamesFacade       GamesFacade
-	gamePhotosFacade  GamePhotosFacade
-	gamePlayersFacade GamePlayersFacade
-	icsFilesFacade    ICSFilesFacade
-	placesFacade      PlacesFacade
-	usersFacade       UsersFacade
+	bot                TelegramBot // *tgbotapi.BotAPI
+	certificatesFacade CertificatesFacade
+	gamesFacade        GamesFacade
+	gamePhotosFacade   GamePhotosFacade
+	gamePlayersFacade  GamePlayersFacade
+	icsFilesFacade     ICSFilesFacade
+	placesFacade       PlacesFacade
+	usersFacade        UsersFacade
 
 	croupierServiceClient CroupierServiceClient
 
@@ -103,13 +110,14 @@ type Bot struct {
 
 // Config ...
 type Config struct {
-	Bot               TelegramBot // *tgbotapi.BotAPI
-	GamesFacade       GamesFacade
-	GamePhotosFacade  GamePhotosFacade
-	GamePlayersFacade GamePlayersFacade
-	ICSFilesFacade    ICSFilesFacade
-	PlacesFacade      PlacesFacade
-	UsersFacade       UsersFacade
+	Bot                TelegramBot // *tgbotapi.BotAPI
+	CertificatesFacade CertificatesFacade
+	GamesFacade        GamesFacade
+	GamePhotosFacade   GamePhotosFacade
+	GamePlayersFacade  GamePlayersFacade
+	ICSFilesFacade     ICSFilesFacade
+	PlacesFacade       PlacesFacade
+	UsersFacade        UsersFacade
 
 	CroupierServiceClient croupierpb.ServiceClient
 }
@@ -117,13 +125,14 @@ type Config struct {
 // New ...
 func New(cfg Config) (*Bot, error) {
 	bot := &Bot{
-		bot:               cfg.Bot,
-		gamesFacade:       cfg.GamesFacade,
-		gamePhotosFacade:  cfg.GamePhotosFacade,
-		gamePlayersFacade: cfg.GamePlayersFacade,
-		icsFilesFacade:    cfg.ICSFilesFacade,
-		placesFacade:      cfg.PlacesFacade,
-		usersFacade:       cfg.UsersFacade,
+		bot:                cfg.Bot,
+		certificatesFacade: cfg.CertificatesFacade,
+		gamesFacade:        cfg.GamesFacade,
+		gamePhotosFacade:   cfg.GamePhotosFacade,
+		gamePlayersFacade:  cfg.GamePlayersFacade,
+		icsFilesFacade:     cfg.ICSFilesFacade,
+		placesFacade:       cfg.PlacesFacade,
+		usersFacade:        cfg.UsersFacade,
 
 		croupierServiceClient: cfg.CroupierServiceClient,
 	}

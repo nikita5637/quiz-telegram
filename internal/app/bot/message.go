@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/users"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
@@ -32,6 +33,14 @@ var (
 	birthdateChangedLexeme = i18n.Lexeme{
 		Key:      "birthdate_changed",
 		FallBack: "Birthdate changed",
+	}
+	certificateInfoLexeme = i18n.Lexeme{
+		Key:      "certificate_info",
+		FallBack: "Certificate info",
+	}
+	certificateTypeLexeme = i18n.Lexeme{
+		Key:      "certificate_type",
+		FallBack: "Certificate type",
 	}
 	changeBirthdateLexeme = i18n.Lexeme{
 		Key:      "change_birthdate",
@@ -68,6 +77,10 @@ var (
 	helpMessageLexeme = i18n.Lexeme{
 		Key:      "help_message",
 		FallBack: "Help message",
+	}
+	listOfCertificatesIsEmptyLexeme = i18n.Lexeme{
+		Key:      "list_of_certificates_is_empty",
+		FallBack: "There are no certificates",
 	}
 	listOfGamesIsEmptyLexeme = i18n.Lexeme{
 		Key:      "list_of_games_is_empty",
@@ -175,6 +188,21 @@ func (b *Bot) HandleMessage(ctx context.Context, update *tgbotapi.Update) error 
 	var handler func(ctx context.Context) error
 
 	switch text {
+	case "/certificates":
+		handler = func(ctx context.Context) error {
+			var msg tgbotapi.Chattable
+			msg, err = b.getListOfCertificatesMessage(ctx, update)
+			if err != nil {
+				return err
+			}
+
+			_, err = b.bot.Send(msg)
+			if err != nil {
+				logger.Errorf(ctx, "error while sending message: %w", err)
+			}
+
+			return err
+		}
 	case "/games":
 		handler = func(ctx context.Context) error {
 			var msg tgbotapi.Chattable
@@ -445,6 +473,30 @@ func (b *Bot) getGamesWithPhotosMessage(ctx context.Context, update *tgbotapi.Up
 
 	msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(gamePhotosLexeme)(ctx))
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(rows...)
+
+	return msg, nil
+}
+
+func (b *Bot) getListOfCertificatesMessage(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error) {
+	clientID := update.Message.From.ID
+
+	certificates, err := b.certificatesFacade.GetActiveCertificates(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(certificates) == 0 {
+		return tgbotapi.NewMessage(clientID, i18n.GetTranslator(listOfCertificatesIsEmptyLexeme)(ctx)), nil
+	}
+
+	textBuilder := strings.Builder{}
+	for _, certificate := range certificates {
+		textBuilder.WriteString(fmt.Sprintf("%s: %s\n", i18n.GetTranslator(certificateTypeLexeme)(ctx), certificate.Type))
+		textBuilder.WriteString(fmt.Sprintf("%s: %s\n", i18n.GetTranslator(certificateInfoLexeme)(ctx), certificate.Info))
+		textBuilder.WriteString("\n")
+	}
+
+	msg := tgbotapi.NewMessage(clientID, textBuilder.String())
 
 	return msg, nil
 }

@@ -9,6 +9,7 @@ import (
 	"os/signal"
 
 	icsfilemanagerpb "github.com/nikita5637/quiz-ics-manager-api/pkg/pb/ics_file_manager"
+	certificatemanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/certificate_manager"
 	croupierpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/croupier"
 	gameplayerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/game_player"
 	leaguepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/league"
@@ -21,6 +22,7 @@ import (
 	"github.com/nikita5637/quiz-telegram/internal/app/telegramapi"
 	"github.com/nikita5637/quiz-telegram/internal/config"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/elasticsearch"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/certificates"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/gamephotos"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/gameplayers"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/games"
@@ -132,6 +134,7 @@ func main() {
 	}
 	defer icsManagerAPIClientConn.Close()
 
+	certificateManagerServiceClient := certificatemanagerpb.NewServiceClient(registratorAPIClientConn)
 	croupierServiceClient := croupierpb.NewServiceClient(registratorAPIClientConn)
 	gamePlayerServiceClient := gameplayerpb.NewServiceClient(registratorAPIClientConn)
 	gamePlayerRegistratorServiceClient := gameplayerpb.NewRegistratorServiceClient(registratorAPIClientConn)
@@ -154,6 +157,11 @@ func main() {
 			PlaceServiceClient: placeServiceClient,
 		}
 		placesFacade := places.NewFacade(placesFacadeConfig)
+
+		certificatesFacadeConfig := certificates.Config{
+			CertificateManagerServiceClient: certificateManagerServiceClient,
+		}
+		certificatesFacade := certificates.New(certificatesFacadeConfig)
 
 		gamePhotosFacadeConfig := gamephotos.Config{
 			LeaguesFacade: leaguesFacade,
@@ -189,13 +197,14 @@ func main() {
 		usersFacade := users.NewFacade(usersFacadeConfig)
 
 		telegramBotConfig := telegram.Config{
-			Bot:               bot,
-			GamesFacade:       gamesFacade,
-			GamePhotosFacade:  gamePhotosFacade,
-			GamePlayersFacade: gamePlayersFacade,
-			ICSFilesFacade:    icsFilesFacade,
-			PlacesFacade:      placesFacade,
-			UsersFacade:       usersFacade,
+			Bot:                bot,
+			CertificatesFacade: certificatesFacade,
+			GamesFacade:        gamesFacade,
+			GamePhotosFacade:   gamePhotosFacade,
+			GamePlayersFacade:  gamePlayersFacade,
+			ICSFilesFacade:     icsFilesFacade,
+			PlacesFacade:       placesFacade,
+			UsersFacade:        usersFacade,
 
 			CroupierServiceClient: croupierServiceClient,
 		}
