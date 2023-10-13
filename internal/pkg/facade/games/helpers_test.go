@@ -1,63 +1,72 @@
 package games
 
 import (
-	"context"
-	"errors"
 	"testing"
 
-	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/games/mocks"
+	"github.com/mono83/maybe"
+	gamepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/game"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
+	timeutils "github.com/nikita5637/quiz-telegram/utils/time"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-type fixture struct {
-	ctx    context.Context
-	facade *Facade
-
-	leaguesFacade *mocks.LeaguesFacade
-	placesFacade  *mocks.PlacesFacade
-
-	registratorServiceClient *mocks.RegistratorServiceClient
-}
-
-func tearUp(t *testing.T) *fixture {
-	fx := &fixture{
-		ctx: context.Background(),
-
-		leaguesFacade: mocks.NewLeaguesFacade(t),
-		placesFacade:  mocks.NewPlacesFacade(t),
-
-		registratorServiceClient: mocks.NewRegistratorServiceClient(t),
+func Test_convertProtoGameToModelGame(t *testing.T) {
+	timeNow := timeutils.TimeNow()
+	paymentCash := gamepb.Payment_PAYMENT_CASH
+	type args struct {
+		pbGame *gamepb.Game
 	}
-
-	fx.facade = &Facade{
-		leaguesFacade: fx.leaguesFacade,
-		placesFacade:  fx.placesFacade,
-
-		registratorServiceClient: fx.registratorServiceClient,
+	tests := []struct {
+		name string
+		args args
+		want model.Game
+	}{
+		{
+			name: "test case 1",
+			args: args{
+				pbGame: &gamepb.Game{
+					Id:          1,
+					ExternalId:  wrapperspb.Int32(2),
+					LeagueId:    3,
+					Type:        gamepb.GameType_GAME_TYPE_CLASSIC,
+					Number:      "1",
+					Name:        wrapperspb.String("name"),
+					PlaceId:     4,
+					Date:        timestamppb.New(timeNow),
+					Price:       400,
+					PaymentType: wrapperspb.String("cash,card"),
+					MaxPlayers:  9,
+					Payment:     &paymentCash,
+					Registered:  true,
+					IsInMaster:  true,
+					HasPassed:   true,
+				},
+			},
+			want: model.Game{
+				ID:          1,
+				ExternalID:  maybe.Just(int32(2)),
+				LeagueID:    3,
+				Type:        1,
+				Number:      "1",
+				Name:        maybe.Just("name"),
+				PlaceID:     4,
+				DateTime:    model.DateTime(timestamppb.New(timeNow).AsTime()),
+				Price:       400,
+				PaymentType: maybe.Just("cash,card"),
+				MaxPlayers:  9,
+				Payment:     maybe.Just(int32(1)),
+				Registered:  true,
+				IsInMaster:  true,
+				HasPassed:   true,
+			},
+		},
 	}
-
-	t.Cleanup(func() {
-	})
-
-	return fx
-}
-
-func Test_handleError(t *testing.T) {
-	t.Run("error is nil", func(t *testing.T) {
-		err := handleError(nil)
-		assert.Nil(t, err)
-	})
-
-	t.Run("error is not found", func(t *testing.T) {
-		err := handleError(status.New(codes.NotFound, "").Err())
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, ErrGameNotFound)
-	})
-
-	t.Run("otherwise case", func(t *testing.T) {
-		err := handleError(errors.New("some error"))
-		assert.Error(t, err)
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := convertProtoGameToModelGame(tt.args.pbGame)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }

@@ -69,11 +69,11 @@ func TestFacade_GetActiveCertificates(t *testing.T) {
 		got, err := fx.facade.GetActiveCertificates(fx.ctx)
 		assert.ElementsMatch(t, []model.Certificate{
 			{
-				Type: model.CertificateTypeBarBillPayment,
+				Type: int32(certificatemanagerpb.CertificateType_CERTIFICATE_TYPE_BAR_BILL_PAYMENT),
 				Info: "info1",
 			},
 			{
-				Type: model.CertificateTypeFreePass,
+				Type: int32(certificatemanagerpb.CertificateType_CERTIFICATE_TYPE_FREE_PASS),
 				Info: "info3",
 			},
 		}, got)

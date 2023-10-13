@@ -1,548 +1,63 @@
 package bot
 
 import (
-	"context"
-	"fmt"
+	"time"
 
-	callbackdata_utils "github.com/nikita5637/quiz-telegram/internal/pkg/utils/callbackdata"
-	userutils "github.com/nikita5637/quiz-telegram/utils/user"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/nikita5637/quiz-telegram/internal/pkg/commands"
+	"github.com/mono83/maybe"
+	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
-	"github.com/nikita5637/quiz-telegram/internal/pkg/icons"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 )
 
 var (
-	addToCalendarLexeme = i18n.Lexeme{
-		Key:      "add_to_calendar",
-		FallBack: "Add to calendar",
-	}
-	cashGamePaymentLexeme = i18n.Lexeme{
-		Key:      "cash_game_payment",
-		FallBack: "We play for money",
-	}
-	freeGamePaymentLexeme = i18n.Lexeme{
-		Key:      "free_game_payment",
-		FallBack: "We play for free",
-	}
-	legionerIsLikelyToComeLexeme = i18n.Lexeme{
-		Key:      "legioner_is_likely_to_come",
-		FallBack: "Legioner is likely to come",
-	}
-	legionerIsUnlikelyToComeLexeme = i18n.Lexeme{
-		Key:      "legioner_is_unlikely_to_come",
-		FallBack: "Legioner is unlikely to come",
-	}
-	legionerWillNotComeLexeme = i18n.Lexeme{
-		Key:      "legioner_will_not_come",
-		FallBack: "Legioner will not come",
-	}
 	listOfPlayersLexeme = i18n.Lexeme{
 		Key:      "list_of_players",
 		FallBack: "List of players",
 	}
-	mixGamePaymentLexeme = i18n.Lexeme{
-		Key:      "mix_game_payment",
-		FallBack: "Mixed payment type",
+	unknownLexeme = i18n.Lexeme{
+		Key:      "unknown",
+		FallBack: "Unknown",
 	}
-	playerIsLikelyToComeLexeme = i18n.Lexeme{
-		Key:      "player_is_likely_to_come",
-		FallBack: "I am likely to come",
+	youAreAlreadyRegisteredForTheGameLexeme = i18n.Lexeme{
+		Key:      "you_are_already_registered_for_the_game",
+		FallBack: "You are already registered for the game",
 	}
-	playerIsUnlikelyToComeLexeme = i18n.Lexeme{
-		Key:      "player_is_unlikely_to_come",
-		FallBack: "I am unlikely to come",
-	}
-	playerWillNotComeLexeme = i18n.Lexeme{
-		Key:      "player_will_not_come",
-		FallBack: "I will not come",
-	}
-	registerForLotteryLexeme = i18n.Lexeme{
-		Key:      "register_for_lottery",
-		FallBack: "Register for lottery",
-	}
-	routeToBarLexeme = i18n.Lexeme{
-		Key:      "route_to_bar",
-		FallBack: "Route to bar",
+	youAreSignedUpForTheGameLexeme = i18n.Lexeme{
+		Key:      "you_are_signed_up_for_the_game",
+		FallBack: "You are signed up for the game",
 	}
 )
 
-func (b *Bot) checkAuth(ctx context.Context, clientID int64) (model.User, error) {
-	return b.usersFacade.GetUserByTelegramID(ctx, clientID)
-}
-
-func (b *Bot) getGameMenu(ctx context.Context, game model.Game, page uint32) (tgbotapi.InlineKeyboardMarkup, error) {
-	switch page {
-	case 0:
-		return b.getGameMenuFirstPage(ctx, game)
-	case 1:
-		return b.getGameMenuSecondPage(ctx, game)
+func convertProtoUserToModelUser(pbUser *usermanagerpb.User) model.User {
+	modelUser := model.User{
+		ID:         pbUser.GetId(),
+		Name:       pbUser.GetName(),
+		TelegramID: pbUser.GetTelegramId(),
+		Email:      maybe.Nothing[string](),
+		Phone:      maybe.Nothing[string](),
+		State:      int32(pbUser.GetState()),
+		Birthdate:  maybe.Nothing[string](),
+		Sex:        maybe.Nothing[model.Sex](),
 	}
 
-	return tgbotapi.InlineKeyboardMarkup{}, nil
-}
-
-func (b *Bot) getGameMenuFirstPage(ctx context.Context, game model.Game) (tgbotapi.InlineKeyboardMarkup, error) {
-	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
-	if game.WithLottery {
-		var btnLottery tgbotapi.InlineKeyboardButton
-		var err error
-		if btnLottery, err = b.lotteryButton(ctx, game.ID); err != nil {
-			return tgbotapi.InlineKeyboardMarkup{}, err
-		}
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnLottery))
+	if email := pbUser.GetEmail(); email != nil {
+		modelUser.Email = maybe.Just(email.GetValue())
 	}
 
-	user := userutils.GetUserFromContext(ctx)
-
-	gamePlayers, err := b.gamePlayersFacade.GetGamePlayersByGameID(ctx, game.ID)
-	if err != nil {
-		return tgbotapi.InlineKeyboardMarkup{}, err
+	if phone := pbUser.GetPhone(); phone != nil {
+		modelUser.Phone = maybe.Just(phone.GetValue())
 	}
 
-	playerDegree := model.DegreeInvalid
-	for _, gamePlayer := range gamePlayers {
-		if gamePlayer.UserID.Value() == user.ID {
-			playerDegree = gamePlayer.Degree
-			break
+	if birthdate := pbUser.GetBirthdate(); birthdate != nil {
+		birthdateTime, err := time.Parse("2006-01-02", birthdate.GetValue())
+		if err == nil {
+			modelUser.Birthdate = maybe.Just(birthdateTime.Format("02.01.2006"))
 		}
 	}
 
-	if game.NumberOfLegioners+game.NumberOfPlayers == game.MaxPlayers {
-		if game.My {
-			var btn1 tgbotapi.InlineKeyboardButton
-			btn1, err = b.unregisterPlayerButton(ctx, game.ID, user.ID, user.ID)
-			if err != nil {
-				return tgbotapi.InlineKeyboardMarkup{}, err
-			}
-
-			if playerDegree != model.DegreeInvalid {
-				newDegree := model.DegreeInvalid
-				if playerDegree == model.DegreeLikely {
-					newDegree = model.DegreeUnlikely
-				} else if playerDegree == model.DegreeUnlikely {
-					newDegree = model.DegreeLikely
-				}
-
-				var btn2 tgbotapi.InlineKeyboardButton
-				if btn2, err = b.updatePlayerRegistionButton(ctx, game.ID, user.ID, user.ID, newDegree); err != nil {
-					return tgbotapi.InlineKeyboardMarkup{}, err
-				}
-
-				rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn1, btn2))
-			} else {
-				rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn1))
-			}
-		}
-
-		if game.NumberOfMyLegioners > 0 {
-			var btn1 tgbotapi.InlineKeyboardButton
-			btn1, err = b.unregisterPlayerButton(ctx, game.ID, 0, user.ID)
-			if err != nil {
-				return tgbotapi.InlineKeyboardMarkup{}, err
-			}
-			rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn1))
-		}
-	} else {
-		if game.My {
-			var btn1 tgbotapi.InlineKeyboardButton
-			btn1, err = b.unregisterPlayerButton(ctx, game.ID, user.ID, user.ID)
-			if err != nil {
-				return tgbotapi.InlineKeyboardMarkup{}, err
-			}
-
-			if playerDegree != model.DegreeInvalid {
-				newDegree := model.DegreeInvalid
-				if playerDegree == model.DegreeLikely {
-					newDegree = model.DegreeUnlikely
-				} else if playerDegree == model.DegreeUnlikely {
-					newDegree = model.DegreeLikely
-				}
-
-				var btn2 tgbotapi.InlineKeyboardButton
-				if btn2, err = b.updatePlayerRegistionButton(ctx, game.ID, user.ID, user.ID, newDegree); err != nil {
-					return tgbotapi.InlineKeyboardMarkup{}, err
-				}
-
-				rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn1, btn2))
-			} else {
-				rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn1))
-			}
-		} else {
-			var btn1 tgbotapi.InlineKeyboardButton
-			btn1, err = b.registerPlayerButton(ctx, game.ID, user.ID, user.ID, model.DegreeLikely)
-			if err != nil {
-				return tgbotapi.InlineKeyboardMarkup{}, err
-			}
-			var btn2 tgbotapi.InlineKeyboardButton
-			btn2, err = b.registerPlayerButton(ctx, game.ID, user.ID, user.ID, model.DegreeUnlikely)
-			if err != nil {
-				return tgbotapi.InlineKeyboardMarkup{}, err
-			}
-			rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn1, btn2))
-		}
-
-		var btn1 tgbotapi.InlineKeyboardButton
-		btn1, err = b.registerPlayerButton(ctx, game.ID, 0, user.ID, model.DegreeLikely)
-		if err != nil {
-			return tgbotapi.InlineKeyboardMarkup{}, err
-		}
-
-		var btn2 tgbotapi.InlineKeyboardButton
-		btn2, err = b.registerPlayerButton(ctx, game.ID, 0, user.ID, model.DegreeUnlikely)
-		if err != nil {
-			return tgbotapi.InlineKeyboardMarkup{}, err
-		}
-
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn1, btn2))
-		if game.NumberOfMyLegioners > 0 {
-			var btn3 tgbotapi.InlineKeyboardButton
-			btn3, err = b.unregisterPlayerButton(ctx, game.ID, 0, user.ID)
-			if err != nil {
-				return tgbotapi.InlineKeyboardMarkup{}, err
-			}
-			rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn3))
-		}
+	if pbUser != nil && pbUser.Sex != nil {
+		modelUser.Sex = maybe.Just(model.Sex(pbUser.GetSex()))
 	}
 
-	if game.NumberOfLegioners+game.NumberOfPlayers > 0 {
-		var btnPlayersList tgbotapi.InlineKeyboardButton
-		btnPlayersList, err = b.playersListButton(ctx, game.ID)
-		if err != nil {
-			return tgbotapi.InlineKeyboardMarkup{}, err
-		}
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnPlayersList))
-	}
-
-	if !game.Registered {
-		var btnRegisterGame tgbotapi.InlineKeyboardButton
-		btnRegisterGame, err = b.registerGameButton(ctx, game.ID)
-		if err != nil {
-			return tgbotapi.InlineKeyboardMarkup{}, err
-		}
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnRegisterGame))
-	} else {
-		var btnUnregisterGame tgbotapi.InlineKeyboardButton
-		btnUnregisterGame, err = b.unregisterGameButton(ctx, game.ID)
-		if err != nil {
-			return tgbotapi.InlineKeyboardMarkup{}, err
-		}
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnUnregisterGame))
-	}
-
-	getGameData := &commands.GetGameData{
-		GameID:    game.ID,
-		PageIndex: 1,
-	}
-
-	var callbackData string
-	callbackData, err = callbackdata_utils.GetCallbackData(ctx, commands.CommandGetGame, getGameData)
-	if err != nil {
-		return tgbotapi.InlineKeyboardMarkup{}, err
-	}
-
-	btnNextMenuPage := tgbotapi.InlineKeyboardButton{
-		Text:         icons.NextPage,
-		CallbackData: &callbackData,
-	}
-
-	rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnNextMenuPage))
-
-	return tgbotapi.NewInlineKeyboardMarkup(rows...), nil
-}
-
-func (b *Bot) getGameMenuSecondPage(ctx context.Context, game model.Game) (tgbotapi.InlineKeyboardMarkup, error) {
-	var err error
-
-	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
-	if game.Registered {
-		var btnNextPayment tgbotapi.InlineKeyboardButton
-		btnNextPayment, err = b.nextPaymentButton(ctx, game.ID, game.Payment)
-		if err != nil {
-			return tgbotapi.InlineKeyboardMarkup{}, err
-		}
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnNextPayment))
-	}
-
-	barButtonsRow := []tgbotapi.InlineKeyboardButton{}
-	if game.Place.Latitude != 0 && game.Place.Longitude != 0 {
-		var btnVenue tgbotapi.InlineKeyboardButton
-		btnVenue, err = b.venueButton(ctx, game.Place.ID)
-		if err != nil {
-			return tgbotapi.InlineKeyboardMarkup{}, err
-		}
-		barButtonsRow = append(barButtonsRow, btnVenue)
-	}
-
-	if game.Place.MenuLink != "" {
-		btnMenu := tgbotapi.NewInlineKeyboardButtonURL("🍴 Меню ресторана", game.Place.MenuLink)
-		barButtonsRow = append(barButtonsRow, btnMenu)
-	}
-
-	if len(barButtonsRow) > 0 {
-		rows = append(rows, barButtonsRow)
-	}
-
-	getGameData := &commands.GetGameData{
-		GameID:    game.ID,
-		PageIndex: 0,
-	}
-
-	var callbackData string
-	callbackData, err = callbackdata_utils.GetCallbackData(ctx, commands.CommandGetGame, getGameData)
-	if err != nil {
-		return tgbotapi.InlineKeyboardMarkup{}, err
-	}
-
-	if game.Registered {
-		if icsFile, err := b.icsFilesFacade.GetICSFileByGameID(ctx, game.ID); err == nil {
-			icsFileButtonsRow := []tgbotapi.InlineKeyboardButton{}
-			btn := tgbotapi.NewInlineKeyboardButtonURL(
-				i18n.GetTranslator(addToCalendarLexeme)(ctx),
-				"http://ics.home0705.keenetic.pro/"+icsFile.Name,
-			)
-			icsFileButtonsRow = append(icsFileButtonsRow, btn)
-
-			rows = append(rows, icsFileButtonsRow)
-		}
-	}
-
-	btnPrevMenuPage := tgbotapi.InlineKeyboardButton{
-		Text:         icons.PrevPage,
-		CallbackData: &callbackData,
-	}
-
-	rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnPrevMenuPage))
-
-	return tgbotapi.NewInlineKeyboardMarkup(rows...), nil
-}
-
-func (b *Bot) lotteryButton(ctx context.Context, gameID int32) (tgbotapi.InlineKeyboardButton, error) {
-	payload := &commands.LotteryData{
-		GameID: gameID,
-	}
-
-	callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandLottery, payload)
-	if err != nil {
-		return tgbotapi.InlineKeyboardButton{}, err
-	}
-
-	btn := tgbotapi.InlineKeyboardButton{
-		Text:         fmt.Sprintf("%s %s", icons.Lottery, i18n.GetTranslator(registerForLotteryLexeme)(ctx)),
-		CallbackData: &callbackData,
-	}
-
-	return btn, nil
-}
-
-func (b *Bot) nextPaymentButton(ctx context.Context, gameID int32, currentPayment model.PaymentType) (tgbotapi.InlineKeyboardButton, error) {
-	nextPayment := model.PaymentTypeInvalid
-	text := ""
-	switch currentPayment {
-	case model.PaymentTypeCash:
-		nextPayment = model.PaymentTypeCertificate
-		text = fmt.Sprintf("%s %s", icons.FreeGamePayment, i18n.GetTranslator(freeGamePaymentLexeme)(ctx))
-	case model.PaymentTypeCertificate:
-		nextPayment = model.PaymentTypeMixed
-		text = fmt.Sprintf("%s %s", icons.MixGamePayment, i18n.GetTranslator(mixGamePaymentLexeme)(ctx))
-	case model.PaymentTypeMixed:
-		nextPayment = model.PaymentTypeCash
-		text = fmt.Sprintf("%s %s", icons.CashGamePayment, i18n.GetTranslator(cashGamePaymentLexeme)(ctx))
-	}
-
-	payload := &commands.UpdatePaymentData{
-		GameID:  gameID,
-		Payment: int32(nextPayment),
-	}
-
-	callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandUpdatePayment, payload)
-	if err != nil {
-		return tgbotapi.InlineKeyboardButton{}, err
-	}
-
-	btn := tgbotapi.InlineKeyboardButton{
-		Text:         text,
-		CallbackData: &callbackData,
-	}
-
-	return btn, nil
-}
-
-func (b *Bot) playersListButton(ctx context.Context, gameID int32) (tgbotapi.InlineKeyboardButton, error) {
-	payload := &commands.PlayersListByGameData{
-		GameID: gameID,
-	}
-
-	callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandPlayersListByGame, payload)
-	if err != nil {
-		return tgbotapi.InlineKeyboardButton{}, err
-	}
-
-	btn := tgbotapi.InlineKeyboardButton{
-		Text:         fmt.Sprintf("%s %s", icons.ListOfPlayers, i18n.GetTranslator(listOfPlayersLexeme)(ctx)),
-		CallbackData: &callbackData,
-	}
-
-	return btn, nil
-}
-
-func (b *Bot) registerGameButton(ctx context.Context, gameID int32) (tgbotapi.InlineKeyboardButton, error) {
-	payload := &commands.RegisterGameData{
-		GameID: gameID,
-	}
-
-	callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandRegisterGame, payload)
-	if err != nil {
-		return tgbotapi.InlineKeyboardButton{}, err
-	}
-
-	btn := tgbotapi.InlineKeyboardButton{
-		Text:         fmt.Sprintf("%s %s", icons.RegisteredGame, i18n.GetTranslator(registeredGameLexeme)(ctx)),
-		CallbackData: &callbackData,
-	}
-
-	return btn, nil
-}
-
-func (b *Bot) registerPlayerButton(ctx context.Context, gameID, userID, registeredBy int32, degree model.Degree) (tgbotapi.InlineKeyboardButton, error) {
-	payload := &commands.RegisterPlayerData{
-		GameID:       gameID,
-		UserID:       userID,
-		RegisteredBy: registeredBy,
-		Degree:       degree,
-	}
-
-	callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandRegisterPlayer, payload)
-	if err != nil {
-		return tgbotapi.InlineKeyboardButton{}, err
-	}
-
-	text := ""
-	if userID == registeredBy && degree == model.DegreeLikely {
-		text = fmt.Sprintf("%s %s", icons.PlayerLikely, i18n.GetTranslator(playerIsLikelyToComeLexeme)(ctx))
-	}
-	if userID == registeredBy && degree == model.DegreeUnlikely {
-		text = fmt.Sprintf("%s %s", icons.PlayerUnlikely, i18n.GetTranslator(playerIsUnlikelyToComeLexeme)(ctx))
-	}
-	if userID != registeredBy && degree == model.DegreeLikely {
-		text = fmt.Sprintf("%s %s", icons.LegionerLikely, i18n.GetTranslator(legionerIsLikelyToComeLexeme)(ctx))
-	}
-	if userID != registeredBy && degree == model.DegreeUnlikely {
-		text = fmt.Sprintf("%s %s", icons.LegionerUnlikely, i18n.GetTranslator(legionerIsUnlikelyToComeLexeme)(ctx))
-	}
-	btn := tgbotapi.InlineKeyboardButton{
-		Text:         text,
-		CallbackData: &callbackData,
-	}
-
-	return btn, nil
-}
-
-func (b *Bot) unregisterGameButton(ctx context.Context, gameID int32) (tgbotapi.InlineKeyboardButton, error) {
-	payload := &commands.UnregisterGameData{
-		GameID: gameID,
-	}
-
-	callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandUnregisterGame, payload)
-	if err != nil {
-		return tgbotapi.InlineKeyboardButton{}, err
-	}
-
-	btn := tgbotapi.InlineKeyboardButton{
-		Text:         fmt.Sprintf("%s %s", icons.UnregisteredGame, i18n.GetTranslator(unregisteredGameLexeme)(ctx)),
-		CallbackData: &callbackData,
-	}
-
-	return btn, nil
-}
-
-func (b *Bot) unregisterPlayerButton(ctx context.Context, gameID, userID, registeredBy int32) (tgbotapi.InlineKeyboardButton, error) {
-	payload := &commands.UnregisterPlayerData{
-		GameID:       gameID,
-		UserID:       userID,
-		RegisteredBy: registeredBy,
-		Degree:       model.DegreeInvalid,
-	}
-
-	callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandUnregisterPlayer, payload)
-	if err != nil {
-		return tgbotapi.InlineKeyboardButton{}, err
-	}
-
-	text := ""
-	if userID == registeredBy {
-		text = fmt.Sprintf("%s %s", icons.PlayerWillNotCome, i18n.GetTranslator(playerWillNotComeLexeme)(ctx))
-	} else {
-		text = fmt.Sprintf("%s %s", icons.LegionerWillNotCome, i18n.GetTranslator(legionerWillNotComeLexeme)(ctx))
-	}
-
-	btn := tgbotapi.InlineKeyboardButton{
-		Text:         text,
-		CallbackData: &callbackData,
-	}
-
-	return btn, nil
-}
-
-func (b *Bot) updatePlayerRegistionButton(ctx context.Context, gameID, userID, registeredBy int32, degree model.Degree) (tgbotapi.InlineKeyboardButton, error) {
-	payload := &commands.UpdatePlayerRegistration{
-		GameID:       gameID,
-		UserID:       userID,
-		RegisteredBy: registeredBy,
-		Degree:       degree,
-	}
-
-	callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandUpdatePlayerRegistration, payload)
-	if err != nil {
-		return tgbotapi.InlineKeyboardButton{}, err
-	}
-
-	text := ""
-	if degree == model.DegreeLikely {
-		text = fmt.Sprintf("%s %s", icons.PlayerLikely, i18n.GetTranslator(playerIsLikelyToComeLexeme)(ctx))
-	}
-	if degree == model.DegreeUnlikely {
-		text = fmt.Sprintf("%s %s", icons.PlayerUnlikely, i18n.GetTranslator(playerIsUnlikelyToComeLexeme)(ctx))
-	}
-	btn := tgbotapi.InlineKeyboardButton{
-		Text:         text,
-		CallbackData: &callbackData,
-	}
-
-	return btn, nil
-}
-
-func (b *Bot) venueButton(ctx context.Context, placeID int32) (tgbotapi.InlineKeyboardButton, error) {
-	payload := commands.GetVenueData{
-		PlaceID: placeID,
-	}
-
-	callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandGetVenue, payload)
-	if err != nil {
-		return tgbotapi.InlineKeyboardButton{}, err
-	}
-
-	text := fmt.Sprintf("%s %s", icons.Route, i18n.GetTranslator(routeToBarLexeme)(ctx))
-
-	return tgbotapi.InlineKeyboardButton{
-		Text:         text,
-		CallbackData: &callbackData,
-	}, nil
-}
-
-func replyKeyboardMarkup(ctx context.Context) tgbotapi.ReplyKeyboardMarkup {
-	kb := tgbotapi.NewReplyKeyboard(
-		[]tgbotapi.KeyboardButton{
-			tgbotapi.NewKeyboardButton(i18n.GetTranslator(myGamesLexeme)(ctx)),
-			tgbotapi.NewKeyboardButton(i18n.GetTranslator(registeredGamesLexeme)(ctx)),
-		},
-		[]tgbotapi.KeyboardButton{
-			tgbotapi.NewKeyboardButton(i18n.GetTranslator(settingsLexeme)(ctx)),
-		},
-	)
-	kb.ResizeKeyboard = true
-
-	return kb
+	return modelUser
 }

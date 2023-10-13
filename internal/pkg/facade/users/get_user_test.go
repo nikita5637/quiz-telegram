@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/mono83/maybe"
 	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	"github.com/stretchr/testify/assert"
@@ -18,7 +19,7 @@ func TestFacade_GetUserByID(t *testing.T) {
 			Id: 1,
 		}).Return(nil, errors.New("some error"))
 
-		got, err := fx.facade.GetUserByID(fx.ctx, 1)
+		got, err := fx.facade.GetUser(fx.ctx, 1)
 		assert.Equal(t, model.User{}, got)
 		assert.Error(t, err)
 	})
@@ -40,13 +41,15 @@ func TestFacade_GetUserByID(t *testing.T) {
 			State: usermanagerpb.UserState_USER_STATE_CHANGING_NAME,
 		}, nil)
 
-		got, err := fx.facade.GetUserByID(fx.ctx, 1)
+		got, err := fx.facade.GetUser(fx.ctx, 1)
 		assert.Equal(t, model.User{
-			ID:    1,
-			Email: "email",
-			Name:  "name",
-			Phone: "phone",
-			State: int32(usermanagerpb.UserState_USER_STATE_CHANGING_NAME),
+			ID:        1,
+			Email:     maybe.Just("email"),
+			Name:      "name",
+			Phone:     maybe.Just("phone"),
+			State:     int32(usermanagerpb.UserState_USER_STATE_CHANGING_NAME),
+			Birthdate: maybe.Nothing[string](),
+			Sex:       maybe.Nothing[model.Sex](),
 		}, got)
 		assert.NoError(t, err)
 	})
@@ -84,11 +87,13 @@ func TestFacade_GetUserByTelegramID(t *testing.T) {
 
 		got, err := fx.facade.GetUserByTelegramID(fx.ctx, -100)
 		assert.Equal(t, model.User{
-			ID:    1,
-			Email: "email",
-			Name:  "name",
-			Phone: "phone",
-			State: int32(usermanagerpb.UserState_USER_STATE_CHANGING_NAME),
+			ID:        1,
+			Email:     maybe.Just("email"),
+			Name:      "name",
+			Phone:     maybe.Just("phone"),
+			State:     int32(usermanagerpb.UserState_USER_STATE_CHANGING_NAME),
+			Birthdate: maybe.Nothing[string](),
+			Sex:       maybe.Nothing[model.Sex](),
 		}, got)
 		assert.NoError(t, err)
 	})

@@ -1,21 +1,20 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"flag"
 	"fmt"
 	"os"
-	"os/signal"
 
 	icsfilemanagerpb "github.com/nikita5637/quiz-ics-manager-api/pkg/pb/ics_file_manager"
 	certificatemanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/certificate_manager"
 	croupierpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/croupier"
+	gamepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/game"
 	gameplayerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/game_player"
+	gameresultmanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/game_result_manager"
 	leaguepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/league"
 	photomanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/photo_manager"
 	placepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/place"
-	registratorpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
 	telegram "github.com/nikita5637/quiz-telegram/internal/app/bot"
 	"github.com/nikita5637/quiz-telegram/internal/app/reminder"
@@ -25,6 +24,7 @@ import (
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/certificates"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/gamephotos"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/gameplayers"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/gameresults"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/games"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/icsfiles"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/leagues"
@@ -32,6 +32,7 @@ import (
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/users"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/middleware"
+	"github.com/posener/ctxutil"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -51,9 +52,8 @@ func init() {
 }
 
 func main() {
+	ctx := ctxutil.Interrupt()
 	flag.Parse()
-
-	ctx := context.Background()
 
 	var err error
 	err = config.ParseConfigFile(configPath)
@@ -85,17 +85,6 @@ func main() {
 	)))
 	logger.InfoKV(ctx, "initialized logger", "log level", logLevel)
 
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-
-	ctx, cancel := context.WithCancel(ctx)
-
-	go func() {
-		oscall := <-c
-		logger.Infof(ctx, "system call recieved: %+v", oscall)
-		cancel()
-	}()
-
 	var bot *tgbotapi.BotAPI
 	bot, err = tgbotapi.NewBotAPI(config.GetSecretValue(config.TelegramToken))
 	if err != nil {
@@ -111,15 +100,23 @@ func main() {
 
 	opts := grpc.WithInsecure()
 	target := fmt.Sprintf("%s:%d", registratorAPIAddress, registratorAPIPort)
-	registratorAPIClientConn, err := grpc.Dial(target, opts, grpc.WithChainUnaryInterceptor(
+	registratorAPIClientServiceConn, err := grpc.Dial(target, opts, grpc.WithChainUnaryInterceptor(
 		middleware.LogInterceptor,
 		middleware.ServiceNameInterceptor,
+	))
+	if err != nil {
+		logger.Fatalf(ctx, "registratorAPIClient service conn dial error: %w", err.Error())
+	}
+	defer registratorAPIClientServiceConn.Close()
+
+	registratorAPIClientUserConn, err := grpc.Dial(target, opts, grpc.WithChainUnaryInterceptor(
+		middleware.LogInterceptor,
 		middleware.TelegramClientIDInterceptor,
 	))
 	if err != nil {
-		panic(err)
+		logger.Fatalf(ctx, "registratorAPIClient user conn dial error: %w", err.Error())
 	}
-	defer registratorAPIClientConn.Close()
+	defer registratorAPIClientUserConn.Close()
 
 	icsManagerAPIAddress := config.GetValue("ICSManagerAPIAddress").String()
 	icsManagerAPIPort := config.GetValue("ICSManagerAPIPort").Uint16()
@@ -134,15 +131,18 @@ func main() {
 	}
 	defer icsManagerAPIClientConn.Close()
 
-	certificateManagerServiceClient := certificatemanagerpb.NewServiceClient(registratorAPIClientConn)
-	croupierServiceClient := croupierpb.NewServiceClient(registratorAPIClientConn)
-	gamePlayerServiceClient := gameplayerpb.NewServiceClient(registratorAPIClientConn)
-	gamePlayerRegistratorServiceClient := gameplayerpb.NewRegistratorServiceClient(registratorAPIClientConn)
-	leagueServiceClient := leaguepb.NewServiceClient(registratorAPIClientConn)
-	photographerServiceClient := photomanagerpb.NewServiceClient(registratorAPIClientConn)
-	placeServiceClient := placepb.NewServiceClient(registratorAPIClientConn)
-	registratorServiceClient := registratorpb.NewRegistratorServiceClient(registratorAPIClientConn)
-	userManagerServiceClient := usermanagerpb.NewServiceClient(registratorAPIClientConn)
+	certificateManagerServiceClient := certificatemanagerpb.NewServiceClient(registratorAPIClientUserConn)
+	croupierServiceClient := croupierpb.NewServiceClient(registratorAPIClientUserConn)
+	gamePlayerServiceClient := gameplayerpb.NewServiceClient(registratorAPIClientUserConn)
+	gamePlayerRegistratorServiceClient := gameplayerpb.NewRegistratorServiceClient(registratorAPIClientUserConn)
+	leagueServiceClient := leaguepb.NewServiceClient(registratorAPIClientUserConn)
+	photographerServiceClient := photomanagerpb.NewServiceClient(registratorAPIClientUserConn)
+	placeServiceClient := placepb.NewServiceClient(registratorAPIClientUserConn)
+	gameServiceClient := gamepb.NewServiceClient(registratorAPIClientUserConn)
+	gameRegistratorServiceClient := gamepb.NewRegistratorServiceClient(registratorAPIClientUserConn)
+	gameResultManagerClient := gameresultmanagerpb.NewServiceClient(registratorAPIClientUserConn)
+	userManagerServiceUserClient := usermanagerpb.NewServiceClient(registratorAPIClientUserConn)
+	userManagerServiceServiceClient := usermanagerpb.NewServiceClient(registratorAPIClientServiceConn)
 	icsFileManagerAPIServiceClient := icsfilemanagerpb.NewServiceClient(icsManagerAPIClientConn)
 
 	g, ctx := errgroup.WithContext(ctx)
@@ -164,27 +164,28 @@ func main() {
 		certificatesFacade := certificates.New(certificatesFacadeConfig)
 
 		gamePhotosFacadeConfig := gamephotos.Config{
-			LeaguesFacade: leaguesFacade,
-			PlacesFacade:  placesFacade,
-
 			PhotographerServiceClient: photographerServiceClient,
 		}
-		gamePhotosFacade := gamephotos.NewFacade(gamePhotosFacadeConfig)
-
-		gamesFacadeConfig := games.Config{
-			LeaguesFacade: leaguesFacade,
-			PlacesFacade:  placesFacade,
-
-			RegistratorServiceClient: registratorServiceClient,
-		}
-		gamesFacade := games.NewFacade(gamesFacadeConfig)
+		gamePhotosFacade := gamephotos.New(gamePhotosFacadeConfig)
 
 		gamePlayersFacadeConfig := gameplayers.Config{
 			GamePlayerServiceClient:            gamePlayerServiceClient,
 			GamePlayerRegistratorServiceClient: gamePlayerRegistratorServiceClient,
-			RegistratorServiceClient:           registratorServiceClient,
 		}
 		gamePlayersFacade := gameplayers.New(gamePlayersFacadeConfig)
+
+		gamesFacadeConfig := games.Config{
+			GamePlayersFacade: gamePlayersFacade,
+
+			GameServiceClient:            gameServiceClient,
+			GameRegistratorServiceClient: gameRegistratorServiceClient,
+		}
+		gamesFacade := games.New(gamesFacadeConfig)
+
+		gameResultsFacadeConfig := gameresults.Config{
+			GameResultManagerClient: gameResultManagerClient,
+		}
+		gameResultsFacade := gameresults.New(gameResultsFacadeConfig)
 
 		icsFilesFacadeConfig := icsfiles.Config{
 			ICSFileManagerAPIServiceClient: icsFileManagerAPIServiceClient,
@@ -192,7 +193,7 @@ func main() {
 		icsFilesFacade := icsfiles.NewFacade(icsFilesFacadeConfig)
 
 		usersFacadeConfig := users.Config{
-			UserManagerServiceClient: userManagerServiceClient,
+			UserManagerServiceClient: userManagerServiceUserClient,
 		}
 		usersFacade := users.NewFacade(usersFacadeConfig)
 
@@ -200,13 +201,16 @@ func main() {
 			Bot:                bot,
 			CertificatesFacade: certificatesFacade,
 			GamesFacade:        gamesFacade,
+			GameResultsFacade:  gameResultsFacade,
 			GamePhotosFacade:   gamePhotosFacade,
 			GamePlayersFacade:  gamePlayersFacade,
 			ICSFilesFacade:     icsFilesFacade,
+			LeaguesFacade:      leaguesFacade,
 			PlacesFacade:       placesFacade,
 			UsersFacade:        usersFacade,
 
-			CroupierServiceClient: croupierServiceClient,
+			CroupierServiceClient:    croupierServiceClient,
+			UserManagerServiceClient: userManagerServiceServiceClient,
 		}
 
 		tgBot, err2 := telegram.New(telegramBotConfig)

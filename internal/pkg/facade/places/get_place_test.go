@@ -20,7 +20,7 @@ func TestFacade_GetPlaceByID(t *testing.T) {
 			Id: 1,
 		}).Return(nil, status.New(codes.NotFound, "").Err())
 
-		got, err := fx.facade.GetPlaceByID(fx.ctx, 1)
+		got, err := fx.facade.GetPlace(fx.ctx, 1)
 		assert.Equal(t, model.Place{}, got)
 		assert.Error(t, err)
 		assert.ErrorIs(t, err, ErrPlaceNotFound)
@@ -33,7 +33,7 @@ func TestFacade_GetPlaceByID(t *testing.T) {
 			Id: 1,
 		}).Return(nil, errors.New("some error"))
 
-		got, err := fx.facade.GetPlaceByID(fx.ctx, 1)
+		got, err := fx.facade.GetPlace(fx.ctx, 1)
 		assert.Equal(t, model.Place{}, got)
 		assert.Error(t, err)
 	})
@@ -48,7 +48,7 @@ func TestFacade_GetPlaceByID(t *testing.T) {
 			Name: "name",
 		}, nil)
 
-		got, err := fx.facade.GetPlaceByID(fx.ctx, 1)
+		got, err := fx.facade.GetPlace(fx.ctx, 1)
 		assert.Equal(t, model.Place{
 			ID:   1,
 			Name: "name",
@@ -63,7 +63,7 @@ func TestFacade_GetPlaceByID(t *testing.T) {
 			Name: "name",
 		}
 
-		got, err := fx.facade.GetPlaceByID(fx.ctx, 1)
+		got, err := fx.facade.GetPlace(fx.ctx, 1)
 		assert.Equal(t, model.Place{
 			ID:   1,
 			Name: "name",

@@ -11,8 +11,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// GetLeagueByID ...
-func (f *Facade) GetLeagueByID(ctx context.Context, leagueID int32) (model.League, error) {
+// GetLeague ...
+func (f *Facade) GetLeague(ctx context.Context, leagueID int32) (model.League, error) {
 	if league, ok := f.leaguesCache[leagueID]; ok {
 		return league, nil
 	}

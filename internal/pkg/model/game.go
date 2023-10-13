@@ -1,53 +1,68 @@
 package model
 
 import (
-	"time"
+	"encoding/json"
 
-	time_utils "github.com/nikita5637/quiz-registrator-api/utils/time"
-	"github.com/nikita5637/quiz-telegram/internal/config"
+	"github.com/mono83/maybe"
+	maybejson "github.com/mono83/maybe/json"
 )
 
 // Game ...
 type Game struct {
 	ID          int32
-	ExternalID  int32
-	League      League
+	ExternalID  maybe.Maybe[int32]
+	LeagueID    int32
 	Type        int32
 	Number      string
-	Name        string
-	Place       Place
-	Date        DateTime
+	Name        maybe.Maybe[string]
+	PlaceID     int32
+	DateTime    DateTime
 	Price       uint32
-	PaymentType string
+	PaymentType maybe.Maybe[string]
 	MaxPlayers  uint32
-	Payment     PaymentType
+	Payment     maybe.Maybe[int32]
 	Registered  bool
-
-	My                  bool
-	NumberOfMyLegioners uint32
-	NumberOfLegioners   uint32
-	NumberOfPlayers     uint32
-	ResultPlace         ResultPlace
-
-	WithLottery bool
-	DeletedAt   DateTime
+	IsInMaster  bool
+	// additional info
+	HasPassed bool
 }
 
-// DateTime ...
-func (g *Game) DateTime() DateTime {
-	if g == nil {
-		return DateTime{}
+// MarshalJSON ...
+func (g Game) MarshalJSON() ([]byte, error) {
+	type wrapperGame struct {
+		ID          int32
+		ExternalID  maybejson.Maybe[int32]
+		LeagueID    int32
+		Type        int32
+		Number      string
+		Name        maybejson.Maybe[string]
+		PlaceID     int32
+		DateTime    DateTime
+		Price       uint32
+		PaymentType maybejson.Maybe[string]
+		MaxPlayers  uint32
+		Payment     maybejson.Maybe[int32]
+		Registered  bool
+		IsInMaster  bool
+		HasPassed   bool
 	}
 
-	return g.Date
-}
-
-// IsActive ...
-func (g *Game) IsActive() bool {
-	if g == nil {
-		return false
+	wg := wrapperGame{
+		ID:          g.ID,
+		ExternalID:  maybejson.Wrap(g.ExternalID),
+		LeagueID:    g.LeagueID,
+		Type:        g.Type,
+		Number:      g.Number,
+		Name:        maybejson.Wrap(g.Name),
+		PlaceID:     g.PlaceID,
+		DateTime:    g.DateTime,
+		Price:       g.Price,
+		PaymentType: maybejson.Wrap(g.PaymentType),
+		MaxPlayers:  g.MaxPlayers,
+		Payment:     maybejson.Wrap(g.Payment),
+		Registered:  g.Registered,
+		IsInMaster:  g.IsInMaster,
+		HasPassed:   g.HasPassed,
 	}
-
-	activeGameLag := config.GetValue("ActiveGameLag").Uint16()
-	return g.DeletedAt.AsTime().IsZero() && time_utils.TimeNow().Before(g.DateTime().AsTime().Add(time.Duration(activeGameLag)*time.Second))
+	return json.Marshal(wg)
 }

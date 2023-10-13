@@ -8,9 +8,9 @@ import (
 	callbackdata_utils "github.com/nikita5637/quiz-telegram/internal/pkg/utils/callbackdata"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	gamepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/game"
 	leaguepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/league"
 	placepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/place"
-	registratorpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
 	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
 	reminder "github.com/nikita5637/quiz-registrator-api/pkg/reminder"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/commands"
@@ -51,17 +51,17 @@ var (
 
 // PlaceServiceClient ...
 type PlaceServiceClient interface {
-	placepb.ServiceClient
+	GetPlace(ctx context.Context, in *placepb.GetPlaceRequest, opts ...grpc.CallOption) (*placepb.Place, error)
 }
 
-// RegistratorServiceClient ...
-type RegistratorServiceClient interface {
-	registratorpb.RegistratorServiceClient
+// GameServiceClient ...
+type GameServiceClient interface {
+	GetGame(ctx context.Context, in *gamepb.GetGameRequest, opts ...grpc.CallOption) (*gamepb.Game, error)
 }
 
 // UserManagerServiceClient ...
 type UserManagerServiceClient interface {
-	usermanagerpb.ServiceClient
+	GetUser(ctx context.Context, in *usermanagerpb.GetUserRequest, opts ...grpc.CallOption) (*usermanagerpb.User, error)
 }
 
 // TelegramBot ...
@@ -81,7 +81,7 @@ type Reminder struct {
 	registratorAPIAddress    string
 	registratorAPIPort       uint16
 	placeServiceClient       PlaceServiceClient
-	registratorServiceClient RegistratorServiceClient
+	gameServiceClient        GameServiceClient
 	userManagerServiceClient UserManagerServiceClient
 }
 
@@ -119,7 +119,7 @@ func (r *Reminder) Start(ctx context.Context) error {
 	}
 
 	r.placeServiceClient = placepb.NewServiceClient(cc)
-	r.registratorServiceClient = registratorpb.NewRegistratorServiceClient(cc)
+	r.gameServiceClient = gamepb.NewServiceClient(cc)
 	r.userManagerServiceClient = usermanagerpb.NewServiceClient(cc)
 
 	gameReminderQueue, err := r.rabbitMQChanel.QueueDeclare(
@@ -184,8 +184,8 @@ func (r *Reminder) Start(ctx context.Context) error {
 					continue
 				}
 
-				gameResp, err := r.registratorServiceClient.GetGameByID(ctx, &registratorpb.GetGameByIDRequest{
-					GameId: gameRemind.GameID,
+				gameResp, err := r.gameServiceClient.GetGame(ctx, &gamepb.GetGameRequest{
+					Id: gameRemind.GameID,
 				})
 				if err != nil {
 					logger.Errorf(ctx, "get game by ID error: %s", err.Error())
@@ -193,7 +193,7 @@ func (r *Reminder) Start(ctx context.Context) error {
 				}
 
 				pbPlace, err := r.placeServiceClient.GetPlace(ctx, &placepb.GetPlaceRequest{
-					Id: gameResp.GetGame().GetPlaceId(),
+					Id: gameResp.GetPlaceId(),
 				})
 				if err != nil {
 					logger.Errorf(ctx, "get place by ID error: %s", err.Error())
@@ -201,7 +201,7 @@ func (r *Reminder) Start(ctx context.Context) error {
 				}
 
 				text := fmt.Sprintf("%s %s\n", icons.Note, i18n.GetTranslator(remindThatThereIsAGameTodayLexeme)(ctx))
-				text += fmt.Sprintf("%s %s: %s\n", icons.Time, i18n.GetTranslator(timeLexeme)(ctx), model.DateTime(gameResp.GetGame().GetDate().AsTime()).Time())
+				text += fmt.Sprintf("%s %s: %s\n", icons.Time, i18n.GetTranslator(timeLexeme)(ctx), model.DateTime(gameResp.GetDate().AsTime()).Time())
 				text += fmt.Sprintf("%s %s: %s\n", icons.Place, i18n.GetTranslator(placeLexeme)(ctx), pbPlace.GetAddress())
 
 				for _, playerID := range gameRemind.PlayerIDs {

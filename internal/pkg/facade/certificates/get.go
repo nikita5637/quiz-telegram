@@ -21,7 +21,7 @@ func (f *Facade) GetActiveCertificates(ctx context.Context) ([]model.Certificate
 		}
 
 		modelCertificates = append(modelCertificates, model.Certificate{
-			Type:  model.CertificateType(pbCertificate.GetType()),
+			Type:  int32(pbCertificate.GetType()),
 			WonOn: pbCertificate.GetWonOn(),
 			Info:  pbCertificate.GetInfo().GetValue(),
 		})

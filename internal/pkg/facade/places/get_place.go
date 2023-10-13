@@ -11,8 +11,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// GetPlaceByID ...
-func (f *Facade) GetPlaceByID(ctx context.Context, placeID int32) (model.Place, error) {
+// GetPlace ...
+func (f *Facade) GetPlace(ctx context.Context, placeID int32) (model.Place, error) {
 	if place, ok := f.placesCache[placeID]; ok {
 		return place, nil
 	}

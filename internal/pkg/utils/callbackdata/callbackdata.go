@@ -3,17 +3,16 @@ package callbackdata
 import (
 	"context"
 	"encoding/json"
-	"errors"
+	"fmt"
 
 	"github.com/nikita5637/quiz-telegram/internal/pkg/commands"
-	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
 )
 
 // GetCallbackData ...
 func GetCallbackData(ctx context.Context, command commands.Command, payload interface{}) (string, error) {
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("marshaling payload error: %w", err)
 	}
 
 	req := commands.TelegramRequest{
@@ -23,12 +22,11 @@ func GetCallbackData(ctx context.Context, command commands.Command, payload inte
 
 	callbackData, err := json.Marshal(req)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("marshaling callback data error: %w", err)
 	}
 
 	if len(callbackData) > 64 {
-		logger.ErrorKV(ctx, "callback data too long", "data", callbackData)
-		return "", errors.New("callback data too long")
+		return "", fmt.Errorf("callback data len is too long: %s", callbackData)
 	}
 
 	return string(callbackData), nil

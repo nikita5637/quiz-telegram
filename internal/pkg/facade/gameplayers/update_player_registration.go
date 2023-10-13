@@ -12,7 +12,6 @@ import (
 	statusutils "github.com/nikita5637/quiz-telegram/internal/pkg/utils/status"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
 // UpdatePlayerRegistration ...
@@ -37,14 +36,9 @@ func (f *Facade) UpdatePlayerRegistration(ctx context.Context, gamePlayer model.
 		return errors.New("game player not found")
 	}
 
-	if _, err := f.gamePlayerServiceClient.PatchGamePlayer(ctx, &gameplayerpb.PatchGamePlayerRequest{
-		GamePlayer: &gameplayerpb.GamePlayer{
-			Id:     id,
-			Degree: gameplayerpb.Degree(gamePlayer.Degree),
-		},
-		UpdateMask: &fieldmaskpb.FieldMask{
-			Paths: []string{"degree"},
-		},
+	if _, err := f.gamePlayerRegistratorServiceClient.UpdatePlayerDegree(ctx, &gameplayerpb.UpdatePlayerDegreeRequest{
+		Id:     id,
+		Degree: gameplayerpb.Degree(gamePlayer.Degree),
 	}); err != nil {
 		st := status.Convert(err)
 		errorInfo := statusutils.GetErrorInfoFromStatus(st)
@@ -54,7 +48,11 @@ func (f *Facade) UpdatePlayerRegistration(ctx context.Context, gamePlayer model.
 		case codes.FailedPrecondition:
 			if errorInfo.Reason == games.ReasonGameNotFound {
 				return games.ErrGameNotFound
+			} else if errorInfo.Reason == ReasonThereAreNoRegistrationForTheGame {
+				return ErrThereAreNoRegistrationForTheGame
 			}
+
+			return games.ErrGameHasPassed
 		}
 
 		return fmt.Errorf("patch game player error: %w", err)

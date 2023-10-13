@@ -37,3 +37,15 @@ func (f *Facade) GetGamePlayersByGameID(ctx context.Context, gameID int32) ([]mo
 
 	return gamePlayers, nil
 }
+
+// GetUserGameIDs ...
+func (f *Facade) GetUserGameIDs(ctx context.Context, userID int32) ([]int32, error) {
+	userGameIDsResp, err := f.gamePlayerServiceClient.GetUserGameIDs(ctx, &gameplayerpb.GetUserGameIDsRequest{
+		UserId: userID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("getting user game IDs error: %w", err)
+	}
+
+	return userGameIDsResp.GetGameIds(), nil
+}

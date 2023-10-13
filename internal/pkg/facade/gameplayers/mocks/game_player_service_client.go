@@ -6,7 +6,6 @@ import (
 	context "context"
 
 	gameplayer "github.com/nikita5637/quiz-registrator-api/pkg/pb/game_player"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 
 	grpc "google.golang.org/grpc"
 
@@ -24,68 +23,6 @@ type GamePlayerServiceClient_Expecter struct {
 
 func (_m *GamePlayerServiceClient) EXPECT() *GamePlayerServiceClient_Expecter {
 	return &GamePlayerServiceClient_Expecter{mock: &_m.Mock}
-}
-
-// DeleteGamePlayer provides a mock function with given fields: ctx, in, opts
-func (_m *GamePlayerServiceClient) DeleteGamePlayer(ctx context.Context, in *gameplayer.DeleteGamePlayerRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	_va := make([]interface{}, len(opts))
-	for _i := range opts {
-		_va[_i] = opts[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, ctx, in)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
-
-	var r0 *emptypb.Empty
-	if rf, ok := ret.Get(0).(func(context.Context, *gameplayer.DeleteGamePlayerRequest, ...grpc.CallOption) *emptypb.Empty); ok {
-		r0 = rf(ctx, in, opts...)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*emptypb.Empty)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *gameplayer.DeleteGamePlayerRequest, ...grpc.CallOption) error); ok {
-		r1 = rf(ctx, in, opts...)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GamePlayerServiceClient_DeleteGamePlayer_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteGamePlayer'
-type GamePlayerServiceClient_DeleteGamePlayer_Call struct {
-	*mock.Call
-}
-
-// DeleteGamePlayer is a helper method to define mock.On call
-//  - ctx context.Context
-//  - in *gameplayer.DeleteGamePlayerRequest
-//  - opts ...grpc.CallOption
-func (_e *GamePlayerServiceClient_Expecter) DeleteGamePlayer(ctx interface{}, in interface{}, opts ...interface{}) *GamePlayerServiceClient_DeleteGamePlayer_Call {
-	return &GamePlayerServiceClient_DeleteGamePlayer_Call{Call: _e.mock.On("DeleteGamePlayer",
-		append([]interface{}{ctx, in}, opts...)...)}
-}
-
-func (_c *GamePlayerServiceClient_DeleteGamePlayer_Call) Run(run func(ctx context.Context, in *gameplayer.DeleteGamePlayerRequest, opts ...grpc.CallOption)) *GamePlayerServiceClient_DeleteGamePlayer_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		variadicArgs := make([]grpc.CallOption, len(args)-2)
-		for i, a := range args[2:] {
-			if a != nil {
-				variadicArgs[i] = a.(grpc.CallOption)
-			}
-		}
-		run(args[0].(context.Context), args[1].(*gameplayer.DeleteGamePlayerRequest), variadicArgs...)
-	})
-	return _c
-}
-
-func (_c *GamePlayerServiceClient_DeleteGamePlayer_Call) Return(_a0 *emptypb.Empty, _a1 error) *GamePlayerServiceClient_DeleteGamePlayer_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
 }
 
 // GetGamePlayersByGameID provides a mock function with given fields: ctx, in, opts
@@ -150,8 +87,8 @@ func (_c *GamePlayerServiceClient_GetGamePlayersByGameID_Call) Return(_a0 *gamep
 	return _c
 }
 
-// PatchGamePlayer provides a mock function with given fields: ctx, in, opts
-func (_m *GamePlayerServiceClient) PatchGamePlayer(ctx context.Context, in *gameplayer.PatchGamePlayerRequest, opts ...grpc.CallOption) (*gameplayer.GamePlayer, error) {
+// GetUserGameIDs provides a mock function with given fields: ctx, in, opts
+func (_m *GamePlayerServiceClient) GetUserGameIDs(ctx context.Context, in *gameplayer.GetUserGameIDsRequest, opts ...grpc.CallOption) (*gameplayer.GetUserGameIDsResponse, error) {
 	_va := make([]interface{}, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
@@ -161,17 +98,17 @@ func (_m *GamePlayerServiceClient) PatchGamePlayer(ctx context.Context, in *game
 	_ca = append(_ca, _va...)
 	ret := _m.Called(_ca...)
 
-	var r0 *gameplayer.GamePlayer
-	if rf, ok := ret.Get(0).(func(context.Context, *gameplayer.PatchGamePlayerRequest, ...grpc.CallOption) *gameplayer.GamePlayer); ok {
+	var r0 *gameplayer.GetUserGameIDsResponse
+	if rf, ok := ret.Get(0).(func(context.Context, *gameplayer.GetUserGameIDsRequest, ...grpc.CallOption) *gameplayer.GetUserGameIDsResponse); ok {
 		r0 = rf(ctx, in, opts...)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*gameplayer.GamePlayer)
+			r0 = ret.Get(0).(*gameplayer.GetUserGameIDsResponse)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *gameplayer.PatchGamePlayerRequest, ...grpc.CallOption) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *gameplayer.GetUserGameIDsRequest, ...grpc.CallOption) error); ok {
 		r1 = rf(ctx, in, opts...)
 	} else {
 		r1 = ret.Error(1)
@@ -180,21 +117,21 @@ func (_m *GamePlayerServiceClient) PatchGamePlayer(ctx context.Context, in *game
 	return r0, r1
 }
 
-// GamePlayerServiceClient_PatchGamePlayer_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'PatchGamePlayer'
-type GamePlayerServiceClient_PatchGamePlayer_Call struct {
+// GamePlayerServiceClient_GetUserGameIDs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUserGameIDs'
+type GamePlayerServiceClient_GetUserGameIDs_Call struct {
 	*mock.Call
 }
 
-// PatchGamePlayer is a helper method to define mock.On call
+// GetUserGameIDs is a helper method to define mock.On call
 //  - ctx context.Context
-//  - in *gameplayer.PatchGamePlayerRequest
+//  - in *gameplayer.GetUserGameIDsRequest
 //  - opts ...grpc.CallOption
-func (_e *GamePlayerServiceClient_Expecter) PatchGamePlayer(ctx interface{}, in interface{}, opts ...interface{}) *GamePlayerServiceClient_PatchGamePlayer_Call {
-	return &GamePlayerServiceClient_PatchGamePlayer_Call{Call: _e.mock.On("PatchGamePlayer",
+func (_e *GamePlayerServiceClient_Expecter) GetUserGameIDs(ctx interface{}, in interface{}, opts ...interface{}) *GamePlayerServiceClient_GetUserGameIDs_Call {
+	return &GamePlayerServiceClient_GetUserGameIDs_Call{Call: _e.mock.On("GetUserGameIDs",
 		append([]interface{}{ctx, in}, opts...)...)}
 }
 
-func (_c *GamePlayerServiceClient_PatchGamePlayer_Call) Run(run func(ctx context.Context, in *gameplayer.PatchGamePlayerRequest, opts ...grpc.CallOption)) *GamePlayerServiceClient_PatchGamePlayer_Call {
+func (_c *GamePlayerServiceClient_GetUserGameIDs_Call) Run(run func(ctx context.Context, in *gameplayer.GetUserGameIDsRequest, opts ...grpc.CallOption)) *GamePlayerServiceClient_GetUserGameIDs_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		variadicArgs := make([]grpc.CallOption, len(args)-2)
 		for i, a := range args[2:] {
@@ -202,12 +139,12 @@ func (_c *GamePlayerServiceClient_PatchGamePlayer_Call) Run(run func(ctx context
 				variadicArgs[i] = a.(grpc.CallOption)
 			}
 		}
-		run(args[0].(context.Context), args[1].(*gameplayer.PatchGamePlayerRequest), variadicArgs...)
+		run(args[0].(context.Context), args[1].(*gameplayer.GetUserGameIDsRequest), variadicArgs...)
 	})
 	return _c
 }
 
-func (_c *GamePlayerServiceClient_PatchGamePlayer_Call) Return(_a0 *gameplayer.GamePlayer, _a1 error) *GamePlayerServiceClient_PatchGamePlayer_Call {
+func (_c *GamePlayerServiceClient_GetUserGameIDs_Call) Return(_a0 *gameplayer.GetUserGameIDsResponse, _a1 error) *GamePlayerServiceClient_GetUserGameIDs_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }

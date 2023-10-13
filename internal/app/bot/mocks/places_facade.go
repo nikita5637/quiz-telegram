@@ -22,8 +22,8 @@ func (_m *PlacesFacade) EXPECT() *PlacesFacade_Expecter {
 	return &PlacesFacade_Expecter{mock: &_m.Mock}
 }
 
-// GetPlaceByID provides a mock function with given fields: ctx, id
-func (_m *PlacesFacade) GetPlaceByID(ctx context.Context, id int32) (model.Place, error) {
+// GetPlace provides a mock function with given fields: ctx, id
+func (_m *PlacesFacade) GetPlace(ctx context.Context, id int32) (model.Place, error) {
 	ret := _m.Called(ctx, id)
 
 	var r0 model.Place
@@ -43,26 +43,26 @@ func (_m *PlacesFacade) GetPlaceByID(ctx context.Context, id int32) (model.Place
 	return r0, r1
 }
 
-// PlacesFacade_GetPlaceByID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetPlaceByID'
-type PlacesFacade_GetPlaceByID_Call struct {
+// PlacesFacade_GetPlace_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetPlace'
+type PlacesFacade_GetPlace_Call struct {
 	*mock.Call
 }
 
-// GetPlaceByID is a helper method to define mock.On call
+// GetPlace is a helper method to define mock.On call
 //  - ctx context.Context
 //  - id int32
-func (_e *PlacesFacade_Expecter) GetPlaceByID(ctx interface{}, id interface{}) *PlacesFacade_GetPlaceByID_Call {
-	return &PlacesFacade_GetPlaceByID_Call{Call: _e.mock.On("GetPlaceByID", ctx, id)}
+func (_e *PlacesFacade_Expecter) GetPlace(ctx interface{}, id interface{}) *PlacesFacade_GetPlace_Call {
+	return &PlacesFacade_GetPlace_Call{Call: _e.mock.On("GetPlace", ctx, id)}
 }
 
-func (_c *PlacesFacade_GetPlaceByID_Call) Run(run func(ctx context.Context, id int32)) *PlacesFacade_GetPlaceByID_Call {
+func (_c *PlacesFacade_GetPlace_Call) Run(run func(ctx context.Context, id int32)) *PlacesFacade_GetPlace_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(int32))
 	})
 	return _c
 }
 
-func (_c *PlacesFacade_GetPlaceByID_Call) Return(_a0 model.Place, _a1 error) *PlacesFacade_GetPlaceByID_Call {
+func (_c *PlacesFacade_GetPlace_Call) Return(_a0 model.Place, _a1 error) *PlacesFacade_GetPlace_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }

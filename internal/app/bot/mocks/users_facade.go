@@ -22,55 +22,8 @@ func (_m *UsersFacade) EXPECT() *UsersFacade_Expecter {
 	return &UsersFacade_Expecter{mock: &_m.Mock}
 }
 
-// CreateUser provides a mock function with given fields: ctx, name, telegramID, state
-func (_m *UsersFacade) CreateUser(ctx context.Context, name string, telegramID int64, state int32) (int32, error) {
-	ret := _m.Called(ctx, name, telegramID, state)
-
-	var r0 int32
-	if rf, ok := ret.Get(0).(func(context.Context, string, int64, int32) int32); ok {
-		r0 = rf(ctx, name, telegramID, state)
-	} else {
-		r0 = ret.Get(0).(int32)
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, string, int64, int32) error); ok {
-		r1 = rf(ctx, name, telegramID, state)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// UsersFacade_CreateUser_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateUser'
-type UsersFacade_CreateUser_Call struct {
-	*mock.Call
-}
-
-// CreateUser is a helper method to define mock.On call
-//  - ctx context.Context
-//  - name string
-//  - telegramID int64
-//  - state int32
-func (_e *UsersFacade_Expecter) CreateUser(ctx interface{}, name interface{}, telegramID interface{}, state interface{}) *UsersFacade_CreateUser_Call {
-	return &UsersFacade_CreateUser_Call{Call: _e.mock.On("CreateUser", ctx, name, telegramID, state)}
-}
-
-func (_c *UsersFacade_CreateUser_Call) Run(run func(ctx context.Context, name string, telegramID int64, state int32)) *UsersFacade_CreateUser_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(int64), args[3].(int32))
-	})
-	return _c
-}
-
-func (_c *UsersFacade_CreateUser_Call) Return(_a0 int32, _a1 error) *UsersFacade_CreateUser_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-// GetUserByID provides a mock function with given fields: ctx, userID
-func (_m *UsersFacade) GetUserByID(ctx context.Context, userID int32) (model.User, error) {
+// GetUser provides a mock function with given fields: ctx, userID
+func (_m *UsersFacade) GetUser(ctx context.Context, userID int32) (model.User, error) {
 	ret := _m.Called(ctx, userID)
 
 	var r0 model.User
@@ -90,71 +43,26 @@ func (_m *UsersFacade) GetUserByID(ctx context.Context, userID int32) (model.Use
 	return r0, r1
 }
 
-// UsersFacade_GetUserByID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUserByID'
-type UsersFacade_GetUserByID_Call struct {
+// UsersFacade_GetUser_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUser'
+type UsersFacade_GetUser_Call struct {
 	*mock.Call
 }
 
-// GetUserByID is a helper method to define mock.On call
+// GetUser is a helper method to define mock.On call
 //  - ctx context.Context
 //  - userID int32
-func (_e *UsersFacade_Expecter) GetUserByID(ctx interface{}, userID interface{}) *UsersFacade_GetUserByID_Call {
-	return &UsersFacade_GetUserByID_Call{Call: _e.mock.On("GetUserByID", ctx, userID)}
+func (_e *UsersFacade_Expecter) GetUser(ctx interface{}, userID interface{}) *UsersFacade_GetUser_Call {
+	return &UsersFacade_GetUser_Call{Call: _e.mock.On("GetUser", ctx, userID)}
 }
 
-func (_c *UsersFacade_GetUserByID_Call) Run(run func(ctx context.Context, userID int32)) *UsersFacade_GetUserByID_Call {
+func (_c *UsersFacade_GetUser_Call) Run(run func(ctx context.Context, userID int32)) *UsersFacade_GetUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(int32))
 	})
 	return _c
 }
 
-func (_c *UsersFacade_GetUserByID_Call) Return(_a0 model.User, _a1 error) *UsersFacade_GetUserByID_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-// GetUserByTelegramID provides a mock function with given fields: ctx, telegramID
-func (_m *UsersFacade) GetUserByTelegramID(ctx context.Context, telegramID int64) (model.User, error) {
-	ret := _m.Called(ctx, telegramID)
-
-	var r0 model.User
-	if rf, ok := ret.Get(0).(func(context.Context, int64) model.User); ok {
-		r0 = rf(ctx, telegramID)
-	} else {
-		r0 = ret.Get(0).(model.User)
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, int64) error); ok {
-		r1 = rf(ctx, telegramID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// UsersFacade_GetUserByTelegramID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUserByTelegramID'
-type UsersFacade_GetUserByTelegramID_Call struct {
-	*mock.Call
-}
-
-// GetUserByTelegramID is a helper method to define mock.On call
-//  - ctx context.Context
-//  - telegramID int64
-func (_e *UsersFacade_Expecter) GetUserByTelegramID(ctx interface{}, telegramID interface{}) *UsersFacade_GetUserByTelegramID_Call {
-	return &UsersFacade_GetUserByTelegramID_Call{Call: _e.mock.On("GetUserByTelegramID", ctx, telegramID)}
-}
-
-func (_c *UsersFacade_GetUserByTelegramID_Call) Run(run func(ctx context.Context, telegramID int64)) *UsersFacade_GetUserByTelegramID_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(int64))
-	})
-	return _c
-}
-
-func (_c *UsersFacade_GetUserByTelegramID_Call) Return(_a0 model.User, _a1 error) *UsersFacade_GetUserByTelegramID_Call {
+func (_c *UsersFacade_GetUser_Call) Return(_a0 model.User, _a1 error) *UsersFacade_GetUser_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }

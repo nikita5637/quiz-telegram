@@ -2,41 +2,54 @@ package bot
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
-
-	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/users"
-	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
-	callbackdata_utils "github.com/nikita5637/quiz-telegram/internal/pkg/utils/callbackdata"
-	telegram_utils "github.com/nikita5637/quiz-telegram/utils/telegram"
-	userutils "github.com/nikita5637/quiz-telegram/utils/user"
-	"google.golang.org/genproto/googleapis/rpc/errdetails"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	certificatemanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/certificate_manager"
 	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
 	"github.com/nikita5637/quiz-telegram/internal/config"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/commands"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/icons"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
+	callbackdatautils "github.com/nikita5637/quiz-telegram/internal/pkg/utils/callbackdata"
+	telegramutils "github.com/nikita5637/quiz-telegram/utils/telegram"
+	userutils "github.com/nikita5637/quiz-telegram/utils/user"
 )
 
+type certificateInfo struct {
+	Sum        uint16 `json:"sum,omitempty"`
+	Person     uint8  `json:"person,omitempty"`
+	ValidFrom  string `json:"valid_from,omitempty"`
+	ValidUntil string `json:"valid_until,omitempty"`
+}
+
 const (
-	gameInfoFormatString       = "%s %s %s %s\n"
-	gamePhotosInfoFormatString = icons.Photo + "%s" + gameInfoFormatString
-	settingFormatString        = "%s [%s]"
+	gameInfoFormatString         = "%s %s %s %s\n"
+	extendedGameInfoFormatString = "%s%s" + gameInfoFormatString
+	settingFormatString          = "%s [%s]"
 )
 
 var (
+	barLexeme = i18n.Lexeme{
+		Key:      "bar",
+		FallBack: "Bar",
+	}
+	barBillPaymentLexeme = i18n.Lexeme{
+		Key:      "bar_bill_payment",
+		FallBack: "Bar bill payment",
+	}
 	birthdateChangedLexeme = i18n.Lexeme{
 		Key:      "birthdate_changed",
 		FallBack: "Birthdate changed",
 	}
-	certificateInfoLexeme = i18n.Lexeme{
-		Key:      "certificate_info",
-		FallBack: "Certificate info",
+	buyElephantLexeme = i18n.Lexeme{
+		Key:      "buy_elephant",
+		FallBack: "Everybody says \"%s\", you buy an elephant",
 	}
 	certificateTypeLexeme = i18n.Lexeme{
 		Key:      "certificate_type",
@@ -70,9 +83,9 @@ var (
 		Key:      "email_changed",
 		FallBack: "Email changed",
 	}
-	gamePhotosLexeme = i18n.Lexeme{
-		Key:      "game_photos",
-		FallBack: "Game photos",
+	freePassLexeme = i18n.Lexeme{
+		Key:      "free_pass",
+		FallBack: "Free pass",
 	}
 	helpMessageLexeme = i18n.Lexeme{
 		Key:      "help_message",
@@ -86,17 +99,9 @@ var (
 		Key:      "list_of_games_is_empty",
 		FallBack: "There are not games",
 	}
-	listOfGamesWithPhotosIsEmptyLexeme = i18n.Lexeme{
-		Key:      "list_of_games_with_photos_is_empty",
-		FallBack: "There are not games with photos",
-	}
-	listOfMyGamesIsEmptyLexeme = i18n.Lexeme{
-		Key:      "list_of_my_games_is_empty",
-		FallBack: "You don't play with us yet",
-	}
-	listOfMyGamesLexeme = i18n.Lexeme{
-		Key:      "list_of_your_games",
-		FallBack: "List of your games",
+	listOfPassedGamesIsEmptyLexeme = i18n.Lexeme{
+		Key:      "list_of_passed_games_is_empty",
+		FallBack: "There are not passed games",
 	}
 	listOfRegisteredGamesLexeme = i18n.Lexeme{
 		Key:      "list_of_registered_games",
@@ -106,6 +111,14 @@ var (
 		Key:      "list_of_registered_games_is_empty",
 		FallBack: "There are not registered games",
 	}
+	listOfYourGamesLexeme = i18n.Lexeme{
+		Key:      "list_of_your_games",
+		FallBack: "List of your games",
+	}
+	listOfYourGamesIsEmptyLexeme = i18n.Lexeme{
+		Key:      "list_of_your_games_is_empty",
+		FallBack: "You don't play with us yet",
+	}
 	myGamesLexeme = i18n.Lexeme{
 		Key:      "my_games",
 		FallBack: "My games",
@@ -114,9 +127,13 @@ var (
 		Key:      "name_changed",
 		FallBack: "Name changed",
 	}
-	permissionDeniedLexeme = i18n.Lexeme{
-		Key:      "permission_denied",
-		FallBack: "Permission denied",
+	numberOfPersonsLexeme = i18n.Lexeme{
+		Key:      "number_of_persons",
+		FallBack: "Number of persons",
+	}
+	passedGamesLexeme = i18n.Lexeme{
+		Key:      "passed_games",
+		FallBack: "Passed games",
 	}
 	phoneChangedLexeme = i18n.Lexeme{
 		Key:      "phone_changed",
@@ -134,598 +151,714 @@ var (
 		Key:      "sex_changed",
 		FallBack: "Sex changed",
 	}
-	somethingWentWrongLexeme = i18n.Lexeme{
-		Key:      "something_went_wrong",
-		FallBack: "Something went wrong",
+	sumLexeme = i18n.Lexeme{
+		Key:      "sum",
+		FallBack: "Sum",
 	}
-	welcomeMessageLexeme = i18n.Lexeme{
-		Key:      "welcome_message",
-		FallBack: "Welcome message",
+	validUntilLexeme = i18n.Lexeme{
+		Key:      "valid_until",
+		FallBack: "Valid until",
 	}
 )
 
-// HandleMessage ...
-func (b *Bot) HandleMessage(ctx context.Context, update *tgbotapi.Update) error {
-	if update.Message.Chat.IsSuperGroup() {
-		logger.DebugKV(ctx, "skipped supergroup message", "groupID", update.Message.Chat.ID)
-		return nil
-	}
-
-	clientID := update.Message.From.ID
-	firstName := update.Message.From.FirstName
-	userName := update.Message.From.UserName
+func (b *Bot) handleMessage(ctx context.Context, update *tgbotapi.Update) error {
 	text := update.Message.Text
+	user := userutils.GetUserFromContext(ctx)
+	logger.DebugKV(ctx, "new private message incoming", "user", user, "text", text)
 
-	ctx = telegram_utils.NewContextWithClientID(ctx, clientID)
-
-	logger.DebugKV(ctx, "new private message incoming", "clientID", clientID, "text", text)
-
-	user, err := b.checkAuth(ctx, clientID)
-	if err != nil {
-		name := firstName
-		if name == "" {
-			name = userName
-		}
-
-		_, err = b.usersFacade.CreateUser(ctx, name, clientID, int32(usermanagerpb.UserState_USER_STATE_WELCOME))
-		if err != nil {
-			st := status.Convert(err)
-
-			if st.Code() == codes.AlreadyExists {
-				return nil
-			}
-
-			return err
-		}
-
-		welcomeMessage := welcomeMessage(ctx, clientID, name)
-		_, err = b.bot.Send(welcomeMessage)
-		return err
-	}
-
-	ctx = userutils.NewContextWithUser(ctx, user)
-
-	var handler func(ctx context.Context) error
-
+	var messageHandler func(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error)
 	switch text {
 	case "/certificates":
-		handler = func(ctx context.Context) error {
-			var msg tgbotapi.Chattable
-			msg, err = b.getListOfCertificatesMessage(ctx, update)
+		messageHandler = func(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error) {
+			msg, err := b.getListOfCertificatesMessage(ctx, update)
 			if err != nil {
-				return err
+				return nil, fmt.Errorf("getting list of certificates message error: %w", err)
 			}
 
-			_, err = b.bot.Send(msg)
-			if err != nil {
-				logger.Errorf(ctx, "error while sending message: %w", err)
-			}
-
-			return err
+			return msg, nil
 		}
 	case "/games":
-		handler = func(ctx context.Context) error {
-			var msg tgbotapi.Chattable
-			msg, err = b.getListOfGamesMessage(ctx, update)
+		messageHandler = func(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error) {
+			msg, err := b.getListOfGamesMessage(ctx, update)
 			if err != nil {
-				return err
+				return nil, fmt.Errorf("getting list of games message error: %w", err)
 			}
 
-			_, err = b.bot.Send(msg)
-			if err != nil {
-				logger.Errorf(ctx, "error while sending message: %w", err)
-			}
-
-			return err
+			return msg, nil
 		}
 	case "/help":
-		handler = func(ctx context.Context) error {
-			helpMessage := helpMessage(ctx, clientID)
-			_, err = b.bot.Send(helpMessage)
-			return err
+		messageHandler = func(ctx context.Context, udpate *tgbotapi.Update) (tgbotapi.Chattable, error) {
+			msg, err := getHelpMessage(ctx, update)
+			if err != nil {
+				return nil, fmt.Errorf("getting help message error: %w", err)
+			}
+
+			return msg, nil
 		}
 	case "/mygames", i18n.GetTranslator(myGamesLexeme)(ctx):
-		handler = func(ctx context.Context) error {
-			var msg tgbotapi.Chattable
-			msg, err = b.getListOfMyGamesMessage(ctx, update)
+		messageHandler = func(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error) {
+			msg, err := b.getListOfUserGamesMessage(ctx, update)
 			if err != nil {
-				return err
+				return nil, fmt.Errorf("getting list of user games message error: %w", err)
 			}
 
-			_, err = b.bot.Send(msg)
-			if err != nil {
-				logger.Errorf(ctx, "error while sending message: %w", err)
-			}
-
-			return err
+			return msg, nil
 		}
-	case "/photos":
-		handler = func(ctx context.Context) error {
-			var msg tgbotapi.Chattable
-			msg, err = b.getGamesWithPhotosMessage(ctx, update)
+	case "/passedgames", i18n.GetTranslator(passedGamesLexeme)(ctx):
+		messageHandler = func(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error) {
+			msg, err := b.getListOfPassedAndRegisteredGamesMessage(ctx, update)
 			if err != nil {
-				return err
+				return nil, fmt.Errorf("getting list of passed and registered games message error: %w", err)
 			}
 
-			_, err = b.bot.Send(msg)
-			if err != nil {
-				logger.Errorf(ctx, "error while sending message: %w", err)
-			}
-
-			return err
+			return msg, nil
 		}
 	case "/registeredgames", i18n.GetTranslator(registeredGamesLexeme)(ctx):
-		handler = func(ctx context.Context) error {
-			var msg tgbotapi.Chattable
-			msg, err = b.getListOfRegisteredGamesMessage(ctx, update)
+		messageHandler = func(ctx context.Context, udpate *tgbotapi.Update) (tgbotapi.Chattable, error) {
+			msg, err := b.getListOfRegisteredGamesMessage(ctx, update)
 			if err != nil {
-				return err
+				return nil, fmt.Errorf("getting list of registered games message error: %w", err)
 			}
 
-			_, err = b.bot.Send(msg)
-			if err != nil {
-				logger.Errorf(ctx, "error while sending message: %w", err)
-			}
-
-			return err
+			return msg, nil
 		}
 	case "/settings", i18n.GetTranslator(settingsLexeme)(ctx):
-		handler = func(ctx context.Context) error {
-			var settingsMessage tgbotapi.Chattable
-			settingsMessage, err = b.getSettingsMessage(ctx, update)
+		messageHandler = func(ctx context.Context, udpate *tgbotapi.Update) (tgbotapi.Chattable, error) {
+			msg, err := b.getSettingsMessage(ctx, update)
 			if err != nil {
-				return err
+				return nil, fmt.Errorf("getting settings message error: %w", err)
 			}
 
-			_, err = b.bot.Send(settingsMessage)
-			if err != nil {
-				logger.Errorf(ctx, "error while sending message: %w", err)
-			}
-
-			return err
+			return msg, nil
 		}
 	default:
-		handler = func(ctx context.Context) error {
-			return b.handleDefaultMessage(ctx, update)
+		messageHandler = func(ctx context.Context, udpate *tgbotapi.Update) (tgbotapi.Chattable, error) {
+			msg, err := b.handleDefaultMessage(ctx, update)
+			if err != nil {
+				return nil, fmt.Errorf("handling default message error: %w", err)
+			}
+
+			return msg, nil
 		}
 	}
 
-	if err := handler(ctx); err != nil {
-		responseMessage := tgbotapi.NewMessage(clientID, i18n.GetTranslator(somethingWentWrongLexeme)(ctx))
-		if st, ok := status.FromError(err); ok {
-			if st.Code() == codes.PermissionDenied {
-				for _, detail := range st.Details() {
-					switch t := detail.(type) {
-					case *errdetails.ErrorInfo:
-						reason := t.GetReason()
-						if reason == "banned" {
-							responseMessage = tgbotapi.NewMessage(clientID, i18n.GetTranslator(permissionDeniedLexeme)(ctx))
-						}
-					}
-				}
-			} else if st.Code() == codes.InvalidArgument {
-				for _, detail := range st.Details() {
-					switch t := detail.(type) {
-					case *errdetails.LocalizedMessage:
-						localizedMessage := t.GetMessage()
-						responseMessage = tgbotapi.NewMessage(clientID, localizedMessage)
-					}
-				}
-			}
+	if messageHandler != nil {
+		msg, err := messageHandler(ctx, update)
+		if err != nil {
+			return fmt.Errorf("messageHandler error: %w", err)
 		}
 
-		_, err = b.bot.Send(responseMessage)
-		if err != nil {
-			logger.Errorf(ctx, "error while send message: %s", err.Error())
+		if messageConfig, ok := msg.(*tgbotapi.MessageConfig); ok {
+			if messageConfig.ReplyMarkup == nil {
+				kb := tgbotapi.NewReplyKeyboard(
+					[]tgbotapi.KeyboardButton{
+						tgbotapi.NewKeyboardButton(i18n.GetTranslator(myGamesLexeme)(ctx)),
+						tgbotapi.NewKeyboardButton(i18n.GetTranslator(registeredGamesLexeme)(ctx)),
+					},
+					[]tgbotapi.KeyboardButton{
+						tgbotapi.NewKeyboardButton(i18n.GetTranslator(passedGamesLexeme)(ctx)),
+					},
+					[]tgbotapi.KeyboardButton{
+						tgbotapi.NewKeyboardButton(i18n.GetTranslator(settingsLexeme)(ctx)),
+					},
+				)
+				kb.ResizeKeyboard = true
+
+				messageConfig.ReplyMarkup = kb
+				logger.Debug(ctx, "added reply keyboard to message")
+			}
+
+			if _, err = b.bot.Send(messageConfig); err != nil {
+				return fmt.Errorf("sending message error: %w", err)
+			}
+		} else {
+			if _, err = b.bot.Send(msg); err != nil {
+				return fmt.Errorf("sending message error: %w", err)
+			}
 		}
 	}
 
 	return nil
 }
 
-func (b *Bot) handleDefaultMessage(ctx context.Context, update *tgbotapi.Update) error {
-	clientID := update.Message.From.ID
-	user, err := b.usersFacade.GetUserByTelegramID(ctx, clientID)
-	if err != nil {
-		st := status.Convert(err)
-		if st.Code() == codes.Unauthenticated {
-			for _, detail := range st.Details() {
-				switch t := detail.(type) {
-				case *errdetails.ErrorInfo:
-					reason := t.GetReason()
-					if reason == users.ReasonUserNotFound {
-						name := update.Message.Chat.FirstName
-						if name == "" {
-							name = update.Message.Chat.UserName
-						}
+func (b *Bot) getListOfCertificatesMessage(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error) {
+	fn := func(ctx context.Context, update *tgbotapi.Update) (*tgbotapi.MessageConfig, error) {
+		clientID := telegramutils.ClientIDFromContext(ctx)
 
-						_, err = b.usersFacade.CreateUser(ctx, name, clientID, int32(usermanagerpb.UserState_USER_STATE_WELCOME))
-						if err != nil {
-							logger.Errorf(ctx, "error while create user: %s", err.Error())
-						}
+		certificates, err := b.certificatesFacade.GetActiveCertificates(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting active certificates error: %w", err)
+		}
 
-						welcomeMessage := welcomeMessage(ctx, clientID, name)
-						_, err = b.bot.Send(welcomeMessage)
-						return err
-					}
+		if len(certificates) == 0 {
+			msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(listOfCertificatesIsEmptyLexeme)(ctx))
+			return &msg, nil
+		}
+
+		textBuilder := strings.Builder{}
+		for _, certificate := range certificates {
+			var certInfo certificateInfo
+			if err := json.Unmarshal([]byte(certificate.Info), &certInfo); err != nil {
+				return nil, fmt.Errorf("unmarshaling certificate info error: %w", err)
+			}
+
+			wonOnGame, err := b.gamesFacade.GetGame(ctx, certificate.WonOn)
+			if err != nil {
+				return nil, fmt.Errorf("getting game error: %w", err)
+			}
+
+			wonOnGamePlayers, err := b.gamePlayersFacade.GetGamePlayersByGameID(ctx, wonOnGame.ID)
+			if err != nil {
+				return nil, fmt.Errorf("getting game players by game ID error: %w", err)
+			}
+
+			place, err := b.placesFacade.GetPlace(ctx, wonOnGame.PlaceID)
+			if err != nil {
+				return nil, fmt.Errorf("getting place error: %w", err)
+			}
+
+			if certificate.Type == int32(certificatemanagerpb.CertificateType_CERTIFICATE_TYPE_FREE_PASS) {
+				textBuilder.WriteString(fmt.Sprintf("%s: %s\n", i18n.GetTranslator(certificateTypeLexeme)(ctx), i18n.GetTranslator(freePassLexeme)(ctx)))
+				textBuilder.WriteString(fmt.Sprintf("%s: %d\n", i18n.GetTranslator(numberOfPersonsLexeme)(ctx), certInfo.Person))
+			} else if certificate.Type == int32(certificatemanagerpb.CertificateType_CERTIFICATE_TYPE_BAR_BILL_PAYMENT) {
+				textBuilder.WriteString(fmt.Sprintf("%s: %s\n", i18n.GetTranslator(certificateTypeLexeme)(ctx), i18n.GetTranslator(barBillPaymentLexeme)(ctx)))
+				textBuilder.WriteString(fmt.Sprintf("%s: %s\n", i18n.GetTranslator(barLexeme)(ctx), place.Name))
+				textBuilder.WriteString(fmt.Sprintf("%s: %d₽\n", i18n.GetTranslator(sumLexeme)(ctx), certInfo.Sum))
+			}
+
+			if certInfo.ValidUntil != "" {
+				validUntilDate, err := time.Parse("2006-01-02", certInfo.ValidUntil)
+				if err != nil {
+					logger.Warnf(ctx, "parsing certificate valid until date error: %s", err.Error())
+					textBuilder.WriteString(fmt.Sprintf("%s: %s\n", i18n.GetTranslator(validUntilLexeme)(ctx), i18n.GetTranslator(unknownLexeme)(ctx)))
+				} else {
+					textBuilder.WriteString(fmt.Sprintf("%s: %s\n", i18n.GetTranslator(validUntilLexeme)(ctx), validUntilDate.Format("02.01.2006")))
 				}
 			}
+
+			playerNames := make([]string, 0)
+			for _, wonOnGamePlayer := range wonOnGamePlayers {
+				if userID, isPresent := wonOnGamePlayer.UserID.Get(); isPresent {
+					user, err := b.usersFacade.GetUser(ctx, userID)
+					if err != nil {
+						return nil, fmt.Errorf("getting user error: %w", err)
+					}
+
+					playerNames = append(playerNames, user.Name)
+				}
+			}
+
+			if len(playerNames) > 0 {
+				textBuilder.WriteString(fmt.Sprintf("%s:\n", i18n.GetTranslator(listOfPlayersLexeme)(ctx)))
+				for i, playerName := range playerNames {
+					textBuilder.WriteString(fmt.Sprintf("%d. %s\n", i+1, playerName))
+				}
+			}
+
+			textBuilder.WriteString("-------------------\n")
 		}
 
-		return err
+		msg := tgbotapi.NewMessage(clientID, textBuilder.String())
+		return &msg, nil
 	}
 
-	switch user.State {
-	case int32(usermanagerpb.UserState_USER_STATE_CHANGING_BIRTHDATE):
-		err = b.usersFacade.UpdateUserBirthdate(ctx, user.ID, update.Message.Text)
-		if err != nil {
-			return err
-		}
-
-		msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(birthdateChangedLexeme)(ctx))
-		msg.ReplyMarkup = replyKeyboardMarkup(ctx)
-
-		_, err = b.bot.Send(msg)
-	case int32(usermanagerpb.UserState_USER_STATE_CHANGING_EMAIL):
-		err = b.usersFacade.UpdateUserEmail(ctx, user.ID, update.Message.Text)
-		if err != nil {
-			return err
-		}
-
-		msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(emailChangedLexeme)(ctx))
-		msg.ReplyMarkup = replyKeyboardMarkup(ctx)
-
-		_, err = b.bot.Send(msg)
-	case int32(usermanagerpb.UserState_USER_STATE_CHANGING_NAME):
-		err = b.usersFacade.UpdateUserName(ctx, user.ID, update.Message.Text)
-		if err != nil {
-			return err
-		}
-
-		msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(nameChangedLexeme)(ctx))
-		msg.ReplyMarkup = replyKeyboardMarkup(ctx)
-
-		_, err = b.bot.Send(msg)
-	case int32(usermanagerpb.UserState_USER_STATE_CHANGING_PHONE):
-		err = b.usersFacade.UpdateUserPhone(ctx, user.ID, update.Message.Text)
-		if err != nil {
-			return err
-		}
-
-		msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(phoneChangedLexeme)(ctx))
-		msg.ReplyMarkup = replyKeyboardMarkup(ctx)
-
-		_, err = b.bot.Send(msg)
-	case int32(usermanagerpb.UserState_USER_STATE_CHANGING_SEX):
-		err = b.usersFacade.UpdateUserSex(ctx, user.ID, model.SexFromString(update.Message.Text))
-		if err != nil {
-			return err
-		}
-
-		msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(sexChangedLexeme)(ctx))
-		msg.ReplyMarkup = replyKeyboardMarkup(ctx)
-
-		_, err = b.bot.Send(msg)
-	default:
-		if update.Message.PinnedMessage != nil {
-			return nil
-		}
-	}
-
-	return err
-}
-
-func (b *Bot) getGamesWithPhotosMessage(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error) {
-	clientID := update.Message.From.ID
-	gamesWithPhotosListLimit := uint32(config.GetValue("GamesWithPhotosListLimit").Uint64())
-
-	games, total, err := b.gamePhotosFacade.GetGamesWithPhotos(ctx, gamesWithPhotosListLimit, 0)
+	msg, err := fn(ctx, update)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("preparing certificates list message error: %w", err)
 	}
-
-	if total == 0 {
-		return tgbotapi.NewMessage(clientID, i18n.GetTranslator(listOfGamesWithPhotosIsEmptyLexeme)(ctx)), nil
-	}
-
-	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
-	for _, game := range games {
-		payload := &commands.GetGamePhotosData{
-			GameID: game.ID,
-		}
-
-		callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandGetGamePhotos, payload)
-		if err != nil {
-			return nil, err
-		}
-
-		text := fmt.Sprintf(gamePhotosInfoFormatString, game.ResultPlace.String(), game.League.ShortName, game.Number, game.Place.ShortName, game.DateTime())
-
-		btn := tgbotapi.InlineKeyboardButton{
-			Text:         text,
-			CallbackData: &callbackData,
-		}
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn))
-	}
-
-	leftNext := uint32(0)
-	if total > gamesWithPhotosListLimit {
-		leftNext = total - gamesWithPhotosListLimit
-	}
-
-	if leftNext > 0 {
-		payload := &commands.GetGamesWithPhotosData{
-			Limit:  gamesWithPhotosListLimit,
-			Offset: gamesWithPhotosListLimit,
-		}
-
-		callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandGetListGamesWithPhotosNextPage, payload)
-		if err != nil {
-			return nil, err
-		}
-
-		btnNext := tgbotapi.InlineKeyboardButton{
-			Text:         icons.NextPage,
-			CallbackData: &callbackData,
-		}
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnNext))
-	}
-
-	msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(gamePhotosLexeme)(ctx))
-	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(rows...)
-
-	return msg, nil
-}
-
-func (b *Bot) getListOfCertificatesMessage(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error) {
-	clientID := update.Message.From.ID
-
-	certificates, err := b.certificatesFacade.GetActiveCertificates(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(certificates) == 0 {
-		return tgbotapi.NewMessage(clientID, i18n.GetTranslator(listOfCertificatesIsEmptyLexeme)(ctx)), nil
-	}
-
-	textBuilder := strings.Builder{}
-	for _, certificate := range certificates {
-		textBuilder.WriteString(fmt.Sprintf("%s: %s\n", i18n.GetTranslator(certificateTypeLexeme)(ctx), certificate.Type))
-		textBuilder.WriteString(fmt.Sprintf("%s: %s\n", i18n.GetTranslator(certificateInfoLexeme)(ctx), certificate.Info))
-		textBuilder.WriteString("\n")
-	}
-
-	msg := tgbotapi.NewMessage(clientID, textBuilder.String())
 
 	return msg, nil
 }
 
 func (b *Bot) getListOfGamesMessage(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error) {
-	clientID := update.Message.From.ID
+	fn := func(ctx context.Context, update *tgbotapi.Update) (*tgbotapi.MessageConfig, error) {
+		user := userutils.GetUserFromContext(ctx)
 
-	games, err := b.gamesFacade.GetGames(ctx, true)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(games) == 0 {
-		return tgbotapi.NewMessage(clientID, i18n.GetTranslator(listOfGamesIsEmptyLexeme)(ctx)), nil
-	}
-
-	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
-	for _, game := range games {
-		payload := &commands.GetGameData{
-			GameID: game.ID,
-		}
-
-		callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandGetGame, payload)
+		games, err := b.gamesFacade.GetGames(ctx, false, true, false)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("getting games error: %w", err)
 		}
 
-		text := fmt.Sprintf(gameInfoFormatString, game.League.ShortName, game.Number, game.Place.ShortName, game.Date)
+		if len(games) == 0 {
+			msg := tgbotapi.NewMessage(user.TelegramID, i18n.GetTranslator(listOfGamesIsEmptyLexeme)(ctx))
+			return &msg, nil
+		}
 
-		if game.My {
-			text = fmt.Sprintf("%s %s", icons.MyGame, text)
-		} else {
-			if game.NumberOfLegioners+game.NumberOfPlayers > 0 {
-				text = fmt.Sprintf("%s %s", icons.GameWithPlayers, text)
+		rows := make([][]tgbotapi.InlineKeyboardButton, 0)
+		for _, game := range games {
+			league, err := b.leaguesFacade.GetLeague(ctx, game.LeagueID)
+			if err != nil {
+				return nil, fmt.Errorf("getting league error: %w", err)
 			}
+
+			place, err := b.placesFacade.GetPlace(ctx, game.PlaceID)
+			if err != nil {
+				return nil, fmt.Errorf("getting place error: %w", err)
+			}
+
+			text := fmt.Sprintf(gameInfoFormatString, league.ShortName, game.Number, place.ShortName, game.DateTime)
+
+			gamePlayers, err := b.gamePlayersFacade.GetGamePlayersByGameID(ctx, game.ID)
+			if err != nil {
+				return nil, fmt.Errorf("getting game players by game ID error: %w", err)
+			}
+
+			userWillPlay := false
+			numberOfLegioners := 0
+			numberOfPlayers := 0
+			for _, gamePlayer := range gamePlayers {
+				if gamePlayer.UserID.Value() == user.ID {
+					userWillPlay = true
+				}
+
+				if _, isPresent := gamePlayer.UserID.Get(); isPresent {
+					numberOfPlayers++
+				} else {
+					numberOfLegioners++
+				}
+			}
+
+			if userWillPlay {
+				text = fmt.Sprintf("%s %s", icons.Fist, text)
+			} else {
+				if numberOfLegioners+numberOfPlayers > 0 {
+					text = fmt.Sprintf("%s %s", icons.GameWithPlayers, text)
+				}
+			}
+
+			payload := &commands.GetGameData{
+				GameID:                  game.ID,
+				PageIndex:               0,
+				GetRootGamesListCommand: commands.CommandGetGamesList,
+			}
+
+			callbackData, err := callbackdatautils.GetCallbackData(ctx, commands.CommandGetGame, payload)
+			if err != nil {
+				return nil, fmt.Errorf("getting callback data error: %w", err)
+			}
+
+			btn := tgbotapi.InlineKeyboardButton{
+				Text:         text,
+				CallbackData: &callbackData,
+			}
+			rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn))
 		}
 
-		btn := tgbotapi.InlineKeyboardButton{
-			Text:         text,
-			CallbackData: &callbackData,
-		}
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn))
+		msg := tgbotapi.NewMessage(user.TelegramID, i18n.GetTranslator(chooseGameLexeme)(ctx))
+		msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(rows...)
+
+		return &msg, nil
 	}
 
-	msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(chooseGameLexeme)(ctx))
-	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(rows...)
+	msg, err := fn(ctx, update)
+	if err != nil {
+		return nil, fmt.Errorf("preparing list of games message error: %w", err)
+	}
 
 	return msg, nil
 }
 
-func (b *Bot) getListOfMyGamesMessage(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error) {
-	clientID := update.Message.From.ID
+func (b *Bot) getListOfPassedAndRegisteredGamesMessage(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error) {
+	fn := func(ctx context.Context, update *tgbotapi.Update) (*tgbotapi.MessageConfig, error) {
+		user := userutils.GetUserFromContext(ctx)
+		passedGamesListLimit := config.GetValue("PassedGamesListLimit").Uint64()
 
-	user, err := b.usersFacade.GetUserByTelegramID(ctx, clientID)
-	if err != nil {
-		return nil, err
-	}
-
-	games, err := b.gamesFacade.GetUserGames(ctx, true, user.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(games) == 0 {
-		return tgbotapi.NewMessage(clientID, i18n.GetTranslator(listOfMyGamesIsEmptyLexeme)(ctx)), nil
-	}
-
-	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
-	for _, game := range games {
-		payload := &commands.GetGameData{
-			GameID: game.ID,
-		}
-
-		callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandGetGame, payload)
+		passedGames, total, err := b.gamesFacade.SearchPassedAndRegisteredGames(ctx, 1, passedGamesListLimit)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("searching passed and registered games error: %w", err)
 		}
 
-		text := fmt.Sprintf(gameInfoFormatString, game.League.ShortName, game.Number, game.Place.ShortName, game.DateTime())
-
-		btn := tgbotapi.InlineKeyboardButton{
-			Text:         text,
-			CallbackData: &callbackData,
+		if total == 0 {
+			msg := tgbotapi.NewMessage(user.TelegramID, i18n.GetTranslator(listOfPassedGamesIsEmptyLexeme)(ctx))
+			return &msg, nil
 		}
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn))
+
+		rows := make([][]tgbotapi.InlineKeyboardButton, 0)
+		for _, passedGame := range passedGames {
+			payload := &commands.GetGameData{
+				GameID:    passedGame.ID,
+				PageIndex: 0,
+			}
+
+			callbackData, err := callbackdatautils.GetCallbackData(ctx, commands.CommandGetGame, payload)
+			if err != nil {
+				return nil, err
+			}
+
+			var resultPlace model.ResultPlace
+			gameResult, err := b.gameResultsFacade.GetGameResultByGameID(ctx, passedGame.ID)
+			if err != nil {
+				logger.ErrorKV(ctx, fmt.Sprintf("getting game result by game ID error: %s", err.Error()), "game", passedGame)
+			} else {
+				resultPlace = gameResult.ResultPlace
+			}
+
+			league, err := b.leaguesFacade.GetLeague(ctx, passedGame.LeagueID)
+			if err != nil {
+				return nil, fmt.Errorf("getting league error: %w", err)
+			}
+
+			place, err := b.placesFacade.GetPlace(ctx, passedGame.PlaceID)
+			if err != nil {
+				return nil, fmt.Errorf("getting place error: %w", err)
+			}
+
+			gamePlayers, err := b.gamePlayersFacade.GetGamePlayersByGameID(ctx, passedGame.ID)
+			if err != nil {
+				return nil, fmt.Errorf("getting game players by game ID error: %w", err)
+			}
+
+			userHasPlayed := false
+			for _, gamePlayer := range gamePlayers {
+				if userID, isPresent := gamePlayer.UserID.Get(); isPresent {
+					if user.ID == userID {
+						userHasPlayed = true
+						break
+					}
+				}
+			}
+
+			fist := ""
+			if userHasPlayed {
+				fist = icons.Fist
+			}
+			text := fmt.Sprintf(extendedGameInfoFormatString, fist, resultPlace.String(), league.ShortName, passedGame.Number, place.ShortName, passedGame.DateTime)
+
+			btn := tgbotapi.InlineKeyboardButton{
+				Text:         text,
+				CallbackData: &callbackData,
+			}
+			rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn))
+		}
+
+		if total > passedGamesListLimit {
+			payload := &commands.GetPassedAndRegisteredGamesListData{
+				Page:     2,
+				PageSize: passedGamesListLimit,
+			}
+
+			callbackData, err := callbackdatautils.GetCallbackData(ctx, commands.CommandGetPassedAndRegisteredGamesList, payload)
+			if err != nil {
+				return nil, err
+			}
+
+			btnNext := tgbotapi.InlineKeyboardButton{
+				Text:         icons.NextPage,
+				CallbackData: &callbackData,
+			}
+			rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnNext))
+		}
+
+		msg := tgbotapi.NewMessage(user.TelegramID, i18n.GetTranslator(passedGamesLexeme)(ctx))
+		msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(rows...)
+
+		return &msg, nil
 	}
-
-	msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(listOfMyGamesLexeme)(ctx))
-	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(rows...)
+	msg, err := fn(ctx, update)
+	if err != nil {
+		return nil, fmt.Errorf("preparing list of passed and registered games message error: %w", err)
+	}
 
 	return msg, nil
 }
 
 func (b *Bot) getListOfRegisteredGamesMessage(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error) {
-	clientID := update.Message.From.ID
+	fn := func(ctx context.Context, update *tgbotapi.Update) (*tgbotapi.MessageConfig, error) {
+		user := userutils.GetUserFromContext(ctx)
 
-	games, err := b.gamesFacade.GetRegisteredGames(ctx, true)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(games) == 0 {
-		return tgbotapi.NewMessage(clientID, i18n.GetTranslator(listOfRegisteredGamesIsEmptyLexeme)(ctx)), nil
-	}
-
-	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
-	for _, game := range games {
-		payload := &commands.GetGameData{
-			GameID: game.ID,
-		}
-
-		callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandGetGame, payload)
+		registeredGames, err := b.gamesFacade.GetGames(ctx, true, true, false)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("getting games error: %w", err)
 		}
 
-		text := fmt.Sprintf(gameInfoFormatString, game.League.ShortName, game.Number, game.Place.ShortName, game.DateTime())
+		if len(registeredGames) == 0 {
+			msg := tgbotapi.NewMessage(user.TelegramID, i18n.GetTranslator(listOfRegisteredGamesIsEmptyLexeme)(ctx))
+			return &msg, nil
+		}
 
-		if game.My {
-			text = fmt.Sprintf("%s %s", icons.MyGame, text)
-		} else {
-			if game.NumberOfLegioners+game.NumberOfPlayers > 0 {
-				text = fmt.Sprintf("%s %s", icons.GameWithPlayers, text)
+		rows := make([][]tgbotapi.InlineKeyboardButton, 0)
+		for _, registeredGame := range registeredGames {
+			league, err := b.leaguesFacade.GetLeague(ctx, registeredGame.LeagueID)
+			if err != nil {
+				return nil, fmt.Errorf("getting league error: %w", err)
 			}
+
+			place, err := b.placesFacade.GetPlace(ctx, registeredGame.PlaceID)
+			if err != nil {
+				return nil, fmt.Errorf("getting place error: %w", err)
+			}
+
+			text := fmt.Sprintf(gameInfoFormatString, league.ShortName, registeredGame.Number, place.ShortName, registeredGame.DateTime)
+
+			gamePlayers, err := b.gamePlayersFacade.GetGamePlayersByGameID(ctx, registeredGame.ID)
+			if err != nil {
+				return nil, fmt.Errorf("getting game players by game ID error: %w", err)
+			}
+
+			userWillPlay := false
+			numberOfLegioners := 0
+			numberOfPlayers := 0
+			for _, gamePlayer := range gamePlayers {
+				if gamePlayer.UserID.Value() == user.ID {
+					userWillPlay = true
+				}
+
+				if _, isPresent := gamePlayer.UserID.Get(); isPresent {
+					numberOfPlayers++
+				} else {
+					numberOfLegioners++
+				}
+			}
+
+			if userWillPlay {
+				text = fmt.Sprintf("%s %s", icons.Fist, text)
+			} else {
+				if numberOfLegioners+numberOfPlayers > 0 {
+					text = fmt.Sprintf("%s %s", icons.GameWithPlayers, text)
+				}
+			}
+
+			payload := &commands.GetGameData{
+				GameID:                  registeredGame.ID,
+				PageIndex:               0,
+				GetRootGamesListCommand: commands.CommandGetRegisteredGamesList,
+			}
+
+			callbackData, err := callbackdatautils.GetCallbackData(ctx, commands.CommandGetGame, payload)
+			if err != nil {
+				return nil, fmt.Errorf("getting callback data error: %w", err)
+			}
+
+			btn := tgbotapi.InlineKeyboardButton{
+				Text:         text,
+				CallbackData: &callbackData,
+			}
+			rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn))
 		}
 
-		btn := tgbotapi.InlineKeyboardButton{
-			Text:         text,
-			CallbackData: &callbackData,
-		}
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn))
+		msg := tgbotapi.NewMessage(user.TelegramID, i18n.GetTranslator(listOfRegisteredGamesLexeme)(ctx))
+		msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(rows...)
+
+		return &msg, nil
 	}
 
-	msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(listOfRegisteredGamesLexeme)(ctx))
-	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(rows...)
+	msg, err := fn(ctx, update)
+	if err != nil {
+		return nil, fmt.Errorf("preparing list of registered games message error: %w", err)
+	}
+
+	return msg, nil
+}
+
+func (b *Bot) getListOfUserGamesMessage(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error) {
+	fn := func(ctx context.Context, update *tgbotapi.Update) (*tgbotapi.MessageConfig, error) {
+		user := userutils.GetUserFromContext(ctx)
+
+		userGames, err := b.gamesFacade.GetGamesByUserID(ctx, user.ID)
+		if err != nil {
+			return nil, fmt.Errorf("getting games by user ID error: %w", err)
+		}
+
+		if len(userGames) == 0 {
+			msg := tgbotapi.NewMessage(user.TelegramID, i18n.GetTranslator(listOfYourGamesIsEmptyLexeme)(ctx))
+			return &msg, nil
+		}
+
+		rows := make([][]tgbotapi.InlineKeyboardButton, 0)
+		for _, userGame := range userGames {
+			league, err := b.leaguesFacade.GetLeague(ctx, userGame.LeagueID)
+			if err != nil {
+				return nil, fmt.Errorf("getting league error: %w", err)
+			}
+
+			place, err := b.placesFacade.GetPlace(ctx, userGame.PlaceID)
+			if err != nil {
+				return nil, fmt.Errorf("getting place error: %w", err)
+			}
+
+			text := fmt.Sprintf(gameInfoFormatString, league.ShortName, userGame.Number, place.ShortName, userGame.DateTime)
+			if !userGame.Registered {
+				text = fmt.Sprintf(extendedGameInfoFormatString, "", icons.UnregisteredGame, league.ShortName, userGame.Number, place.ShortName, userGame.DateTime)
+			}
+
+			payload := &commands.GetGameData{
+				GameID:                  userGame.ID,
+				PageIndex:               0,
+				GetRootGamesListCommand: commands.CommandGetUserGamesList,
+			}
+
+			callbackData, err := callbackdatautils.GetCallbackData(ctx, commands.CommandGetGame, payload)
+			if err != nil {
+				return nil, fmt.Errorf("getting callback data error: %w", err)
+			}
+
+			btn := tgbotapi.InlineKeyboardButton{
+				Text:         text,
+				CallbackData: &callbackData,
+			}
+			rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn))
+		}
+
+		msg := tgbotapi.NewMessage(user.TelegramID, i18n.GetTranslator(listOfYourGamesLexeme)(ctx))
+		msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(rows...)
+
+		return &msg, nil
+	}
+
+	msg, err := fn(ctx, update)
+	if err != nil {
+		return nil, fmt.Errorf("preparing list of user games message error: %w", err)
+	}
 
 	return msg, nil
 }
 
 func (b *Bot) getSettingsMessage(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error) {
-	clientID := update.Message.From.ID
+	fn := func(ctx context.Context, update *tgbotapi.Update) (*tgbotapi.MessageConfig, error) {
+		user := userutils.GetUserFromContext(ctx)
 
-	user, err := b.usersFacade.GetUserByTelegramID(ctx, clientID)
+		rows := make([][]tgbotapi.InlineKeyboardButton, 0, 3)
+		{
+			callbackData, err := callbackdatautils.GetCallbackData(ctx, commands.CommandChangeEmail, "")
+			if err != nil {
+				return nil, err
+			}
+
+			btnEmail := tgbotapi.InlineKeyboardButton{
+				Text:         fmt.Sprintf(settingFormatString, i18n.GetTranslator(changeEmailLexeme)(ctx), user.Email.Value()),
+				CallbackData: &callbackData,
+			}
+			rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnEmail))
+		}
+
+		{
+			callbackData, err := callbackdatautils.GetCallbackData(ctx, commands.CommandChangeName, "")
+			if err != nil {
+				return nil, err
+			}
+
+			btnName := tgbotapi.InlineKeyboardButton{
+				Text:         fmt.Sprintf(settingFormatString, i18n.GetTranslator(changeNameLexeme)(ctx), user.Name),
+				CallbackData: &callbackData,
+			}
+			rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnName))
+		}
+
+		{
+			callbackData, err := callbackdatautils.GetCallbackData(ctx, commands.CommandChangePhone, "")
+			if err != nil {
+				return nil, err
+			}
+
+			btnPhone := tgbotapi.InlineKeyboardButton{
+				Text:         fmt.Sprintf(settingFormatString, i18n.GetTranslator(changePhoneLexeme)(ctx), user.Phone.Value()),
+				CallbackData: &callbackData,
+			}
+			rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnPhone))
+		}
+
+		{
+			callbackData, err := callbackdatautils.GetCallbackData(ctx, commands.CommandChangeBirthdate, "")
+			if err != nil {
+				return nil, err
+			}
+
+			btnBirthdate := tgbotapi.InlineKeyboardButton{
+				Text:         fmt.Sprintf(settingFormatString, i18n.GetTranslator(changeBirthdateLexeme)(ctx), user.Birthdate.Value()),
+				CallbackData: &callbackData,
+			}
+			rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnBirthdate))
+		}
+
+		{
+			callbackData, err := callbackdatautils.GetCallbackData(ctx, commands.CommandChangeSex, "")
+			if err != nil {
+				return nil, err
+			}
+
+			btnSex := tgbotapi.InlineKeyboardButton{
+				Text:         fmt.Sprintf(settingFormatString, i18n.GetTranslator(changeSexLexeme)(ctx), user.Sex.Value()),
+				CallbackData: &callbackData,
+			}
+			rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnSex))
+		}
+
+		msg := tgbotapi.NewMessage(user.TelegramID, i18n.GetTranslator(settingsLexeme)(ctx))
+		msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(rows...)
+
+		return &msg, nil
+	}
+
+	msg, err := fn(ctx, update)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("preparing settings message error: %w", err)
 	}
-
-	rows := make([][]tgbotapi.InlineKeyboardButton, 0, 3)
-	{
-		callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandChangeEmail, "")
-		if err != nil {
-			return nil, err
-		}
-
-		btnEmail := tgbotapi.InlineKeyboardButton{
-			Text:         fmt.Sprintf(settingFormatString, i18n.GetTranslator(changeEmailLexeme)(ctx), user.Email),
-			CallbackData: &callbackData,
-		}
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnEmail))
-	}
-
-	{
-		callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandChangeName, "")
-		if err != nil {
-			return nil, err
-		}
-
-		btnName := tgbotapi.InlineKeyboardButton{
-			Text:         fmt.Sprintf(settingFormatString, i18n.GetTranslator(changeNameLexeme)(ctx), user.Name),
-			CallbackData: &callbackData,
-		}
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnName))
-	}
-
-	{
-		callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandChangePhone, "")
-		if err != nil {
-			return nil, err
-		}
-
-		btnPhone := tgbotapi.InlineKeyboardButton{
-			Text:         fmt.Sprintf(settingFormatString, i18n.GetTranslator(changePhoneLexeme)(ctx), user.Phone),
-			CallbackData: &callbackData,
-		}
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnPhone))
-	}
-
-	{
-		callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandChangeBirthdate, "")
-		if err != nil {
-			return nil, err
-		}
-
-		btnBirthdate := tgbotapi.InlineKeyboardButton{
-			Text:         fmt.Sprintf(settingFormatString, i18n.GetTranslator(changeBirthdateLexeme)(ctx), user.Birthdate),
-			CallbackData: &callbackData,
-		}
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnBirthdate))
-	}
-
-	{
-		callbackData, err := callbackdata_utils.GetCallbackData(ctx, commands.CommandChangeSex, "")
-		if err != nil {
-			return nil, err
-		}
-
-		btnSex := tgbotapi.InlineKeyboardButton{
-			Text:         fmt.Sprintf(settingFormatString, i18n.GetTranslator(changeSexLexeme)(ctx), user.Sex),
-			CallbackData: &callbackData,
-		}
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnSex))
-	}
-
-	msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(settingsLexeme)(ctx))
-	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(rows...)
 
 	return msg, nil
 }
 
-func helpMessage(ctx context.Context, clientID int64) tgbotapi.MessageConfig {
-	msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(helpMessageLexeme)(ctx))
+func (b *Bot) handleDefaultMessage(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error) {
+	fn := func(ctx context.Context, update *tgbotapi.Update) (*tgbotapi.MessageConfig, error) {
+		user := userutils.GetUserFromContext(ctx)
 
-	msg.ReplyMarkup = replyKeyboardMarkup(ctx)
+		switch user.State {
+		case int32(usermanagerpb.UserState_USER_STATE_CHANGING_BIRTHDATE):
+			err := b.usersFacade.UpdateUserBirthdate(ctx, user.ID, update.Message.Text)
+			if err != nil {
+				return nil, fmt.Errorf("updating user birthdate error: %w", err)
+			}
 
-	return msg
+			msg := tgbotapi.NewMessage(user.TelegramID, i18n.GetTranslator(birthdateChangedLexeme)(ctx))
+			return &msg, nil
+		case int32(usermanagerpb.UserState_USER_STATE_CHANGING_EMAIL):
+			err := b.usersFacade.UpdateUserEmail(ctx, user.ID, update.Message.Text)
+			if err != nil {
+				return nil, fmt.Errorf("updating user email error: %w", err)
+			}
+
+			msg := tgbotapi.NewMessage(user.TelegramID, i18n.GetTranslator(emailChangedLexeme)(ctx))
+			return &msg, nil
+		case int32(usermanagerpb.UserState_USER_STATE_CHANGING_NAME):
+			err := b.usersFacade.UpdateUserName(ctx, user.ID, update.Message.Text)
+			if err != nil {
+				return nil, fmt.Errorf("updating user name error: %w", err)
+			}
+
+			msg := tgbotapi.NewMessage(user.TelegramID, i18n.GetTranslator(nameChangedLexeme)(ctx))
+			return &msg, nil
+		case int32(usermanagerpb.UserState_USER_STATE_CHANGING_PHONE):
+			err := b.usersFacade.UpdateUserPhone(ctx, user.ID, update.Message.Text)
+			if err != nil {
+				return nil, fmt.Errorf("updating user phone error: %w", err)
+			}
+
+			msg := tgbotapi.NewMessage(user.TelegramID, i18n.GetTranslator(phoneChangedLexeme)(ctx))
+			return &msg, nil
+		case int32(usermanagerpb.UserState_USER_STATE_CHANGING_SEX):
+			err := b.usersFacade.UpdateUserSex(ctx, user.ID, model.SexFromString(update.Message.Text))
+			if err != nil {
+				return nil, fmt.Errorf("updating user sex error: %w", err)
+			}
+
+			msg := tgbotapi.NewMessage(user.TelegramID, i18n.GetTranslator(sexChangedLexeme)(ctx))
+			return &msg, nil
+		}
+
+		msg := tgbotapi.NewMessage(user.TelegramID, fmt.Sprintf(i18n.GetTranslator(buyElephantLexeme)(ctx), update.Message.Text))
+		return &msg, nil
+	}
+
+	msg, err := fn(ctx, update)
+	if err != nil {
+		return nil, err
+	}
+
+	return msg, nil
 }
 
-func welcomeMessage(ctx context.Context, clientID int64, name string) tgbotapi.MessageConfig {
-	msg := tgbotapi.NewMessage(clientID, fmt.Sprintf(i18n.GetTranslator(welcomeMessageLexeme)(ctx), name))
+func getHelpMessage(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error) {
+	clientID := telegramutils.ClientIDFromContext(ctx)
+	msg := tgbotapi.NewMessage(clientID, i18n.GetTranslator(helpMessageLexeme)(ctx))
 
-	return msg
+	return &msg, nil
 }

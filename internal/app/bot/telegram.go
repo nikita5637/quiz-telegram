@@ -2,10 +2,13 @@
 //go:generate mockery --case underscore --name GamesFacade --with-expecter
 //go:generate mockery --case underscore --name GamePhotosFacade --with-expecter
 //go:generate mockery --case underscore --name GamePlayersFacade --with-expecter
+//go:generate mockery --case underscore --name GameResultsFacade --with-expecter
 //go:generate mockery --case underscore --name ICSFilesFacade --with-expecter
+//go:generate mockery --case underscore --name LeaguesFacade --with-expecter
 //go:generate mockery --case underscore --name PlacesFacade --with-expecter
 //go:generate mockery --case underscore --name UsersFacade --with-expecter
 //go:generate mockery --case underscore --name CroupierServiceClient --with-expecter
+//go:generate mockery --case underscore --name UserManagerServiceClient --with-expecter
 //go:generate mockery --case underscore --name TelegramBot --with-expecter
 
 package bot
@@ -13,15 +16,14 @@ package bot
 import (
 	"context"
 	"runtime/debug"
+	"sync"
 
 	croupierpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/croupier"
-	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
+	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 	telegrampb "github.com/nikita5637/quiz-telegram/pkg/pb/telegram"
-	"google.golang.org/genproto/googleapis/rpc/errdetails"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"google.golang.org/grpc"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -33,18 +35,17 @@ type CertificatesFacade interface {
 
 // GamesFacade ...
 type GamesFacade interface {
-	GetGameByID(ctx context.Context, id int32) (model.Game, error)
-	GetGames(ctx context.Context, active bool) ([]model.Game, error)
-	GetRegisteredGames(ctx context.Context, active bool) ([]model.Game, error)
-	GetUserGames(ctx context.Context, active bool, userID int32) ([]model.Game, error)
-	RegisterGame(ctx context.Context, gameID int32) (int32, error)
-	UnregisterGame(ctx context.Context, gameID int32) (int32, error)
+	GetGame(ctx context.Context, id int32) (model.Game, error)
+	GetGames(ctx context.Context, registered, isInMaster, hasPassed bool) ([]model.Game, error)
+	GetGamesByUserID(ctx context.Context, userID int32) ([]model.Game, error)
+	SearchPassedAndRegisteredGames(ctx context.Context, page, pageSize uint64) ([]model.Game, uint64, error)
+	RegisterGame(ctx context.Context, gameID int32) error
+	UnregisterGame(ctx context.Context, gameID int32) error
 	UpdatePayment(ctx context.Context, gameID, payment int32) error
 }
 
 // GamePhotosFacade ...
 type GamePhotosFacade interface {
-	GetGamesWithPhotos(ctx context.Context, limit, offset uint32) ([]model.Game, uint32, error)
 	GetPhotosByGameID(ctx context.Context, gameID int32) ([]string, error)
 }
 
@@ -56,32 +57,47 @@ type GamePlayersFacade interface {
 	UpdatePlayerRegistration(ctx context.Context, gamePlayer model.GamePlayer) error
 }
 
+// GameResultsFacade ...
+type GameResultsFacade interface {
+	GetGameResultByGameID(ctx context.Context, gameID int32) (model.GameResult, error)
+}
+
 // ICSFilesFacade ...
 type ICSFilesFacade interface {
 	GetICSFileByGameID(ctx context.Context, gameID int32) (model.ICSFile, error)
 }
 
+// LeaguesFacade ...
+type LeaguesFacade interface {
+	GetLeague(ctx context.Context, id int32) (model.League, error)
+}
+
 // PlacesFacade ...
 type PlacesFacade interface {
-	GetPlaceByID(ctx context.Context, id int32) (model.Place, error)
+	GetPlace(ctx context.Context, id int32) (model.Place, error)
 }
 
 // UsersFacade ...
 type UsersFacade interface {
-	CreateUser(ctx context.Context, name string, telegramID int64, state int32) (int32, error)
-	GetUserByID(ctx context.Context, userID int32) (model.User, error)
-	GetUserByTelegramID(ctx context.Context, telegramID int64) (model.User, error)
+	GetUser(ctx context.Context, userID int32) (model.User, error)
 	UpdateUserBirthdate(ctx context.Context, userID int32, birthdate string) error
 	UpdateUserEmail(ctx context.Context, userID int32, email string) error
 	UpdateUserName(ctx context.Context, userID int32, name string) error
 	UpdateUserPhone(ctx context.Context, userID int32, phone string) error
-	UpdateUserState(ctx context.Context, userID, state int32) error
 	UpdateUserSex(ctx context.Context, userID int32, sex model.Sex) error
+	UpdateUserState(ctx context.Context, userID, state int32) error
 }
 
 // CroupierServiceClient ...
 type CroupierServiceClient interface {
-	croupierpb.ServiceClient
+	GetLotteryStatus(ctx context.Context, in *croupierpb.GetLotteryStatusRequest, opts ...grpc.CallOption) (*croupierpb.GetLotteryStatusResponse, error)
+	RegisterForLottery(ctx context.Context, in *croupierpb.RegisterForLotteryRequest, opts ...grpc.CallOption) (*croupierpb.RegisterForLotteryResponse, error)
+}
+
+// UserManagerServiceClient ...
+type UserManagerServiceClient interface {
+	CreateUser(ctx context.Context, in *usermanagerpb.CreateUserRequest, opts ...grpc.CallOption) (*usermanagerpb.User, error)
+	GetUserByTelegramID(ctx context.Context, in *usermanagerpb.GetUserByTelegramIDRequest, opts ...grpc.CallOption) (*usermanagerpb.User, error)
 }
 
 // TelegramBot ...
@@ -97,13 +113,16 @@ type Bot struct {
 	bot                TelegramBot // *tgbotapi.BotAPI
 	certificatesFacade CertificatesFacade
 	gamesFacade        GamesFacade
+	gameResultsFacade  GameResultsFacade
 	gamePhotosFacade   GamePhotosFacade
 	gamePlayersFacade  GamePlayersFacade
 	icsFilesFacade     ICSFilesFacade
+	leaguesFacade      LeaguesFacade
 	placesFacade       PlacesFacade
 	usersFacade        UsersFacade
 
-	croupierServiceClient CroupierServiceClient
+	croupierServiceClient    CroupierServiceClient
+	userManagerServiceClient UserManagerServiceClient
 
 	telegrampb.UnimplementedMessageSenderServiceServer
 }
@@ -113,13 +132,16 @@ type Config struct {
 	Bot                TelegramBot // *tgbotapi.BotAPI
 	CertificatesFacade CertificatesFacade
 	GamesFacade        GamesFacade
+	GameResultsFacade  GameResultsFacade
 	GamePhotosFacade   GamePhotosFacade
 	GamePlayersFacade  GamePlayersFacade
 	ICSFilesFacade     ICSFilesFacade
+	LeaguesFacade      LeaguesFacade
 	PlacesFacade       PlacesFacade
 	UsersFacade        UsersFacade
 
-	CroupierServiceClient croupierpb.ServiceClient
+	CroupierServiceClient    croupierpb.ServiceClient
+	UserManagerServiceClient usermanagerpb.ServiceClient
 }
 
 // New ...
@@ -128,13 +150,16 @@ func New(cfg Config) (*Bot, error) {
 		bot:                cfg.Bot,
 		certificatesFacade: cfg.CertificatesFacade,
 		gamesFacade:        cfg.GamesFacade,
+		gameResultsFacade:  cfg.GameResultsFacade,
 		gamePhotosFacade:   cfg.GamePhotosFacade,
 		gamePlayersFacade:  cfg.GamePlayersFacade,
 		icsFilesFacade:     cfg.ICSFilesFacade,
+		leaguesFacade:      cfg.LeaguesFacade,
 		placesFacade:       cfg.PlacesFacade,
 		usersFacade:        cfg.UsersFacade,
 
-		croupierServiceClient: cfg.CroupierServiceClient,
+		croupierServiceClient:    cfg.CroupierServiceClient,
+		userManagerServiceClient: cfg.UserManagerServiceClient,
 	}
 	return bot, nil
 }
@@ -146,9 +171,13 @@ func (b *Bot) Start(ctx context.Context) error {
 
 	updates := b.bot.GetUpdatesChan(u)
 
+	wg := sync.WaitGroup{}
 	go func(ctx context.Context) {
 		for update := range updates {
 			go func(ctx context.Context, update tgbotapi.Update) {
+				wg.Add(1)
+				defer wg.Done()
+
 				defer func() {
 					if r := recover(); r != nil {
 						logger.ErrorKV(ctx, "panic recovered", "r", r, "update", update, "stack", string(debug.Stack()))
@@ -159,45 +188,8 @@ func (b *Bot) Start(ctx context.Context) error {
 					return
 				}
 
-				if update.CallbackQuery != nil && update.CallbackQuery.Message != nil {
-					if err := b.HandleCallbackQuery(ctx, &update); err != nil {
-						logger.Errorf(ctx, "callback query handle error: %s", err)
-						clientID := update.CallbackQuery.From.ID
-						responseMessage := tgbotapi.NewMessage(clientID, i18n.GetTranslator(somethingWentWrongLexeme)(ctx))
-						if s, ok := status.FromError(err); ok {
-							if s.Code() == codes.PermissionDenied {
-								responseMessage = tgbotapi.NewMessage(clientID, i18n.GetTranslator(permissionDeniedLexeme)(ctx))
-							}
-							if s.Code() == codes.NotFound {
-								for _, detail := range s.Details() {
-									switch t := detail.(type) {
-									case *errdetails.LocalizedMessage:
-										responseMessage = tgbotapi.NewMessage(clientID, t.GetMessage())
-									}
-								}
-							}
-						}
-
-						if _, err := b.bot.Send(responseMessage); err != nil {
-							logger.Errorf(ctx, "error while send message: %s", err)
-						}
-					}
-				} else if update.CallbackQuery != nil && update.CallbackQuery.InlineMessageID != "" {
-					var err2 error
-					err2 = b.HandleInlineMessage(ctx, &update)
-					if err2 != nil {
-						logger.Errorf(ctx, "inline message handle error: %s", err2)
-					}
-				} else if update.InlineQuery != nil {
-					var err2 error
-					err2 = b.HandleInlineQuery(ctx, &update)
-					if err2 != nil {
-						logger.Errorf(ctx, "inline query handle error: %s", err2)
-					}
-				} else if update.Message != nil {
-					if err := b.HandleMessage(ctx, &update); err != nil {
-						logger.Errorf(ctx, "handle message error: %s", err)
-					}
+				if err := b.handleUpdate(ctx, &update); err != nil {
+					logger.Errorf(ctx, "update handling error: %s", err.Error())
 				}
 			}(ctx, update)
 		}
@@ -206,6 +198,7 @@ func (b *Bot) Start(ctx context.Context) error {
 	<-ctx.Done()
 
 	b.bot.StopReceivingUpdates()
+	wg.Wait()
 
 	logger.Info(ctx, "telegram bot gracefully stopped")
 	return nil

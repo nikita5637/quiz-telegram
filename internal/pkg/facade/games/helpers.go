@@ -1,20 +1,45 @@
 package games
 
 import (
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"github.com/mono83/maybe"
+	gamepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/game"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
 )
 
-func handleError(err error) error {
-	if err == nil {
-		return nil
+func convertProtoGameToModelGame(pbGame *gamepb.Game) model.Game {
+	modelGame := model.Game{
+		ID:          pbGame.GetId(),
+		ExternalID:  maybe.Nothing[int32](),
+		LeagueID:    int32(pbGame.GetLeagueId()),
+		Type:        int32(pbGame.GetType()),
+		Number:      pbGame.GetNumber(),
+		Name:        maybe.Nothing[string](),
+		PlaceID:     pbGame.GetPlaceId(),
+		DateTime:    model.DateTime(pbGame.GetDate().AsTime()),
+		Price:       pbGame.GetPrice(),
+		PaymentType: maybe.Nothing[string](),
+		MaxPlayers:  pbGame.GetMaxPlayers(),
+		Payment:     maybe.Nothing[int32](),
+		Registered:  pbGame.GetRegistered(),
+		IsInMaster:  pbGame.GetIsInMaster(),
+		HasPassed:   pbGame.GetHasPassed(),
 	}
 
-	st := status.Convert(err)
-	if st.Code() == codes.NotFound {
-		return ErrGameNotFound
+	if externalID := pbGame.GetExternalId(); externalID != nil {
+		modelGame.ExternalID = maybe.Just(externalID.GetValue())
 	}
 
-	return err
+	if name := pbGame.GetName(); name != nil {
+		modelGame.Name = maybe.Just(name.GetValue())
+	}
 
+	if paymentType := pbGame.GetPaymentType(); paymentType != nil {
+		modelGame.PaymentType = maybe.Just(paymentType.GetValue())
+	}
+
+	if payment := pbGame.Payment; payment != nil {
+		modelGame.Payment = maybe.Just(int32(*payment))
+	}
+
+	return modelGame
 }

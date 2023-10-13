@@ -1,60 +1,59 @@
-//go:generate mockery --case underscore --name LeaguesFacade --with-expecter
-//go:generate mockery --case underscore --name PlacesFacade --with-expecter
-//go:generate mockery --case underscore --name RegistratorServiceClient --with-expecter
+//go:generate mockery --case underscore --name GamePlayersFacade --with-expecter
+//go:generate mockery --case underscore --name GameServiceClient --with-expecter
+//go:generate mockery --case underscore --name GameRegistratorServiceClient --with-expecter
 
 package games
 
 import (
 	"context"
 
-	"github.com/nikita5637/quiz-registrator-api/pkg/pb/registrator"
-	"github.com/nikita5637/quiz-telegram/internal/pkg/model"
+	gamepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/game"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-// LeaguesFacade ...
-type LeaguesFacade interface {
-	GetLeagueByID(ctx context.Context, leagueID int32) (model.League, error)
+// GamePlayersFacade ...
+type GamePlayersFacade interface {
+	GetUserGameIDs(ctx context.Context, userID int32) ([]int32, error)
 }
 
-// PlacesFacade ...
-type PlacesFacade interface {
-	GetPlaceByID(ctx context.Context, placeID int32) (model.Place, error)
+// GameServiceClient ...
+type GameServiceClient interface {
+	BatchGetGames(ctx context.Context, in *gamepb.BatchGetGamesRequest, opts ...grpc.CallOption) (*gamepb.BatchGetGamesResponse, error)
+	GetGame(ctx context.Context, in *gamepb.GetGameRequest, opts ...grpc.CallOption) (*gamepb.Game, error)
+	ListGames(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*gamepb.ListGamesResponse, error)
+	SearchPassedAndRegisteredGames(ctx context.Context, in *gamepb.SearchPassedAndRegisteredGamesRequest, opts ...grpc.CallOption) (*gamepb.SearchPassedAndRegisteredGamesResponse, error)
 }
 
-// RegistratorServiceClient ...
-type RegistratorServiceClient interface {
-	GetGameByID(ctx context.Context, in *registrator.GetGameByIDRequest, opts ...grpc.CallOption) (*registrator.GetGameByIDResponse, error)
-	GetGames(ctx context.Context, in *registrator.GetGamesRequest, opts ...grpc.CallOption) (*registrator.GetGamesResponse, error)
-	GetRegisteredGames(ctx context.Context, in *registrator.GetRegisteredGamesRequest, opts ...grpc.CallOption) (*registrator.GetRegisteredGamesResponse, error)
-	GetUserGames(ctx context.Context, in *registrator.GetUserGamesRequest, opts ...grpc.CallOption) (*registrator.GetUserGamesResponse, error)
-	RegisterGame(ctx context.Context, in *registrator.RegisterGameRequest, opts ...grpc.CallOption) (*registrator.RegisterGameResponse, error)
-	UnregisterGame(ctx context.Context, in *registrator.UnregisterGameRequest, opts ...grpc.CallOption) (*registrator.UnregisterGameResponse, error)
-	UpdatePayment(ctx context.Context, in *registrator.UpdatePaymentRequest, opts ...grpc.CallOption) (*registrator.UpdatePaymentResponse, error)
+// GameRegistratorServiceClient ...
+type GameRegistratorServiceClient interface {
+	RegisterGame(ctx context.Context, in *gamepb.RegisterGameRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	UnregisterGame(ctx context.Context, in *gamepb.UnregisterGameRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	UpdatePayment(ctx context.Context, in *gamepb.UpdatePaymentRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 // Facade ...
 type Facade struct {
-	leaguesFacade LeaguesFacade
-	placesFacade  PlacesFacade
+	gamePlayersFacade GamePlayersFacade
 
-	registratorServiceClient RegistratorServiceClient
+	gameServiceClient            GameServiceClient
+	gameRegistratorServiceClient GameRegistratorServiceClient
 }
 
 // Config ...
 type Config struct {
-	LeaguesFacade LeaguesFacade
-	PlacesFacade  PlacesFacade
+	GamePlayersFacade GamePlayersFacade
 
-	RegistratorServiceClient RegistratorServiceClient
+	GameServiceClient            GameServiceClient
+	GameRegistratorServiceClient GameRegistratorServiceClient
 }
 
-// NewFacade ...
-func NewFacade(cfg Config) *Facade {
+// New ...
+func New(cfg Config) *Facade {
 	return &Facade{
-		leaguesFacade: cfg.LeaguesFacade,
-		placesFacade:  cfg.PlacesFacade,
+		gamePlayersFacade: cfg.GamePlayersFacade,
 
-		registratorServiceClient: cfg.RegistratorServiceClient,
+		gameServiceClient:            cfg.GameServiceClient,
+		gameRegistratorServiceClient: cfg.GameRegistratorServiceClient,
 	}
 }

@@ -11,9 +11,6 @@ type fixture struct {
 	ctx    context.Context
 	facade *Facade
 
-	leaguesFacade *mocks.LeaguesFacade
-	placesFacade  *mocks.PlacesFacade
-
 	photographerServiceClient *mocks.PhotographerServiceClient
 }
 
@@ -21,16 +18,10 @@ func tearUp(t *testing.T) *fixture {
 	fx := &fixture{
 		ctx: context.Background(),
 
-		leaguesFacade: mocks.NewLeaguesFacade(t),
-		placesFacade:  mocks.NewPlacesFacade(t),
-
 		photographerServiceClient: mocks.NewPhotographerServiceClient(t),
 	}
 
 	fx.facade = &Facade{
-		leaguesFacade: fx.leaguesFacade,
-		placesFacade:  fx.placesFacade,
-
 		photographerServiceClient: fx.photographerServiceClient,
 	}
 
