@@ -1,4 +1,5 @@
 .vscode
+cover.out
 bin
 buf.lock
 protodep.lock
