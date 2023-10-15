@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  telegram:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        GITHUB_PATH: https://github.com/nikita5637/quiz-telegram.git
+        BRANCH: v1.0
+    command: "/bin/telegram --config /etc/config.toml"
+    container_name: telegram
+    environment:
+    networks:
+      - network
+    ports:
+      - "8080:8080"
+
+networks:
+  network:
+    driver: bridge

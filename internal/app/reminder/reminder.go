@@ -79,7 +79,7 @@ type Reminder struct {
 	lotteryReminderQueueName string
 	rabbitMQChanel           *amqp.Channel
 	registratorAPIAddress    string
-	registratorAPIPort       uint16
+	registratorAPIPort       int32
 	placeServiceClient       PlaceServiceClient
 	gameServiceClient        GameServiceClient
 	userManagerServiceClient UserManagerServiceClient
@@ -92,7 +92,7 @@ type Config struct {
 	LotteryReminderQueueName string
 	RabbitMQChannel          *amqp.Channel
 	RegistratorAPIAddress    string
-	RegistratorAPIPort       uint16
+	RegistratorAPIPort       int32
 }
 
 // New ...

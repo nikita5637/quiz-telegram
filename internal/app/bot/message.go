@@ -10,7 +10,6 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	certificatemanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/certificate_manager"
 	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
-	"github.com/nikita5637/quiz-telegram/internal/config"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/commands"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/icons"
@@ -19,6 +18,7 @@ import (
 	callbackdatautils "github.com/nikita5637/quiz-telegram/internal/pkg/utils/callbackdata"
 	telegramutils "github.com/nikita5637/quiz-telegram/utils/telegram"
 	userutils "github.com/nikita5637/quiz-telegram/utils/user"
+	"github.com/spf13/viper"
 )
 
 type certificateInfo struct {
@@ -461,7 +461,8 @@ func (b *Bot) getListOfGamesMessage(ctx context.Context, update *tgbotapi.Update
 func (b *Bot) getListOfPassedAndRegisteredGamesMessage(ctx context.Context, update *tgbotapi.Update) (tgbotapi.Chattable, error) {
 	fn := func(ctx context.Context, update *tgbotapi.Update) (*tgbotapi.MessageConfig, error) {
 		user := userutils.GetUserFromContext(ctx)
-		passedGamesListLimit := config.GetValue("PassedGamesListLimit").Uint64()
+
+		passedGamesListLimit := viper.GetUint64("bot.passed_games_list_limit")
 
 		passedGames, total, err := b.gamesFacade.SearchPassedAndRegisteredGames(ctx, 1, passedGamesListLimit)
 		if err != nil {

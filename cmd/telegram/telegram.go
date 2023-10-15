@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"flag"
 	"fmt"
 	"os"
 
@@ -34,6 +33,8 @@ import (
 	"github.com/nikita5637/quiz-telegram/internal/pkg/middleware"
 	"github.com/posener/ctxutil"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
@@ -43,33 +44,29 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-var (
-	configPath string
-)
-
 func init() {
-	flag.StringVar(&configPath, "config", "./config.toml", "path to config file")
+	pflag.StringP("config", "c", "", "path to config file")
+	_ = viper.BindPFlag("config", pflag.Lookup("config"))
 }
 
 func main() {
 	ctx := ctxutil.Interrupt()
-	flag.Parse()
 
-	var err error
-	err = config.ParseConfigFile(configPath)
-	if err != nil {
+	pflag.Parse()
+
+	if err := config.ReadConfig(); err != nil {
 		panic(err)
 	}
 
 	logsCombiner := &logger.Combiner{}
 	logsCombiner = logsCombiner.WithWriter(os.Stdout)
 
-	elasticLogsEnabled := config.GetValue("ElasticLogsEnabled").Bool()
+	elasticLogsEnabled := viper.GetBool("log.elastic.enabled")
 	if elasticLogsEnabled {
 		var elasticClient *elasticsearch.Client
-		elasticClient, err = elasticsearch.New(elasticsearch.Config{
+		elasticClient, err := elasticsearch.New(elasticsearch.Config{
 			ElasticAddress: config.GetElasticAddress(),
-			ElasticIndex:   config.GetValue("ElasticIndex").String(),
+			ElasticIndex:   viper.GetString("log.elastic.index"),
 		})
 		if err != nil {
 			panic(err)
@@ -81,22 +78,22 @@ func main() {
 
 	logLevel := config.GetLogLevel()
 	logger.SetGlobalLogger(logger.NewLogger(logLevel, logsCombiner, zap.Fields(
-		zap.String("module", "telegram"),
+		zap.String("module", viper.GetString("log.module_name")),
 	)))
 	logger.InfoKV(ctx, "initialized logger", "log level", logLevel)
 
 	var bot *tgbotapi.BotAPI
-	bot, err = tgbotapi.NewBotAPI(config.GetSecretValue(config.TelegramToken))
+	bot, err := tgbotapi.NewBotAPI(viper.GetString("bot.token"))
 	if err != nil {
-		panic(err)
+		logger.Fatalf(ctx, "new bot API error: %s", err.Error())
 	}
 
 	bot.Debug = false
 
 	logger.Infof(ctx, "authorized on account '%s'", bot.Self.UserName)
 
-	registratorAPIAddress := config.GetValue("RegistratorAPIAddress").String()
-	registratorAPIPort := config.GetValue("RegistratorAPIPort").Uint16()
+	registratorAPIAddress := viper.GetString("bot.registrator_api.address")
+	registratorAPIPort := viper.GetInt32("bot.registrator_api.port")
 
 	opts := grpc.WithInsecure()
 	target := fmt.Sprintf("%s:%d", registratorAPIAddress, registratorAPIPort)
@@ -105,7 +102,7 @@ func main() {
 		middleware.ServiceNameInterceptor,
 	))
 	if err != nil {
-		logger.Fatalf(ctx, "registratorAPIClient service conn dial error: %w", err.Error())
+		logger.Fatalf(ctx, "registratorAPIClient service conn dial error: %s", err.Error())
 	}
 	defer registratorAPIClientServiceConn.Close()
 
@@ -114,12 +111,12 @@ func main() {
 		middleware.TelegramClientIDInterceptor,
 	))
 	if err != nil {
-		logger.Fatalf(ctx, "registratorAPIClient user conn dial error: %w", err.Error())
+		logger.Fatalf(ctx, "registratorAPIClient user conn dial error: %s", err.Error())
 	}
 	defer registratorAPIClientUserConn.Close()
 
-	icsManagerAPIAddress := config.GetValue("ICSManagerAPIAddress").String()
-	icsManagerAPIPort := config.GetValue("ICSManagerAPIPort").Uint16()
+	icsManagerAPIAddress := viper.GetString("bot.ics_manager_api.address")
+	icsManagerAPIPort := viper.GetInt32("bot.ics_manager_api.port")
 
 	target = fmt.Sprintf("%s:%d", icsManagerAPIAddress, icsManagerAPIPort)
 	icsManagerAPIClientConn, err := grpc.Dial(target, opts, grpc.WithChainUnaryInterceptor(
@@ -127,7 +124,7 @@ func main() {
 		middleware.TelegramClientIDInterceptor,
 	))
 	if err != nil {
-		panic(err)
+		logger.Fatalf(ctx, "ics manager API user conn dial error: %s", err.Error())
 	}
 	defer icsManagerAPIClientConn.Close()
 
@@ -223,7 +220,7 @@ func main() {
 	})
 
 	g.Go(func() error {
-		bindAddr := config.GetTelegramAPIBindAddress()
+		bindAddr := config.GetBindAddress()
 		telegramAPIConfig := telegramapi.Config{
 			BindAddr: bindAddr,
 			Bot:      bot,
@@ -251,12 +248,12 @@ func main() {
 		}
 		defer rabbitMQChannel.Close()
 
-		gameReminderQueueName := config.GetValue("RabbitMQGameReminderQueueName").String()
+		gameReminderQueueName := viper.GetString("reminder.game.queue.name")
 		if gameReminderQueueName == "" {
 			return errors.New("empty rabbit MQ game reminder queue name")
 		}
 
-		lotteryReminderQueueName := config.GetValue("RabbitMQLotteryReminderQueueName").String()
+		lotteryReminderQueueName := viper.GetString("reminder.lottery.queue.name")
 		if lotteryReminderQueueName == "" {
 			return errors.New("empty rabbit MQ lottery reminder queue name")
 		}

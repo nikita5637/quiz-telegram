@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+
+	"github.com/spf13/viper"
 )
 
 const (
@@ -9,23 +11,17 @@ const (
 	rabbitMQURLFormat = "amqp://%s:%s@%s:%d/"
 )
 
-// ReminderConfig ...
-type ReminderConfig struct {
-	RabbitMQAddress                  string `toml:"rabbitmq_address"`
-	RabbitMQGameReminderQueueName    string `toml:"rabbitmq_game_reminder_queue_name"`
-	RabbitMQLotteryReminderQueueName string `toml:"rabbitmq_lottery_reminder_queue_name"`
-	RabbitMQPort                     uint16 `toml:"rabbitmq_port"`
-	RabbitMQUserName                 string `toml:"rabbitmq_username"`
+func initRemindManagerConfigureParams() {
+	_ = viper.BindEnv("rabbitmq.address")
+	_ = viper.BindEnv("rabbitmq.credentials.password")
 }
 
 // GetRabbitMQURL ...
 func GetRabbitMQURL() string {
-	rabbitMQPassword := GetSecretValue(RabbitMQPassword)
-
 	return fmt.Sprintf(rabbitMQURLFormat,
-		globalConfig.RabbitMQUserName,
-		rabbitMQPassword,
-		globalConfig.RabbitMQAddress,
-		globalConfig.RabbitMQPort,
+		viper.GetString("rabbitmq.credentials.username"),
+		viper.GetString("rabbitmq.credentials.password"),
+		viper.GetString("rabbitmq.address"),
+		viper.GetUint32("rabbitmq.port"),
 	)
 }

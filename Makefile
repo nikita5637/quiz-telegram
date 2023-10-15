@@ -64,7 +64,7 @@ migrations:
 
 .PHONY: run
 run:
-	go run ./cmd/telegram
+	go run ./cmd/telegram --config ./config.yaml
 
 .PHONY: test
 test:

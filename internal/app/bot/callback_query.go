@@ -12,7 +12,6 @@ import (
 	croupierpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/croupier"
 	gamepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/game"
 	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
-	"github.com/nikita5637/quiz-telegram/internal/config"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/commands"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/gameplayers"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/games"
@@ -23,6 +22,7 @@ import (
 	callbackdatautils "github.com/nikita5637/quiz-telegram/internal/pkg/utils/callbackdata"
 	telegramutils "github.com/nikita5637/quiz-telegram/utils/telegram"
 	userutils "github.com/nikita5637/quiz-telegram/utils/user"
+	"github.com/spf13/viper"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/status"
 )
@@ -890,7 +890,7 @@ func (b *Bot) handleGetPassedAndRegisteredGamesList(ctx context.Context, update 
 		user := userutils.GetUserFromContext(ctx)
 		messageID := update.CallbackQuery.Message.MessageID
 
-		passedGamesListLimit := config.GetValue("PassedGamesListLimit").Uint64()
+		passedGamesListLimit := viper.GetUint64("bot.passed_games_list_limit")
 
 		passedGames, total, err := b.gamesFacade.SearchPassedAndRegisteredGames(ctx, data.Page, data.PageSize)
 		if err != nil {
