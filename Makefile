@@ -12,8 +12,8 @@ ifeq ($(wildcard $(GOIMPORTS_BIN)),)
 	GOBIN=$(LOCAL_BIN) go install golang.org/x/tools/cmd/goimports 
 endif
 ifeq ($(wildcard $(GOTESTSUM_BIN)),)
-       $(info Installing binary dependency gotestsum)
-       GOBIN=$(LOCAL_BIN) go install gotest.tools/gotestsum
+	$(info Installing binary dependency gotestsum)
+	GOBIN=$(LOCAL_BIN) go install gotest.tools/gotestsum
 endif
 ifeq ($(wildcard $(PROTOC_GEN_GO_BIN)),)
 	$(info Installing binary dependency protoc-gen-go)
