@@ -1,0 +1,38 @@
+apiserver:
+  bind:
+    address: "localhost"
+    port: 8081
+
+bot:
+  ics_manager_api:
+    address: "ics-manager-api"
+    port: 8082
+  passed_games_list_limit: 8
+  registrator_api:
+    address: "registrator-api"
+    port: 8080
+  token: "TOPSECRET"
+
+log:
+  level: "info"
+  elastic:
+    address: "elasticsearch"
+    enabled: true
+    index: "quiz_regbot"
+    port: 9200
+  module_name: "telegram"
+
+rabbitmq:
+  address: "rabbitmq"
+  port: 5672
+  credentials:
+    username: "quiz_regbot"
+    password: "TOPSECRET"
+
+reminder:
+  game:
+    queue:
+      name: "game_reminder"
+  lottery:
+    queue:
+      name: "lottery_reminder"

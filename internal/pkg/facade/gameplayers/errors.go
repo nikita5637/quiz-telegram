@@ -1,0 +1,19 @@
+package gameplayers
+
+import "errors"
+
+var (
+	// ErrGamePlayerAlreadyRegistered ...
+	ErrGamePlayerAlreadyRegistered = errors.New("game player already registered")
+	// ErrGamePlayerNotFound ...
+	ErrGamePlayerNotFound = errors.New("game player not found")
+	// ErrNoFreeSlot ...
+	ErrNoFreeSlot = errors.New("no free slot")
+	// ErrThereAreNoRegistrationForTheGame ...
+	ErrThereAreNoRegistrationForTheGame = errors.New("there are no registration for the game")
+
+	// ReasonNoFreeSlot ...
+	ReasonNoFreeSlot = "THERE_ARE_NO_FREE_SLOT"
+	// ReasonThereAreNoRegistrationForTheGame ...
+	ReasonThereAreNoRegistrationForTheGame = "THERE_ARE_NO_REGISTRATION_FOR_THE_GAME"
+)

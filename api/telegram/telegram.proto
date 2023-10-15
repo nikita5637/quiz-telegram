@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package telegram;
+
+option go_package = "github.com/nikita5637/quiz-telegram/pkg/pb/telegram;telegram";
+
+service MessageSenderService {
+	// SendMessage sends a message to client
+	rpc SendMessage(SendMessageRequest) returns (SendMessageResponse) {
+	}
+	// SendSticker sends a sticker to client
+	rpc SendSticker(SendStickerRequest) returns (SendStickerResponse) {
+	}
+}
+
+message SendMessageRequest {
+	int64 telegram_id = 1;
+	string message = 2;
+}
+
+message SendMessageResponse {
+}
+
+message SendStickerRequest {
+	int64 telegram_id = 1;
+	string sticker_id = 2;
+}
+
+message SendStickerResponse {
+}

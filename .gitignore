@@ -1,0 +1,10 @@
+.vscode
+cover.out
+bin
+buf.lock
+protodep.lock
+telegram
+!telegram/
+token
+token_test
+vendor.protodep
