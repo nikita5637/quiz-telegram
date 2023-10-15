@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -704,14 +705,25 @@ func (b *Bot) getPassedAndRegisteredGameMenuEditMessage(ctx context.Context, gam
 			logger.ErrorKV(ctx, fmt.Sprintf("getting game result by game ID error: %s", err.Error()), "game", game)
 		} else {
 			gameInfo.WriteString(fmt.Sprintf("%s %s: %d\n", icons.StoneFace, i18n.GetTranslator(resultPlaceLexeme)(ctx), gameResult.ResultPlace))
-			if roundPoints, isPresent := gameResult.RoundPoints.Get(); isPresent {
-				roundPointsMap := map[string]int32{}
-				if err = json.Unmarshal([]byte(roundPoints), &roundPointsMap); err != nil {
-					logger.ErrorKV(ctx, fmt.Errorf("unmarshaling round points error: %w", err).Error(), "roundPoints", roundPoints)
+			if roundPointsJSON, isPresent := gameResult.RoundPoints.Get(); isPresent {
+				roundPointsMap := map[string]float64{}
+				if err = json.Unmarshal([]byte(roundPointsJSON), &roundPointsMap); err != nil {
+					logger.ErrorKV(ctx, fmt.Errorf("unmarshaling round points error: %w", err).Error(), "roundPoints", roundPointsJSON)
 				} else {
+					roundNames := make([]string, 0, len(roundPointsMap))
+					for roundName := range roundPointsMap {
+						roundNames = append(roundNames, roundName)
+					}
+					sort.Strings(roundNames)
+
 					gameInfo.WriteString(fmt.Sprintf("%s %s:\n", icons.Info, i18n.GetTranslator(roundPointsLexeme)(ctx)))
-					for round, points := range roundPointsMap {
-						gameInfo.WriteString(fmt.Sprintf("\t%s: %d\n", round, points))
+					for _, roundName := range roundNames {
+						points := roundPointsMap[roundName]
+						if float64(int(points)) == points {
+							gameInfo.WriteString(fmt.Sprintf("\t%s: %d\n", roundName, int(points)))
+						} else {
+							gameInfo.WriteString(fmt.Sprintf("\t%s: %.1f\n", roundName, points))
+						}
 					}
 				}
 			}
