@@ -8,7 +8,7 @@ services:
       args:
         GITHUB_PATH: https://github.com/nikita5637/quiz-telegram.git
         BRANCH: v1.0
-    command: "/bin/telegram --config /etc/config.toml"
+    command: "/bin/telegram --config /etc/config.yaml"
     container_name: telegram
     environment:
     networks:

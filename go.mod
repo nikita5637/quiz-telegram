@@ -3,7 +3,7 @@ module github.com/nikita5637/quiz-telegram
 go 1.18
 
 require (
-	github.com/BurntSushi/toml v1.3.2
+	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/bufbuild/buf v1.9.0
 	github.com/elastic/go-elasticsearch/v6 v6.8.10
 	github.com/go-sql-driver/mysql v1.7.0
