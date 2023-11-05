@@ -25,6 +25,7 @@ type Game struct {
 	IsInMaster  bool
 	// additional info
 	HasPassed bool
+	GameLink  maybe.Maybe[string]
 }
 
 // MarshalJSON ...
@@ -45,6 +46,7 @@ func (g Game) MarshalJSON() ([]byte, error) {
 		Registered  bool
 		IsInMaster  bool
 		HasPassed   bool
+		GameLink    maybejson.Maybe[string]
 	}
 
 	wg := wrapperGame{
@@ -63,6 +65,7 @@ func (g Game) MarshalJSON() ([]byte, error) {
 		Registered:  g.Registered,
 		IsInMaster:  g.IsInMaster,
 		HasPassed:   g.HasPassed,
+		GameLink:    maybejson.Wrap(g.GameLink),
 	}
 	return json.Marshal(wg)
 }

@@ -481,11 +481,6 @@ func (b *Bot) getListOfPassedAndRegisteredGamesMessage(ctx context.Context, upda
 				PageIndex: 0,
 			}
 
-			callbackData, err := callbackdatautils.GetCallbackData(ctx, commands.CommandGetGame, payload)
-			if err != nil {
-				return nil, err
-			}
-
 			var resultPlace model.ResultPlace
 			gameResult, err := b.gameResultsFacade.GetGameResultByGameID(ctx, passedGame.ID)
 			if err != nil {
@@ -524,6 +519,11 @@ func (b *Bot) getListOfPassedAndRegisteredGamesMessage(ctx context.Context, upda
 				fist = icons.Fist
 			}
 			text := fmt.Sprintf(extendedGameInfoFormatString, fist, resultPlace.String(), league.ShortName, passedGame.Number, place.ShortName, passedGame.DateTime)
+
+			callbackData, err := callbackdatautils.GetCallbackData(ctx, commands.CommandGetGame, payload)
+			if err != nil {
+				return nil, err
+			}
 
 			btn := tgbotapi.InlineKeyboardButton{
 				Text:         text,

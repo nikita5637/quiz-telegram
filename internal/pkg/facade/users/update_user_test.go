@@ -24,11 +24,9 @@ func TestFacade_UpdateUserBirthdate(t *testing.T) {
 
 		fx.userManagerServiceClient.EXPECT().PatchUser(fx.ctx, &usermanagerpb.PatchUserRequest{
 			User: &usermanagerpb.User{
-				Id: 1,
-				Birthdate: &wrapperspb.StringValue{
-					Value: "1990-01-30",
-				},
-				State: usermanagerpb.UserState_USER_STATE_REGISTERED,
+				Id:        1,
+				Birthdate: wrapperspb.String("1990-01-30"),
+				State:     usermanagerpb.UserState_USER_STATE_REGISTERED,
 			},
 			UpdateMask: &fieldmaskpb.FieldMask{
 				Paths: []string{
@@ -47,11 +45,9 @@ func TestFacade_UpdateUserBirthdate(t *testing.T) {
 
 		fx.userManagerServiceClient.EXPECT().PatchUser(fx.ctx, &usermanagerpb.PatchUserRequest{
 			User: &usermanagerpb.User{
-				Id: 1,
-				Birthdate: &wrapperspb.StringValue{
-					Value: "1990-01-30",
-				},
-				State: usermanagerpb.UserState_USER_STATE_REGISTERED,
+				Id:        1,
+				Birthdate: wrapperspb.String("1990-01-30"),
+				State:     usermanagerpb.UserState_USER_STATE_REGISTERED,
 			},
 			UpdateMask: &fieldmaskpb.FieldMask{
 				Paths: []string{
@@ -71,10 +67,8 @@ func TestFacade_UpdateUserEmail(t *testing.T) {
 
 		fx.userManagerServiceClient.EXPECT().PatchUser(fx.ctx, &usermanagerpb.PatchUserRequest{
 			User: &usermanagerpb.User{
-				Id: 1,
-				Email: &wrapperspb.StringValue{
-					Value: "email",
-				},
+				Id:    1,
+				Email: wrapperspb.String("email"),
 				State: usermanagerpb.UserState_USER_STATE_REGISTERED,
 			},
 			UpdateMask: &fieldmaskpb.FieldMask{
@@ -94,10 +88,8 @@ func TestFacade_UpdateUserEmail(t *testing.T) {
 
 		fx.userManagerServiceClient.EXPECT().PatchUser(fx.ctx, &usermanagerpb.PatchUserRequest{
 			User: &usermanagerpb.User{
-				Id: 1,
-				Email: &wrapperspb.StringValue{
-					Value: "email",
-				},
+				Id:    1,
+				Email: wrapperspb.String("email"),
 				State: usermanagerpb.UserState_USER_STATE_REGISTERED,
 			},
 			UpdateMask: &fieldmaskpb.FieldMask{
@@ -163,10 +155,8 @@ func TestFacade_UpdateUserPhone(t *testing.T) {
 
 		fx.userManagerServiceClient.EXPECT().PatchUser(fx.ctx, &usermanagerpb.PatchUserRequest{
 			User: &usermanagerpb.User{
-				Id: 1,
-				Phone: &wrapperspb.StringValue{
-					Value: "phone",
-				},
+				Id:    1,
+				Phone: wrapperspb.String("phone"),
 				State: usermanagerpb.UserState_USER_STATE_REGISTERED,
 			},
 			UpdateMask: &fieldmaskpb.FieldMask{
@@ -186,10 +176,8 @@ func TestFacade_UpdateUserPhone(t *testing.T) {
 
 		fx.userManagerServiceClient.EXPECT().PatchUser(fx.ctx, &usermanagerpb.PatchUserRequest{
 			User: &usermanagerpb.User{
-				Id: 1,
-				Phone: &wrapperspb.StringValue{
-					Value: "phone",
-				},
+				Id:    1,
+				Phone: wrapperspb.String("phone"),
 				State: usermanagerpb.UserState_USER_STATE_REGISTERED,
 			},
 			UpdateMask: &fieldmaskpb.FieldMask{

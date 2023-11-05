@@ -30,14 +30,10 @@ func TestFacade_GetUserByID(t *testing.T) {
 		fx.userManagerServiceClient.EXPECT().GetUser(fx.ctx, &usermanagerpb.GetUserRequest{
 			Id: 1,
 		}).Return(&usermanagerpb.User{
-			Id: 1,
-			Email: &wrapperspb.StringValue{
-				Value: "email",
-			},
-			Name: "name",
-			Phone: &wrapperspb.StringValue{
-				Value: "phone",
-			},
+			Id:    1,
+			Email: wrapperspb.String("email"),
+			Name:  "name",
+			Phone: wrapperspb.String("phone"),
 			State: usermanagerpb.UserState_USER_STATE_CHANGING_NAME,
 		}, nil)
 
@@ -74,14 +70,10 @@ func TestFacade_GetUserByTelegramID(t *testing.T) {
 		fx.userManagerServiceClient.EXPECT().GetUserByTelegramID(fx.ctx, &usermanagerpb.GetUserByTelegramIDRequest{
 			TelegramId: -100,
 		}).Return(&usermanagerpb.User{
-			Id: 1,
-			Email: &wrapperspb.StringValue{
-				Value: "email",
-			},
-			Name: "name",
-			Phone: &wrapperspb.StringValue{
-				Value: "phone",
-			},
+			Id:    1,
+			Email: wrapperspb.String("email"),
+			Name:  "name",
+			Phone: wrapperspb.String("phone"),
 			State: usermanagerpb.UserState_USER_STATE_CHANGING_NAME,
 		}, nil)
 

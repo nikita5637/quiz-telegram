@@ -19,11 +19,9 @@ func (f *Facade) UpdateUserBirthdate(ctx context.Context, userID int32, birthdat
 
 	_, err = f.userManagerServiceClient.PatchUser(ctx, &usermanagerpb.PatchUserRequest{
 		User: &usermanagerpb.User{
-			Id:    userID,
-			State: usermanagerpb.UserState_USER_STATE_REGISTERED,
-			Birthdate: &wrapperspb.StringValue{
-				Value: birthdateTime.Format("2006-01-02"),
-			},
+			Id:        userID,
+			State:     usermanagerpb.UserState_USER_STATE_REGISTERED,
+			Birthdate: wrapperspb.String(birthdateTime.Format("2006-01-02")),
 		},
 		UpdateMask: &fieldmaskpb.FieldMask{
 			Paths: []string{
@@ -40,10 +38,8 @@ func (f *Facade) UpdateUserBirthdate(ctx context.Context, userID int32, birthdat
 func (f *Facade) UpdateUserEmail(ctx context.Context, userID int32, email string) error {
 	_, err := f.userManagerServiceClient.PatchUser(ctx, &usermanagerpb.PatchUserRequest{
 		User: &usermanagerpb.User{
-			Id: userID,
-			Email: &wrapperspb.StringValue{
-				Value: email,
-			},
+			Id:    userID,
+			Email: wrapperspb.String(email),
 			State: usermanagerpb.UserState_USER_STATE_REGISTERED,
 		},
 		UpdateMask: &fieldmaskpb.FieldMask{
@@ -80,10 +76,8 @@ func (f *Facade) UpdateUserName(ctx context.Context, userID int32, name string) 
 func (f *Facade) UpdateUserPhone(ctx context.Context, userID int32, phone string) error {
 	_, err := f.userManagerServiceClient.PatchUser(ctx, &usermanagerpb.PatchUserRequest{
 		User: &usermanagerpb.User{
-			Id: userID,
-			Phone: &wrapperspb.StringValue{
-				Value: phone,
-			},
+			Id:    userID,
+			Phone: wrapperspb.String(phone),
 			State: usermanagerpb.UserState_USER_STATE_REGISTERED,
 		},
 		UpdateMask: &fieldmaskpb.FieldMask{

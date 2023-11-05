@@ -23,6 +23,7 @@ func convertProtoGameToModelGame(pbGame *gamepb.Game) model.Game {
 		Registered:  pbGame.GetRegistered(),
 		IsInMaster:  pbGame.GetIsInMaster(),
 		HasPassed:   pbGame.GetHasPassed(),
+		GameLink:    maybe.Nothing[string](),
 	}
 
 	if externalID := pbGame.GetExternalId(); externalID != nil {
@@ -39,6 +40,10 @@ func convertProtoGameToModelGame(pbGame *gamepb.Game) model.Game {
 
 	if payment := pbGame.Payment; payment != nil {
 		modelGame.Payment = maybe.Just(int32(*payment))
+	}
+
+	if gameLink := pbGame.GetGameLink(); gameLink != nil {
+		modelGame.GameLink = maybe.Just(gameLink.GetValue())
 	}
 
 	return modelGame

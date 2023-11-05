@@ -32,9 +32,7 @@ func convertModelGamePlayerToProtoGamePlayer(gamePlayer model.GamePlayer) *gamep
 	}
 
 	if userID, ok := gamePlayer.UserID.Get(); ok {
-		ret.UserId = &wrapperspb.Int32Value{
-			Value: userID,
-		}
+		ret.UserId = wrapperspb.Int32(userID)
 	}
 
 	return ret

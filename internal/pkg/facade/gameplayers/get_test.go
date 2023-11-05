@@ -32,20 +32,16 @@ func TestFacade_GetPlayersByGameID(t *testing.T) {
 		}).Return(&gameplayerpb.GetGamePlayersByGameIDResponse{
 			GamePlayers: []*gameplayerpb.GamePlayer{
 				{
-					Id:     1,
-					GameId: 1,
-					UserId: &wrapperspb.Int32Value{
-						Value: 1,
-					},
+					Id:           1,
+					GameId:       1,
+					UserId:       wrapperspb.Int32(1),
 					RegisteredBy: 1,
 					Degree:       gameplayerpb.Degree_DEGREE_LIKELY,
 				},
 				{
-					Id:     2,
-					GameId: 2,
-					UserId: &wrapperspb.Int32Value{
-						Value: 2,
-					},
+					Id:           2,
+					GameId:       2,
+					UserId:       wrapperspb.Int32(2),
 					RegisteredBy: 2,
 					Degree:       gameplayerpb.Degree_DEGREE_UNLIKELY,
 				},

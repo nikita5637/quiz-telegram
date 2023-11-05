@@ -77,6 +77,10 @@ var (
 		Key:      "game_cost",
 		FallBack: "Game cost",
 	}
+	gameLinkLexeme = i18n.Lexeme{
+		Key:      "game_link",
+		FallBack: "Game link",
+	}
 	leagueLexeme = i18n.Lexeme{
 		Key:      "league",
 		FallBack: "League",
@@ -626,6 +630,16 @@ func (b *Bot) getGameMenuSecondPageEditMessage(ctx context.Context, game model.G
 			}
 		}
 
+		if gameLink, isPresent := game.GameLink.Get(); isPresent {
+			btnSite := tgbotapi.NewInlineKeyboardButtonURL(
+				i18n.GetTranslator(gameLinkLexeme)(ctx),
+				gameLink,
+			)
+			rows = append(rows, []tgbotapi.InlineKeyboardButton{
+				btnSite,
+			})
+		}
+
 		getGameData := &commands.GetGameData{
 			GameID:                  game.ID,
 			PageIndex:               0,
@@ -749,6 +763,16 @@ func (b *Bot) getPassedAndRegisteredGameMenuEditMessage(ctx context.Context, gam
 				}
 				rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnGamePhotos))
 			}
+		}
+
+		if gameLink, isPresent := game.GameLink.Get(); isPresent {
+			btnSite := tgbotapi.NewInlineKeyboardButtonURL(
+				i18n.GetTranslator(gameLinkLexeme)(ctx),
+				gameLink,
+			)
+			rows = append(rows, []tgbotapi.InlineKeyboardButton{
+				btnSite,
+			})
 		}
 
 		replyMarkup := tgbotapi.NewInlineKeyboardMarkup(rows...)

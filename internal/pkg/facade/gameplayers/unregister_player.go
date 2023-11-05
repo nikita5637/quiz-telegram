@@ -22,9 +22,7 @@ func (f *Facade) UnregisterPlayer(ctx context.Context, gamePlayer model.GamePlay
 		},
 	}
 	if userID, ok := gamePlayer.UserID.Get(); ok {
-		req.GamePlayer.UserId = &wrapperspb.Int32Value{
-			Value: userID,
-		}
+		req.GamePlayer.UserId = wrapperspb.Int32(userID)
 	}
 
 	_, err := f.gamePlayerRegistratorServiceClient.UnregisterPlayer(ctx, req)

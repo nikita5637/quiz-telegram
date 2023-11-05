@@ -42,6 +42,7 @@ func Test_convertProtoGameToModelGame(t *testing.T) {
 					Registered:  true,
 					IsInMaster:  true,
 					HasPassed:   true,
+					GameLink:    wrapperspb.String("link"),
 				},
 			},
 			want: model.Game{
@@ -60,6 +61,7 @@ func Test_convertProtoGameToModelGame(t *testing.T) {
 				Registered:  true,
 				IsInMaster:  true,
 				HasPassed:   true,
+				GameLink:    maybe.Just("link"),
 			},
 		},
 	}

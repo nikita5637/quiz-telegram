@@ -42,26 +42,18 @@ func TestFacade_GetActiveCertificates(t *testing.T) {
 				{
 					Id:   1,
 					Type: certificatemanagerpb.CertificateType_CERTIFICATE_TYPE_BAR_BILL_PAYMENT,
-					Info: &wrapperspb.StringValue{
-						Value: "info1",
-					},
+					Info: wrapperspb.String("info1"),
 				},
 				{
-					Id:   2,
-					Type: certificatemanagerpb.CertificateType_CERTIFICATE_TYPE_FREE_PASS,
-					SpentOn: &wrapperspb.Int32Value{
-						Value: 1,
-					},
-					Info: &wrapperspb.StringValue{
-						Value: "info2",
-					},
+					Id:      2,
+					Type:    certificatemanagerpb.CertificateType_CERTIFICATE_TYPE_FREE_PASS,
+					SpentOn: wrapperspb.Int32(1),
+					Info:    wrapperspb.String("info2"),
 				},
 				{
 					Id:   3,
 					Type: certificatemanagerpb.CertificateType_CERTIFICATE_TYPE_FREE_PASS,
-					Info: &wrapperspb.StringValue{
-						Value: "info3",
-					},
+					Info: wrapperspb.String("info3"),
 				},
 			},
 		}, nil)
