@@ -6,7 +6,6 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	gamepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/game"
-	leaguepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/league"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/commands"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/icons"
@@ -109,7 +108,7 @@ func (b *Bot) lotteryButton(ctx context.Context, gameID int32, leagueID int32, r
 		CallbackData: &callbackData,
 	}
 
-	if leagueID == int32(leaguepb.LeagueID_SQUIZ) {
+	if leagueID == model.LeagueSquiz {
 		text := fmt.Sprintf("%s %s", icons.Lottery, i18n.GetTranslator(registrationLink)(ctx))
 		btn = tgbotapi.NewInlineKeyboardButtonURL(text, "https://spb.squiz.ru/game")
 	}

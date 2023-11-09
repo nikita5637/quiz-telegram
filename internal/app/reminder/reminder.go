@@ -9,7 +9,6 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	gamepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/game"
-	leaguepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/league"
 	placepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/place"
 	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
 	reminder "github.com/nikita5637/quiz-registrator-api/pkg/reminder"
@@ -263,7 +262,7 @@ func (r *Reminder) Start(ctx context.Context) error {
 					var btnLottery tgbotapi.InlineKeyboardButton
 
 					switch lotteryRemind.LeagueID {
-					case int32(leaguepb.LeagueID_QUIZ_PLEASE):
+					case model.LeagueQuizPlease:
 						payload := &commands.LotteryData{
 							GameID: lotteryRemind.GameID,
 						}
@@ -279,7 +278,7 @@ func (r *Reminder) Start(ctx context.Context) error {
 							Text:         fmt.Sprintf("%s %s", icons.Lottery, i18n.GetTranslator(registerForLotteryLexeme)(ctx)),
 							CallbackData: &callbackData,
 						}
-					case int32(leaguepb.LeagueID_SQUIZ):
+					case model.LeagueSquiz:
 						text = fmt.Sprintf("%s %s", icons.Lottery, i18n.GetTranslator(registrationLink)(ctx))
 						btnLottery = tgbotapi.NewInlineKeyboardButtonURL(text, "https://spb.squiz.ru/game")
 					default:
