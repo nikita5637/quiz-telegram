@@ -786,16 +786,18 @@ func (b *Bot) getPassedAndRegisteredGameMenuEditMessage(ctx context.Context, gam
 			})
 		}
 
-		if _, err := b.mathProblemsFacade.GetMathProblemByGameID(ctx, game.ID); err != nil {
-			if !errors.Is(err, mathproblems.ErrMathProblemNotFound) {
-				logger.ErrorKV(ctx, "getting math problem by game ID error", zap.Error(err))
+		if game.LeagueID == model.LeagueQuizPlease { // TODO feature
+			if _, err := b.mathProblemsFacade.GetMathProblemByGameID(ctx, game.ID); err != nil {
+				if !errors.Is(err, mathproblems.ErrMathProblemNotFound) {
+					logger.ErrorKV(ctx, "getting math problem by game ID error", zap.Error(err))
+				}
+			} else {
+				btnMathProblem, err := b.mathProblemButton(ctx, game.ID)
+				if err != nil {
+					return nil, fmt.Errorf("generating math problem button error: %w", err)
+				}
+				rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnMathProblem))
 			}
-		} else {
-			btnMathProblem, err := b.mathProblemButton(ctx, game.ID)
-			if err != nil {
-				return nil, fmt.Errorf("generating math problem button error: %w", err)
-			}
-			rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnMathProblem))
 		}
 
 		replyMarkup := tgbotapi.NewInlineKeyboardMarkup(rows...)
