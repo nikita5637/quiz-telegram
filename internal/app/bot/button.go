@@ -38,6 +38,10 @@ var (
 		Key:      "legioner_will_not_come",
 		FallBack: "Legioner will not come",
 	}
+	mathProblemLexeme = i18n.Lexeme{
+		Key:      "math_problem",
+		FallBack: "Math problem",
+	}
 	mixGamePaymentLexeme = i18n.Lexeme{
 		Key:      "mix_game_payment",
 		FallBack: "Mixed payment type",
@@ -114,6 +118,22 @@ func (b *Bot) lotteryButton(ctx context.Context, gameID int32, leagueID int32, r
 	}
 
 	return btn, nil
+}
+
+func (b *Bot) mathProblemButton(ctx context.Context, gameID int32) (tgbotapi.InlineKeyboardButton, error) {
+	payload := &commands.GetMathProblemData{
+		GameID: gameID,
+	}
+
+	callbackData, err := callbackdatautils.GetCallbackData(ctx, commands.CommandGetMathProblem, payload)
+	if err != nil {
+		return tgbotapi.InlineKeyboardButton{}, fmt.Errorf("getting callback data error: %w", err)
+	}
+
+	return tgbotapi.InlineKeyboardButton{
+		Text:         fmt.Sprintf("%s %s", icons.MathProblem, i18n.GetTranslator(mathProblemLexeme)(ctx)),
+		CallbackData: &callbackData,
+	}, nil
 }
 
 func (b *Bot) nextPaymentButton(ctx context.Context, gameID int32, currentPayment int32, rootGamesListCommand commands.Command) (tgbotapi.InlineKeyboardButton, error) {

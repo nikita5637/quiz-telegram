@@ -5,6 +5,7 @@
 //go:generate mockery --case underscore --name GameResultsFacade --with-expecter
 //go:generate mockery --case underscore --name ICSFilesFacade --with-expecter
 //go:generate mockery --case underscore --name LeaguesFacade --with-expecter
+//go:generate mockery --case underscore --name MathProblemsFacade --with-expecter
 //go:generate mockery --case underscore --name PlacesFacade --with-expecter
 //go:generate mockery --case underscore --name UsersFacade --with-expecter
 //go:generate mockery --case underscore --name CroupierServiceClient --with-expecter
@@ -72,6 +73,11 @@ type LeaguesFacade interface {
 	GetLeague(ctx context.Context, id int32) (model.League, error)
 }
 
+// MathProblemsFacade ...
+type MathProblemsFacade interface {
+	GetMathProblemByGameID(ctx context.Context, gameID int32) (model.MathProblem, error)
+}
+
 // PlacesFacade ...
 type PlacesFacade interface {
 	GetPlace(ctx context.Context, id int32) (model.Place, error)
@@ -118,6 +124,7 @@ type Bot struct {
 	gamePlayersFacade  GamePlayersFacade
 	icsFilesFacade     ICSFilesFacade
 	leaguesFacade      LeaguesFacade
+	mathProblemsFacade MathProblemsFacade
 	placesFacade       PlacesFacade
 	usersFacade        UsersFacade
 
@@ -137,6 +144,7 @@ type Config struct {
 	GamePlayersFacade  GamePlayersFacade
 	ICSFilesFacade     ICSFilesFacade
 	LeaguesFacade      LeaguesFacade
+	MathProblemsFacade MathProblemsFacade
 	PlacesFacade       PlacesFacade
 	UsersFacade        UsersFacade
 
@@ -155,6 +163,7 @@ func New(cfg Config) (*Bot, error) {
 		gamePlayersFacade:  cfg.GamePlayersFacade,
 		icsFilesFacade:     cfg.ICSFilesFacade,
 		leaguesFacade:      cfg.LeaguesFacade,
+		mathProblemsFacade: cfg.MathProblemsFacade,
 		placesFacade:       cfg.PlacesFacade,
 		usersFacade:        cfg.UsersFacade,
 

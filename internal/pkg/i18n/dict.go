@@ -66,6 +66,8 @@ var dictionary = map[string]map[string]string{
 		"list_of_registered_games_is_empty":           "Нет зарегистрированных игр",
 		"list_of_your_games":                          "Список твоих игр",
 		"list_of_your_games_is_empty":                 "Ты пока не играешь с нами",
+		"math_problem":                                "Математическая задача",
+		"math_problem_not_found":                      "Математическая задача не найдена",
 		"menu":                                        "Меню ресторана",
 		"mix":                                         "Микс",
 		"mix_game_payment":                            "Кто-то платит, кто-то нет",

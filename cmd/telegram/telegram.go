@@ -12,6 +12,7 @@ import (
 	gameplayerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/game_player"
 	gameresultmanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/game_result_manager"
 	leaguepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/league"
+	mathproblempb "github.com/nikita5637/quiz-registrator-api/pkg/pb/math_problem"
 	photomanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/photo_manager"
 	placepb "github.com/nikita5637/quiz-registrator-api/pkg/pb/place"
 	usermanagerpb "github.com/nikita5637/quiz-registrator-api/pkg/pb/user_manager"
@@ -27,6 +28,7 @@ import (
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/games"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/icsfiles"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/leagues"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/mathproblems"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/places"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/users"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
@@ -133,6 +135,7 @@ func main() {
 	gamePlayerServiceClient := gameplayerpb.NewServiceClient(registratorAPIClientUserConn)
 	gamePlayerRegistratorServiceClient := gameplayerpb.NewRegistratorServiceClient(registratorAPIClientUserConn)
 	leagueServiceClient := leaguepb.NewServiceClient(registratorAPIClientUserConn)
+	mathProblemServiceClient := mathproblempb.NewServiceClient(registratorAPIClientUserConn)
 	photographerServiceClient := photomanagerpb.NewServiceClient(registratorAPIClientUserConn)
 	placeServiceClient := placepb.NewServiceClient(registratorAPIClientUserConn)
 	gameServiceClient := gamepb.NewServiceClient(registratorAPIClientUserConn)
@@ -149,6 +152,11 @@ func main() {
 			LeagueServiceClient: leagueServiceClient,
 		}
 		leaguesFacade := leagues.NewFacade(leaguesFacadeConfig)
+
+		mathProblemsFacadeConfig := mathproblems.Config{
+			MathProblemServiceClient: mathProblemServiceClient,
+		}
+		mathProblemsFacade := mathproblems.New(mathProblemsFacadeConfig)
 
 		placesFacadeConfig := places.Config{
 			PlaceServiceClient: placeServiceClient,
@@ -203,6 +211,7 @@ func main() {
 			GamePlayersFacade:  gamePlayersFacade,
 			ICSFilesFacade:     icsFilesFacade,
 			LeaguesFacade:      leaguesFacade,
+			MathProblemsFacade: mathProblemsFacade,
 			PlacesFacade:       placesFacade,
 			UsersFacade:        usersFacade,
 

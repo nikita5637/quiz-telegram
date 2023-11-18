@@ -16,6 +16,7 @@ import (
 	"github.com/nikita5637/quiz-telegram/internal/pkg/commands"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/gameplayers"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/games"
+	"github.com/nikita5637/quiz-telegram/internal/pkg/facade/mathproblems"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/i18n"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/icons"
 	"github.com/nikita5637/quiz-telegram/internal/pkg/logger"
@@ -24,6 +25,7 @@ import (
 	telegramutils "github.com/nikita5637/quiz-telegram/utils/telegram"
 	userutils "github.com/nikita5637/quiz-telegram/utils/user"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/status"
 )
@@ -238,6 +240,15 @@ func (b *Bot) handleCallbackQuery(ctx context.Context, update *tgbotapi.Update) 
 			}
 
 			return b.handleGetGamesList(ctx, update, data)
+		}
+	case commands.CommandGetMathProblem:
+		callbackHandler = func(ctx context.Context, update *tgbotapi.Update) ([]tgbotapi.Chattable, []tgbotapi.Chattable, error) {
+			data := &commands.GetMathProblemData{}
+			if err = json.Unmarshal(telegramRequest.Body, data); err != nil {
+				return nil, nil, fmt.Errorf("unmarshaling telegram request body error: %w", err)
+			}
+
+			return b.handleGetMathProblem(ctx, update, data)
 		}
 	case commands.CommandGetPassedAndRegisteredGamesList:
 		callbackHandler = func(ctx context.Context, update *tgbotapi.Update) ([]tgbotapi.Chattable, []tgbotapi.Chattable, error) {
@@ -775,6 +786,18 @@ func (b *Bot) getPassedAndRegisteredGameMenuEditMessage(ctx context.Context, gam
 			})
 		}
 
+		if _, err := b.mathProblemsFacade.GetMathProblemByGameID(ctx, game.ID); err != nil {
+			if !errors.Is(err, mathproblems.ErrMathProblemNotFound) {
+				logger.ErrorKV(ctx, "getting math problem by game ID error", zap.Error(err))
+			}
+		} else {
+			btnMathProblem, err := b.mathProblemButton(ctx, game.ID)
+			if err != nil {
+				return nil, fmt.Errorf("generating math problem button error: %w", err)
+			}
+			rows = append(rows, tgbotapi.NewInlineKeyboardRow(btnMathProblem))
+		}
+
 		replyMarkup := tgbotapi.NewInlineKeyboardMarkup(rows...)
 		msg.ReplyMarkup = &replyMarkup
 
@@ -916,6 +939,38 @@ func (b *Bot) handleGetGamesList(ctx context.Context, update *tgbotapi.Update, d
 	msg, cb, err := fn(ctx, update, data)
 	if err != nil {
 		return nil, nil, fmt.Errorf("preparing games list message and callback error: %w", err)
+	}
+
+	return msg, cb, nil
+}
+
+func (b *Bot) handleGetMathProblem(ctx context.Context, update *tgbotapi.Update, data *commands.GetMathProblemData) ([]tgbotapi.Chattable, []tgbotapi.Chattable, error) {
+	fn := func(ctx context.Context, update *tgbotapi.Update, data *commands.GetMathProblemData) ([]tgbotapi.Chattable, []tgbotapi.Chattable, error) {
+		clientID := update.CallbackQuery.From.ID
+		messageID := update.CallbackQuery.Message.MessageID
+		cb := tgbotapi.NewCallback(update.CallbackQuery.ID, "")
+
+		mathProblem, err := b.mathProblemsFacade.GetMathProblemByGameID(ctx, data.GameID)
+		if err != nil {
+			if errors.Is(err, games.ErrGameNotFound) {
+				msg := tgbotapi.NewEditMessageText(clientID, messageID, i18n.GetTranslator(games.GameNotFoundLexeme)(ctx))
+				return []tgbotapi.Chattable{msg}, []tgbotapi.Chattable{cb}, nil
+			} else if errors.Is(err, mathproblems.ErrMathProblemNotFound) {
+				cb = tgbotapi.NewCallback(update.CallbackQuery.ID, i18n.GetTranslator(mathproblems.MathProblemNotFoundLexeme)(ctx))
+				return nil, []tgbotapi.Chattable{cb}, nil
+			}
+
+			return nil, nil, fmt.Errorf("getting math problem by game ID error: %w", err)
+		}
+
+		msg := tgbotapi.NewMessage(clientID, mathProblem.URL)
+
+		return []tgbotapi.Chattable{msg}, []tgbotapi.Chattable{cb}, nil
+	}
+
+	msg, cb, err := fn(ctx, update, data)
+	if err != nil {
+		return nil, nil, fmt.Errorf("preparing math problem messages and callback error: %w", err)
 	}
 
 	return msg, cb, nil

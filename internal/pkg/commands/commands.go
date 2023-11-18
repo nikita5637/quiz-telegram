@@ -55,6 +55,8 @@ const (
 	CommandGetRegisteredGamesList
 	// CommandGetUserGamesList ...
 	CommandGetUserGamesList
+	// CommandGetMathProblem ...
+	CommandGetMathProblem
 	// ...
 
 	// CommandsNumber ...
@@ -82,6 +84,11 @@ type GetGamePhotosData struct {
 // GetGamesListData is a payload for command CommandGetGamesList
 type GetGamesListData struct {
 	Command Command `json:"c,omitempty"`
+}
+
+// GetMathProblemData is a payload for command CommandGetMathProblem
+type GetMathProblemData struct {
+	GameID int32 `json:"g,omitempty"`
 }
 
 // GetPassedAndRegisteredGamesListData is a payload for commands CommandGetPassedAndRegisteredGamesListNextPage and CommandGetPassedAndRegisteredGamesListPrevPage
