@@ -36,16 +36,14 @@ func (f *Facade) GetGames(ctx context.Context, registered, isInMaster, hasPassed
 		return nil, fmt.Errorf("get games error: %w", err)
 	}
 
-	permittedGameTypes := map[gamepb.GameType]struct{}{
-		gamepb.GameType_GAME_TYPE_CLASSIC: {},
-		gamepb.GameType_GAME_TYPE_CLOSED:  {},
-	}
-
 	modelGames := make([]model.Game, 0, len(gamesResp.GetGames()))
 	for _, pbGame := range gamesResp.GetGames() {
 		if pbGame.GetRegistered() == registered && pbGame.GetIsInMaster() == isInMaster && pbGame.GetHasPassed() == hasPassed {
-			if _, ok := permittedGameTypes[pbGame.GetType()]; ok {
-				modelGames = append(modelGames, convertProtoGameToModelGame(pbGame))
+			for _, t := range f.permittedGameTypes {
+				if gamepb.GameType(t) == pbGame.GetType() {
+					modelGames = append(modelGames, convertProtoGameToModelGame(pbGame))
+					break
+				}
 			}
 		}
 	}

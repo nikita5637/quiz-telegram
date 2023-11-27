@@ -184,6 +184,8 @@ func main() {
 
 			GameServiceClient:            gameServiceClient,
 			GameRegistratorServiceClient: gameRegistratorServiceClient,
+
+			PermittedGameTypes: viper.GetIntSlice("bot.permitted_game_types"),
 		}
 		gamesFacade := games.New(gamesFacadeConfig)
 

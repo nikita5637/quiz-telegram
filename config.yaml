@@ -8,6 +8,7 @@ bot:
     address: "ics-manager-api"
     port: 8082
   passed_games_list_limit: 8
+  permitted_game_types: [1,6]
   registrator_api:
     address: "registrator-api"
     port: 8080

@@ -38,6 +38,8 @@ type Facade struct {
 
 	gameServiceClient            GameServiceClient
 	gameRegistratorServiceClient GameRegistratorServiceClient
+
+	permittedGameTypes []int
 }
 
 // Config ...
@@ -46,6 +48,8 @@ type Config struct {
 
 	GameServiceClient            GameServiceClient
 	GameRegistratorServiceClient GameRegistratorServiceClient
+
+	PermittedGameTypes []int
 }
 
 // New ...
@@ -55,5 +59,7 @@ func New(cfg Config) *Facade {
 
 		gameServiceClient:            cfg.GameServiceClient,
 		gameRegistratorServiceClient: cfg.GameRegistratorServiceClient,
+
+		permittedGameTypes: cfg.PermittedGameTypes,
 	}
 }
