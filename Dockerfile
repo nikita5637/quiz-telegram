@@ -16,6 +16,6 @@ FROM golang:1.18.3 as server
 COPY --from=builder /go/src/quiz-telegram/telegram /bin/
 COPY --from=builder /go/src/quiz-telegram/config.yaml /etc/
 
-EXPOSE 8080
+EXPOSE 8081
 
 CMD ["/bin/telegram"]
